@@ -123,7 +123,7 @@ const SongSection: React.FC<Props> = ({
       <div className="w-full overflow-x-auto overflow-y-hidden pb-4 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-gray-800 [&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-gray-500">
         <div className="flex gap-4 md:gap-6">
           {albums.map((album) => (
-            <div key={album.id} className="w-[160px] sm:w-[180px] md:w-[200px] flex-shrink-0">
+            <div key={album.id} className="w-40 sm:w-45 md:w-50 shrink-0">
               <AlbumCard album={album} />
             </div>
           ))}

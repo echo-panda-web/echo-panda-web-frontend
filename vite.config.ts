@@ -2,7 +2,7 @@ import { defineConfig, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr';
 import tailwindcss from '@tailwindcss/vite'
-// https://vite.dev/config/
+
 export default defineConfig({
   server: {
     host: "0.0.0.0",
@@ -14,4 +14,18 @@ export default defineConfig({
     tailwindcss() as PluginOption,
     svgr() as PluginOption
   ],
+build: {
+  rollupOptions: {
+    output: {
+      manualChunks(id) {
+        if (id.includes('node_modules')) {
+          if (id.includes('react-dom') || id.includes('react-router')) {
+            return 'vendor'
+          }
+          return 'chunks'
+        }
+      }
+    }
+  }
+}
 })

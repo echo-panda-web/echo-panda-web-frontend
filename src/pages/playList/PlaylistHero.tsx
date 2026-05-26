@@ -11,7 +11,7 @@ export const PlaylistHero: React.FC<Props> = ({ title, songCount, duration }) =>
   return (
     <header className="relative px-4 sm:px-8 pt-20 sm:pt-24 pb-8 bg-linear-to-b from-blue-600/30 via-blue-950/20 to-black overflow-hidden">
       {/* Background blur circle */}
-      <div className="absolute top-0 -left-16 sm:-left-20 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 -left-16 sm:-left-20 w-75 sm:w-125 h-75 sm:h-125 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Content */}
       <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 relative z-10">

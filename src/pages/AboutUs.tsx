@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import AppFooter from "./home/AppFooter";
-import chyta from "../assets/chyta.png";
-import mokot from "../assets/mokot.png";
-import nimorl from "../assets/nimorl.png";
-import rasy from "../assets/rasy.png";
-import engyi from "../assets/engyi.png";
-import aboutPic1 from "../assets/aboutUsPic/about1.jpg";
-import aboutPic2 from "../assets/aboutUsPic/about2.jpg";
-import aboutPic3 from "../assets/aboutUsPic/about3.jpg";
-import aboutPic4 from "../assets/aboutUsPic/about4.jpg";
-import lastSetionPic from "../assets/aboutUsPic/lastSectionPic.png";
+import chyta from "../assets/chyta.webp";
+import mokot from "../assets/mokot.webp";
+import nimorl from "../assets/nimorl.webp";
+import rasy from "../assets/rasy.webp";
+import engyi from "../assets/engyi.webp";
+import aboutPic1 from "../assets/aboutUsPic/about1.webp";
+import aboutPic2 from "../assets/aboutUsPic/about2.webp";
+import aboutPic3 from "../assets/aboutUsPic/about3.webp";
+import aboutPic4 from "../assets/aboutUsPic/about4.webp";
+import lastSetionPic from "../assets/aboutUsPic/lastSectionPic.webp";
 const teamMembers = [
   { image: rasy, name: "Pa Borasy", role: "Team Leader" },
   { image: engyi, name: "Thoeun Engyi", role: "Team Member" },
@@ -223,10 +223,10 @@ const AboutUs: React.FC = () => {
                         item.id === "01."
                           ? "rgba(16, 185, 129, 0.2)"
                           : item.id === "02."
-                          ? "rgba(249, 115, 22, 0.2)"
-                          : item.id === "03."
-                          ? "rgba(59, 130, 246, 0.2)"
-                          : "rgba(168, 85, 247, 0.2)",
+                            ? "rgba(249, 115, 22, 0.2)"
+                            : item.id === "03."
+                              ? "rgba(59, 130, 246, 0.2)"
+                              : "rgba(168, 85, 247, 0.2)",
                     }}
                   ></div>
                 </div>

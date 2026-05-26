@@ -9,21 +9,21 @@ const HeroSection: React.FC<Props> = () => {
   const navigate = useNavigate();
 
 
- const handleDiscover = () => {
+  const handleDiscover = () => {
     navigate("/discover");
   };
 
   const handleCreatePlaylist = () => {
-    navigate("/playlist"); 
+    navigate("/playlist");
   };
 
   return (
-    <section className="relative mt-4 mb-8 overflow-hidden min-h-[300px] md:min-h-[450px] lg:min-h-[550px]">
-      
+    <section className="relative mt-4 mb-8 overflow-hidden min-h-75 md:min-h-112.5 lg:min-h-137.5">
+
       {/* Bg Image */}
       <div className="absolute inset-0">
-        <img 
-          src="/image.png" 
+        <img
+          src="/image.webp"
           alt=""
           className="w-full h-full object-cover object-center"
         />
@@ -34,15 +34,15 @@ const HeroSection: React.FC<Props> = () => {
 
       {/* Content */}
       <div className="relative z-10 px-6 py-16 md:px-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center min-h-[300px]">
-          
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center min-h-75">
+
           {/* Left Content */}
           <div className="space-y-6 text-center md:text-left">
             <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
               All the <span className="text-blue-500">Best Songs</span><br />
               in One Place
             </h1>
-            
+
             <p className="text-gray-200 text-sm md:text-base leading-relaxed max-w-xl mx-auto md:mx-0">
               On our website, you can access an amazing collection of popular and new songs.
               Stream high-quality music and enjoy without interruptions — whatever your taste,
@@ -50,7 +50,7 @@ const HeroSection: React.FC<Props> = () => {
             </p>
 
             {/* Buttons */}
-           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <button
                 onClick={handleDiscover}
                 className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"

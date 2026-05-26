@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BgImage from "../assets/registerBG.png";
+import BgImage from "../assets/registerBG.webp";
 import {
   SignInWithGoogle,
   completeGoogleRedirectSignIn,
@@ -130,11 +130,10 @@ const Register: React.FC = () => {
           <button
             onClick={() => void handleGoogleRegister()}
             disabled={loading}
-            className={`w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/95 backdrop-blur-sm rounded-xl text-base font-semibold text-gray-800 transition-all duration-300 shadow-lg border border-white/40 ${
-              loading
+            className={`w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/95 backdrop-blur-sm rounded-xl text-base font-semibold text-gray-800 transition-all duration-300 shadow-lg border border-white/40 ${loading
                 ? "opacity-60 cursor-not-allowed"
                 : "hover:bg-white hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-            }`}
+              }`}
           >
             {!loading && (
               <svg className="w-6 h-6" viewBox="0 0 24 24">
@@ -259,11 +258,10 @@ const Register: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className={` p-6 mt-6  py-4 bg-white text-gray-800 rounded-xl font-bold text-base shadow-xl transition-all duration-300 border border-white/90 ${
-                loading
+              className={` p-6 mt-6  py-4 bg-white text-gray-800 rounded-xl font-bold text-base shadow-xl transition-all duration-300 border border-white/90 ${loading
                   ? "opacity-60 cursor-not-allowed"
                   : "hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
-              }`}
+                }`}
             >
               {loading ? "Creating Account..." : "Create Account"}
             </button>

@@ -101,16 +101,16 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
       setDisplayText("");
       return;
     }
-    const duration = 1.2; 
+    const duration = 1.2;
     let rafId: number | null = null;
     const start = performance.now();
 
-    const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t); 
+    const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t);
 
     const step = (now: number) => {
       const elapsedSec = (now - start) / 1000;
       let progress = Math.min(elapsedSec / duration, 1);
-      progress = easeOutQuad(progress); 
+      progress = easeOutQuad(progress);
       const chars = Math.floor(progress * voiceText.length);
       setDisplayText(voiceText.slice(0, chars));
 
@@ -209,23 +209,21 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
       <div className="relative w-full h-screen flex flex-col items-center justify-center px-8">
         <div className="flex flex-col items-center gap-6">
           <div
-            className={`w-56 h-56 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${
-              isListening
-                ? "bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse scale-110"
-                : hasSpoken
-                ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                : "bg-gradient-to-r from-gray-700 to-gray-800"
-            }`}
+            className={`w-56 h-56 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${isListening
+              ? "bg-linear-to-r from-blue-500 to-purple-500 animate-pulse scale-110"
+              : hasSpoken
+                ? "bg-linear-to-r from-green-500 to-emerald-500"
+                : "bg-linear-to-r from-gray-700 to-gray-800"
+              }`}
           >
             <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center shadow-lg">
               <FaMicrophone
-                className={`h-12 w-12 transition-colors ${
-                  isListening
-                    ? "text-blue-600 animate-bounce"
-                    : hasSpoken
+                className={`h-12 w-12 transition-colors ${isListening
+                  ? "text-blue-600 animate-bounce"
+                  : hasSpoken
                     ? "text-green-600"
                     : "text-gray-400"
-                }`}
+                  }`}
               />
             </div>
           </div>
@@ -239,9 +237,9 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
         </div>
 
         {displayText && (
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-900/40 to-purple-900/40 p-8 rounded-2xl max-w-xl border border-blue-500/30 backdrop-blur animate-in fade-in duration-500">
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-linear-to-r from-blue-900/40 to-purple-900/40 p-8 rounded-2xl max-w-xl border border-blue-500/30 backdrop-blur animate-in fade-in duration-500">
             <p className="text-gray-400 text-sm mb-4">You said:</p>
-            <p className="text-white text-2xl font-semibold leading-relaxed break-words">
+            <p className="text-white text-2xl font-semibold leading-relaxed wrap-break-word">
               {displayText}
               {isListening && <span className="animate-pulse">|</span>}
             </p>
@@ -252,9 +250,9 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
   );
 
   return (
-   <header
-  className={`w-full border-b px-4 md:px-8 py-4 min-h-[90px] flex items-center justify-between ${headerBg}`}
->
+    <header
+      className={`w-full border-b px-4 md:px-8 py-4 min-h-22.5 flex items-center justify-between ${headerBg}`}
+    >
 
       {isVoiceSearchOpen && <VoiceSearchModal />}
 
@@ -264,13 +262,13 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
         className="flex items-center gap-3 text-2xl md:text-3xl font-bold"
       >
         <img
-          src="/logo.png"
+          src="/logo.webp"
           alt="Echo Panda Logo"
           className="h-10 md:h-12 w-auto"
         />
 
         {/* Text */}
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
+        <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-purple-500 to-pink-500">
           Echo Panda
         </span>
       </NavLink>
@@ -375,7 +373,7 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
             <NavLink
               to="/register"
               className="px-6 py-2.5 text-base font-semibold rounded-full
-                        bg-gradient-to-r from-blue-500 to-purple-600 text-white
+                        bg-linear-to-r from-blue-500 to-purple-600 text-white
                         shadow-md hover:shadow-blue-500/40 hover:scale-105
                         transition-all duration-300"
             >

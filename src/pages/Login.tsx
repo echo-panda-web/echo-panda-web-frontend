@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BgImage from "../assets/loginBG.jpg";
+import BgImage from "../assets/loginBG.webp";
 import { getAdminBackendUrl } from "../routes/backendAuth";
 import {
   SignInWithGoogle,
@@ -143,11 +143,10 @@ const Login: React.FC = () => {
           <button
             onClick={() => void handleGoogleLogin()}
             disabled={loading}
-            className={`w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/95 backdrop-blur-sm rounded-xl text-base font-semibold text-gray-800 transition-all duration-300 shadow-lg border border-white/40 ${
-              loading
+            className={`w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/95 backdrop-blur-sm rounded-xl text-base font-semibold text-gray-800 transition-all duration-300 shadow-lg border border-white/40 ${loading
                 ? "opacity-60 cursor-not-allowed"
                 : "hover:bg-white hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-            }`}
+              }`}
           >
             {!loading && (
               <svg className="w-6 h-6" viewBox="0 0 24 24">
@@ -234,11 +233,10 @@ const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-4 from-purple-500/90 to-indigo-600/90 backdrop-blur-sm text-white rounded-xl font-bold text-base shadow-xl transition-all duration-300 border border-white/20 ${
-              loading
+            className={`w-full py-4 from-purple-500/90 to-indigo-600/90 backdrop-blur-sm text-white rounded-xl font-bold text-base shadow-xl transition-all duration-300 border border-white/20 ${loading
                 ? "opacity-60 cursor-not-allowed"
                 : "hover:from-purple-600 hover:to-indigo-700 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
-            }`}
+              }`}
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
