@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "types": ["node"],
+    "strictNullChecks": true
+  },
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e/**/*.ts"]
+}

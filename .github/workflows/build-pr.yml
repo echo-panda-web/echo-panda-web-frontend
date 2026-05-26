@@ -1,0 +1,84 @@
+name: Development
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: echo "Run Lint"
+      # - run: npm run lint
+
+  unit-test:
+    name: Unit Tests
+    runs-on: ubuntu-22.04
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: echo "Test Unit"
+      # - run: npm run test:unit
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-22.04
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: echo "Test Intergrate"
+      # - run: npm run test:integration
+
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-22.04
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: echo "Test E2E"
+      # - run: npm run test:e2e
+
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+    needs: [unit-test, integration-test, e2e-test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: echo "Run Build"
+      - run: npm run build
+
+  deploy:
+    name: Check Status
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: echo "Deployment"

@@ -1,0 +1,47 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Logs
+logs
+*.log
+
+# Dependency directories
+.pnpm-store
+.bun
+.cache
+dist
+build
+coverage
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local development files
+.vscode
+.idea
+.DS_Store
+*.swp
+
+# OS / editor files
+Thumbs.db
+*.iml
+
+# Docker-related
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Test files
+__tests__/
+*.test.js
+*.spec.js
+
+# Optional: ignore local git
+.git
+.gitignore

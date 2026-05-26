@@ -1,0 +1,56 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+This project follows https://keepachangelog.com/ and Semantic Versioning.
+
+## [Unreleased]
+### Added
+- New feature placeholders (describe upcoming work).
+- TODO: list UX/feature improvements and tickets.
+
+### Changed
+- Placeholder for breaking or non-breaking changes planned before next release.
+
+### Fixed
+- Placeholder for bug fixes planned.
+
+---
+
+## [0.2.0] - 2025-11-22
+### Added
+- Responsive layout improvements for main dashboard.
+- Client-side routing and lazy-loaded routes to reduce initial bundle size.
+- Basic accessibility enhancements (aria labels, keyboard navigation).
+- Internationalization scaffolding (i18n) with default en locale.
+- Form validation helpers and reusable UI components.
+
+### Changed
+- Updated UI theme and global styles.
+- Refactored state management to use centralized store patterns.
+
+### Fixed
+- Several minor UI/UX bugs and layout regressions on mobile viewports.
+
+### Security
+- Bumped dependency versions to address known vulnerabilities.
+
+---
+
+## [0.1.0] - 2025-10-01
+### Added
+- Initial front-end implementation for EchoPanda:
+    - Core pages (home, projects, settings).
+    - Authentication flow (login/logout).
+    - API client with typed responses and error handling.
+    - Basic unit tests and CI configuration.
+- Project scaffolding with build, lint, and format scripts.
+
+### Fixed
+- Initial bug fixes following integration tests.
+
+---
+
+[Unreleased]: ./CHANGELOG#unreleased
+[0.2.0]: ./CHANGELOG#020---2025-11-22
+[0.1.0]: ./CHANGELOG#010---2025-10-01

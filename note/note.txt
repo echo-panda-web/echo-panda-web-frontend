@@ -1,0 +1,28 @@
+1. for admin to login need to mannually do it in firebase console :
+_go to auth tab , add user , enter email and password
+-to to firestore and copy the UID from auth and add it as document id in admin collection
+_then enter the fiede 
+ **Field 1:**
+   - Field name: `email`
+   - Type: `string`
+   - Value: `admin@example.com` (same as Auth email)
+   
+   **Field 2:**
+   - Field name: `name`
+   - Type: `string`
+   - Value: `Admin Name` (any display name you want)
+   
+   **Field 3:**
+   - Field name: `role`
+   - Type: `string`
+   - Value: `admin` (must be exactly "admin")
+   
+   **Field 4:**
+   - Field name: `status`
+   - Type: `string`
+   - Value: `active` (must be exactly "active")
+   
+   **Field 5:**
+   - Field name: `createdAt`
+   - Type: `timestamp`
+   - Value: Click the clock icon to set current timestamp
