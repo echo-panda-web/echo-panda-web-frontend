@@ -12,7 +12,7 @@ const redirectAfterLogin = (
   navigate: ReturnType<typeof useNavigate>,
   role?: string
 ): void => {
-  if (role === "artist" || role === "publicer") {
+  if (role === "artist") {
     void navigate("/artist/dashboard", { replace: true });
     return;
   }
@@ -71,7 +71,7 @@ const Login: React.FC = () => {
       const result = await signInWithEmail(formData.email, formData.password);
 
       if (!result.success) {
-        setError(result.error || "Failed to log in");
+        setError(result.error + 'debug here' || "Failed to log in");
         setLoading(false);
         return;
       }
@@ -144,8 +144,8 @@ const Login: React.FC = () => {
             onClick={() => void handleGoogleLogin()}
             disabled={loading}
             className={`w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white/95 backdrop-blur-sm rounded-xl text-base font-semibold text-gray-800 transition-all duration-300 shadow-lg border border-white/40 ${loading
-                ? "opacity-60 cursor-not-allowed"
-                : "hover:bg-white hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+              ? "opacity-60 cursor-not-allowed"
+              : "hover:bg-white hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
               }`}
           >
             {!loading && (
@@ -234,8 +234,8 @@ const Login: React.FC = () => {
             type="submit"
             disabled={loading}
             className={`w-full py-4 from-purple-500/90 to-indigo-600/90 backdrop-blur-sm text-white rounded-xl font-bold text-base shadow-xl transition-all duration-300 border border-white/20 ${loading
-                ? "opacity-60 cursor-not-allowed"
-                : "hover:from-purple-600 hover:to-indigo-700 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
+              ? "opacity-60 cursor-not-allowed"
+              : "hover:from-purple-600 hover:to-indigo-700 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
               }`}
           >
             {loading ? "Signing in..." : "Sign In"}
