@@ -69,5 +69,13 @@ export function resolveMediaUrl(value?: string | null): string | null {
     return `${BACKEND_BASE_URL}${raw}`;
   }
 
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(raw)) {
+    return `http://${raw}`;
+  }
+
+  if (/^[^/\s]+:\d+(\/.*)?$/.test(raw)) {
+    return `http://${raw}`;
+  }
+
   return joinUrl(BACKEND_BASE_URL, raw);
 }

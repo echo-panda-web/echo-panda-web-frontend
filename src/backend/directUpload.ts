@@ -55,27 +55,66 @@ async function requestPresignedUpload(file: File, purpose: MediaUploadPurpose): 
   return data as PresignedMediaUploadResponse;
 }
 
-export async function uploadMediaDirectly(file: File, purpose: MediaUploadPurpose): Promise<{ key: string; url: string }> {
-  const presigned = await requestPresignedUpload(file, purpose);
-  const contentType = file.type || "application/octet-stream";
-  const headers = {
-    ...normalizeHeaders(presigned.headers),
-    "Content-Type": contentType,
-  };
+async function uploadViaBackend(file: File, purpose: MediaUploadPurpose): Promise<{ key: string; url: string }> {
+  const token = getToken();
+  if (!token) {
+    throw new Error("Missing auth token");
+  }
 
-  const uploadResponse = await fetch(presigned.upload_url, {
-    method: "PUT",
-    headers,
-    body: file,
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("purpose", purpose);
+
+  const response = await fetch(`${BACKEND_API_BASE_URL}/upload/media`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
   });
 
-  if (!uploadResponse.ok) {
-    const errorText = await uploadResponse.text().catch(() => "");
-    throw new Error(errorText || `Upload failed (${uploadResponse.status})`);
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || `Upload failed (${response.status})`);
   }
 
   return {
-    key: presigned.key,
-    url: presigned.url,
+    key: data.key,
+    url: data.url,
   };
+}
+
+export async function uploadMediaDirectly(file: File, purpose: MediaUploadPurpose): Promise<{ key: string; url: string }> {
+  try {
+    const presigned = await requestPresignedUpload(file, purpose);
+    const contentType = file.type || "application/octet-stream";
+    const headers = {
+      ...normalizeHeaders(presigned.headers),
+      "Content-Type": contentType,
+    };
+
+    const uploadResponse = await fetch(presigned.upload_url, {
+      method: "PUT",
+      headers,
+      body: file,
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text().catch(() => "");
+      throw new Error(errorText || `Upload failed (${uploadResponse.status})`);
+    }
+
+    return {
+      key: presigned.key,
+      url: presigned.url,
+    };
+  } catch (error) {
+    if (!import.meta.env.DEV) {
+      throw error;
+    }
+
+    console.warn("Presigned upload failed, falling back to backend upload", error);
+    return uploadViaBackend(file, purpose);
+  }
 }
