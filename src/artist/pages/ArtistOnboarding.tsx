@@ -31,7 +31,7 @@ export default function ArtistOnboarding() {
       let imageUrl: string | null = null;
       if (imageFile) {
         const res = await uploadArtistMedia({ file: imageFile, purpose: 'artist_image' });
-        imageUrl = res.url;
+        imageUrl = res.key;
       }
 
       const token = getToken();

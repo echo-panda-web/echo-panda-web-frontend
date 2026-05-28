@@ -37,6 +37,7 @@ interface AuthResult {
 }
 
 async function persistGoogleUser(user: User): Promise<UserData> {
+  const idToken = await user.getIdToken(true);
   const userDocRef = doc(db, "users", user.uid);
   const userDoc = await getDoc(userDocRef);
 
@@ -66,9 +67,9 @@ async function persistGoogleUser(user: User): Promise<UserData> {
   }
 
   const backendAuth = await loginFirebaseUserToBackend({
+    id_token: idToken,
     email: user.email || "",
     name: user.displayName || undefined,
-    firebase_uid: user.uid,
     provider: "google",
   });
 
@@ -150,6 +151,7 @@ export async function registerWithEmail(
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    const idToken = await user.getIdToken(true);
 
     if (username) {
       await updateProfile(user, { displayName: username });
@@ -167,9 +169,9 @@ export async function registerWithEmail(
     }, { merge: true });
 
     const backendAuth = await loginFirebaseUserToBackend({
+      id_token: idToken,
       email: user.email || email,
       name: username || user.displayName || undefined,
-      firebase_uid: user.uid,
       provider: "email",
     });
 
@@ -219,6 +221,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    const idToken = await user.getIdToken(true);
 
     const userDocRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userDocRef);
@@ -238,9 +241,9 @@ export async function signInWithEmail(email: string, password: string): Promise<
     }, { merge: true });
 
     const backendAuth = await loginFirebaseUserToBackend({
+      id_token: idToken,
       email: user.email || email,
       name: user.displayName || undefined,
-      firebase_uid: user.uid,
       provider: "email",
     });
 

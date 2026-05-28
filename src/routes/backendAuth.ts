@@ -18,9 +18,9 @@ export interface BackendAuthResponse {
 }
 
 interface FirebaseLoginPayload {
+  id_token: string;
   email: string;
   name?: string;
-  firebase_uid?: string;
   provider?: string;
 }
 
@@ -42,16 +42,20 @@ function normalizeRedirectTarget(target: string): string {
 export async function loginFirebaseUserToBackend(
   payload: FirebaseLoginPayload
 ): Promise<BackendAuthResponse> {
-  const response = await fetch(`${BACKEND_API_BASE_URL}/firebase/login`, {
+  const response = await fetch(`${BACKEND_API_BASE_URL}/firebase/session`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Accept": "application/json",
+      Authorization: `Bearer ${payload.id_token}`,
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    throw new Error("Failed to synchronize Firebase login with backend API.");
+    const errorPayload = await response.json().catch(() => null);
+    const message = errorPayload?.message || "Failed to synchronize Firebase login with backend API.";
+    throw new Error(message);
   }
 
   return (await response.json()) as BackendAuthResponse;

@@ -109,7 +109,7 @@ export default function ArtistSettings() {
       setError("");
       setMessage("");
       const uploaded = await uploadArtistMedia({ file, purpose: "artist_image" });
-      await updateMyProfile({ name: profile.name, image_url: uploaded.url });
+      await updateMyProfile({ name: profile.name, image_url: uploaded.key });
       // Refetch profile to get the updated artist object with image_url
       const updatedProfile = await getMyProfile();
       setProfile(updatedProfile);
@@ -124,7 +124,7 @@ export default function ArtistSettings() {
       if (artistUserRaw) {
         try {
           const artistUser = JSON.parse(artistUserRaw);
-          artistUser.image_url = uploaded.url;
+          artistUser.image_url = uploaded.key;
           localStorage.setItem("artistUser", JSON.stringify(artistUser));
         } catch {
           localStorage.removeItem("artistUser");

@@ -33,8 +33,11 @@ export default function ProtectedAdminRoute({ children }: ProtectedAdminRoutePro
           const artistDoc = await getDoc(artistDocRef);
           const artistData = artistDoc.exists() ? artistDoc.data() : null;
 
-          // Synchronize with backend to get the authoritative role
+          // Use the current Firebase ID token to synchronize with backend
+          const idToken = await user.getIdToken(true);
+
           const backendAuth = await loginFirebaseUserToBackend({
+            id_token: idToken,
             email: user.email || "",
             name: artistData?.name || user.displayName || undefined,
             firebase_uid: user.uid,
