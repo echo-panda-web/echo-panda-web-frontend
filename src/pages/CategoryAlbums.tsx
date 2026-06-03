@@ -100,7 +100,7 @@ const CategoryAlbums: React.FC = () => {
         <div className="text-center">
           <div className="text-6xl mb-4 opacity-20">🎵</div>
           <p className="text-gray-400 text-xl">Category not found</p>
-          <button 
+          <button
             onClick={() => navigate('/discover')}
             className="mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold transition-all"
           >
@@ -114,16 +114,16 @@ const CategoryAlbums: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8"
         >
           <FaArrowLeft size={18} /> Back
         </button>
-        
+
         <div className="mb-10">
           <div className="flex items-start gap-6 mb-6">
-            <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-5xl md:text-6xl shadow-2xl flex-shrink-0">
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center text-5xl md:text-6xl shadow-2xl shrink-0">
               🎵
             </div>
             <div className="flex-1">
@@ -135,7 +135,7 @@ const CategoryAlbums: React.FC = () => {
               )}
             </div>
           </div>
-          
+
           <p className="text-gray-500 font-medium">
             {albums.length} {albums.length === 1 ? 'album' : 'albums'}
           </p>

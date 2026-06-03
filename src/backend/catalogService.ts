@@ -36,6 +36,12 @@ export interface CatalogSong {
   } | null;
 }
 
+export interface CatalogCategory {
+  id: string;
+  name: string;
+  description: string;
+}
+
 const request = async <T = any>(path: string): Promise<T> => {
   const res = await fetch(buildApiUrl(path), {
     headers: {
@@ -44,7 +50,16 @@ const request = async <T = any>(path: string): Promise<T> => {
   });
 
   if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
+    const errorData = await res.json().catch(() => null);
+    const errorMessage =
+      errorData?.message ||
+      errorData?.error ||
+      errorData?.detail ||
+      (typeof errorData === "string" ? errorData : "") ||
+      res.statusText ||
+      `HTTP ${res.status}`;
+
+    throw new Error(`Request failed: ${errorMessage}`);
   }
 
   return (await res.json()) as T;
@@ -188,14 +203,58 @@ export async function getDerivedArtists(limit = 10, search = ""): Promise<Catalo
   return list.slice(0, Math.max(1, limit));
 }
 
-export async function getDerivedCategories(): Promise<Array<{ id: string; name: string; description: string }>> {
-  const defaults = ["Pop", "Rock", "Hip Hop", "Chill", "Acoustic", "Electronic"];
+const normalizeCategories = (items: any[]): CatalogCategory[] => {
+  return (Array.isArray(items) ? items : [])
+    .map((item: any) => {
+      const name = String(item?.name || item?.title || item?.genre || "").trim();
+      if (!name) {
+        return null;
+      }
 
-  return defaults.map((name) => ({
-    id: encodeURIComponent(name.toLowerCase()),
-    name,
-    description: `${name} music`,
-  }));
+      const description = String(item?.description || item?.summary || `${name} music`).trim();
+
+      return {
+        id: String(item?.id || encodeURIComponent(name.toLowerCase())),
+        name,
+        description,
+      };
+    })
+    .filter((item): item is CatalogCategory => Boolean(item));
+};
+
+export async function getGenres(): Promise<CatalogCategory[]> {
+  const parseResponse = (data: any): CatalogCategory[] => {
+    if (Array.isArray(data)) {
+      return normalizeCategories(data);
+    }
+
+    if (Array.isArray(data?.data)) {
+      return normalizeCategories(data.data);
+    }
+
+    if (Array.isArray(data?.genres)) {
+      return normalizeCategories(data.genres);
+    }
+
+    return [];
+  };
+
+  try {
+    const genresRes = await request<any>("/genres");
+
+    const fromGenres = parseResponse(genresRes);
+    if (fromGenres.length > 0) {
+      return fromGenres;
+    }
+  } catch (error) {
+    console.error("Error fetching genres from backend:", error);
+  }
+
+  return [];
+}
+
+export async function getDerivedCategories(): Promise<CatalogCategory[]> {
+  return getGenres();
 }
 
 export async function getHomeTags(): Promise<Array<{ id: string; name: string; description: string; display_order: number; albums: CatalogAlbum[] }>> {

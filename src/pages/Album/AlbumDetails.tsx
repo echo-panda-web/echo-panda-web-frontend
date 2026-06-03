@@ -124,6 +124,9 @@ const AlbumDetails: React.FC = () => {
       setLoading(false);
     }
   };
+  const handleAddToFavorite = (songId: string) => {
+    console.log('Add to favorite:', songId);
+  };
 
   const handlePlaySong = async (songId: string) => {
     const song = songs.find(s => s.id === songId);
@@ -173,8 +176,8 @@ const AlbumDetails: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-gray-200">
       {/* Header */}
-      <div className="relative shrink-0 min-h-[380px] flex flex-col justify-end p-10 bg-cover bg-center"
-           style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.85)), url('${album.cover_url || ""}')` }}>
+      <div className="relative shrink-0 min-h-95 flex flex-col justify-end p-10 bg-cover bg-center"
+        style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.85)), url('${album.cover_url || ""}')` }}>
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate(-1)} className="bg-black/40 hover:bg-black/60 p-2 rounded-full text-white transition">
             <FaArrowLeft size={16} />
@@ -212,8 +215,7 @@ const AlbumDetails: React.FC = () => {
               metadata={formatDate(s.created_at)}
               hideAlbum={true}
               onPlay={handlePlaySong}
-              onAddToPlaylist={() => {/* open playlist modal elsewhere if needed */}}
-              onAddToFavorite={() => {/* favorites handled inside Song */}}
+
             />
           ))}
         </div>

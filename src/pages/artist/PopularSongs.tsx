@@ -68,10 +68,10 @@ export default function PopularSongs({ artistId }: Props) {
             created_at: song.created_at,
             album: song.album
               ? {
-                  id: song.album.id,
-                  title: song.album.title,
-                  cover_url: song.album.cover_url || "",
-                }
+                id: song.album.id,
+                title: song.album.title,
+                cover_url: song.album.cover_url || "",
+              }
               : undefined,
             artists: song.artists || []
           }));
@@ -153,7 +153,7 @@ export default function PopularSongs({ artistId }: Props) {
 
       {songs.length > 5 && (
         <div className="flex justify-center mt-6">
-          <button 
+          <button
             onClick={() => setShowAll(!showAll)}
             className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white font-medium transition-all hover:scale-105"
           >

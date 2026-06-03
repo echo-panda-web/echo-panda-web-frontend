@@ -1,7 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaMusic, FaHeart, FaPlay, FaPlus } from "react-icons/fa";
+import { FaMusic, FaHeart, FaPlay, FaPlus, FaTrash } from "react-icons/fa";
 import { isSongFavorite, toggleFavorite } from "../backend/favoritesService";
+import {
+  getUserPlaylists,
+  createPlaylist,
+  addSongToPlaylist,
+  isSongInPlaylist,
+  type Playlist,
+} from "../backend/playlistsService";
 
 interface Artist {
   id: string;
@@ -23,11 +30,13 @@ interface SongProps {
   album?: Album | null;
   duration: number;
   coverUrl?: string | null;
-  metadata?: string; // For custom metadata like "Added date", "Play count", etc.
+  metadata?: string;
   onPlay?: (id: string) => void;
-  onAddToPlaylist?: (id: string) => void;
+  onAddToPlaylist?: (id: string) => void; // optional post-add callback
   onAddToFavorite?: (id: string) => void;
-  hideAlbum?: boolean; // Whether to hide the album column
+  onRemoveFromPlaylist?: (id: string) => void;
+  hideAlbum?: boolean;
+  showAddToPlaylist?: boolean;
 }
 
 const Song: React.FC<SongProps> = ({
@@ -42,16 +51,22 @@ const Song: React.FC<SongProps> = ({
   onPlay,
   onAddToPlaylist,
   onAddToFavorite,
+  onRemoveFromPlaylist,
   hideAlbum = false,
+  showAddToPlaylist = true,
 }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
+  const heartButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Playlist state
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [isPlaylistSelectorOpen, setIsPlaylistSelectorOpen] = useState(false);
+  const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
 
   // Check favorite status on mount
   useEffect(() => {
@@ -63,93 +78,145 @@ const Song: React.FC<SongProps> = ({
     setIsFavorite(isFav);
   };
 
+  const loadPlaylists = async () => {
+    try {
+      const data = await getUserPlaylists();
+      setPlaylists(data);
+    } catch (error) {
+      console.error("Error loading playlists:", error);
+    }
+  };
+
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // ── Context menu ──────────────────────────────────────────────────────────
+
   const handleHeartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    setContextMenu({
-      x: rect.left,
-      y: rect.bottom + 5,
-    });
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setContextMenu({ x: rect.left, y: rect.bottom + 5 });
   };
 
-  const closeContextMenu = () => {
-    setContextMenu(null);
-  };
+  const closeContextMenu = () => setContextMenu(null);
 
-  const handleAddToFavorite = async () => {
-    const success = await toggleFavorite(id);
-    if (success) {
-      setIsFavorite(!isFavorite);
-      if (onAddToFavorite) {
-        onAddToFavorite(id);
-      }
-    }
-    closeContextMenu();
-  };
-
-  const handleAddToPlaylist = () => {
-    if (onAddToPlaylist) {
-      onAddToPlaylist(id);
-    }
-    closeContextMenu();
-  };
-
-  const handleRowClick = () => {
-    if (onPlay) {
-      onPlay(id);
-    }
-  };
-
-  const handleArtistClick = (e: React.MouseEvent, artistId: string) => {
-    e.stopPropagation(); // Prevent triggering the row click
-    navigate(`/artist/${artistId}`);
-  };
-
-  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         contextMenuRef.current &&
-        !contextMenuRef.current.contains(event.target as Node)
+        !contextMenuRef.current.contains(event.target as Node) &&
+        !heartButtonRef.current?.contains(event.target as Node)
       ) {
         closeContextMenu();
       }
     };
-
-    if (contextMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    if (contextMenu) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [contextMenu]);
+
+  // ── Favorite ──────────────────────────────────────────────────────────────
+
+  const handleAddToFavorite = async () => {
+    const success = await toggleFavorite(id);
+    if (success) {
+      setIsFavorite((prev) => !prev);
+      onAddToFavorite?.(id);
+    }
+    closeContextMenu();
+  };
+
+  // ── Playlist selector ─────────────────────────────────────────────────────
+
+  const openPlaylistSelector = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    closeContextMenu();
+    await loadPlaylists();
+    setIsPlaylistSelectorOpen(true);
+  };
+
+  const closePlaylistSelector = () => {
+    setIsPlaylistSelectorOpen(false);
+  };
+
+  const handleSelectPlaylist = async (playlistId: string) => {
+    try {
+      const alreadyIn = await isSongInPlaylist(playlistId, id);
+      if (!alreadyIn) {
+        await addSongToPlaylist(playlistId, id);
+        onAddToPlaylist?.(id);
+      }
+      closePlaylistSelector();
+    } catch (error) {
+      console.error("Error adding song to playlist:", error);
+    }
+  };
+
+  // ── Create playlist ───────────────────────────────────────────────────────
+
+  const openCreatePlaylist = () => {
+    setIsPlaylistSelectorOpen(false);
+    setNewPlaylistName("");
+    setIsCreatePlaylistOpen(true);
+  };
+
+  const closeCreatePlaylist = () => {
+    setIsCreatePlaylistOpen(false);
+    setNewPlaylistName("");
+  };
+
+  const handleCreatePlaylist = async () => {
+    const name = newPlaylistName.trim();
+    if (!name) return;
+    try {
+      const newPlaylist = await createPlaylist(name);
+      if (newPlaylist) {
+        await addSongToPlaylist(newPlaylist.id, id);
+        onAddToPlaylist?.(id);
+      }
+      closeCreatePlaylist();
+    } catch (error) {
+      console.error("Error creating playlist:", error);
+    }
+  };
+
+  // ── Row actions ───────────────────────────────────────────────────────────
+
+  const handleRowClick = () => onPlay?.(id);
+
+  const handleArtistClick = (e: React.MouseEvent, artistId: string) => {
+    e.stopPropagation();
+    navigate(`/artist/${artistId}`);
+  };
+
+  const handleRemoveFromPlaylist = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onRemoveFromPlaylist?.(id);
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <>
+      {/* ── Song row ── */}
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={handleRowClick}
         className="group grid grid-cols-12 items-center gap-4 p-3 rounded-lg bg-gray-800/70 hover:bg-gray-700/70 transition-colors cursor-pointer"
       >
-        {/* Index / Play Button */}
+        {/* Index / Play */}
         <div className="col-span-1 flex justify-center items-center text-sm font-semibold text-gray-200">
-          {hovered ? (
-            <FaPlay size={16} className="text-gray-100" />
-          ) : (
-            `#${index}`
-          )}
+          {hovered ? <FaPlay size={16} className="text-gray-100" /> : `#${index}`}
         </div>
 
-        {/* Title & Artist with Cover */}
-        <div className={`flex items-center gap-3 min-w-0 ${hideAlbum ? 'col-span-9' : 'col-span-5 md:col-span-4'}`}>
+        {/* Title & Artist */}
+        <div
+          className={`flex items-center gap-3 min-w-0 ${hideAlbum ? "col-span-9" : "col-span-5 md:col-span-4"
+            }`}
+        >
           {coverUrl || album?.cover_url ? (
             <img
               src={coverUrl || album?.cover_url || ""}
@@ -157,41 +224,34 @@ const Song: React.FC<SongProps> = ({
               className="w-12 h-12 rounded-md shrink-0 object-cover"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
-                const placeholder = e.currentTarget
-                  .nextElementSibling as HTMLElement;
+                const placeholder = e.currentTarget.nextElementSibling as HTMLElement;
                 if (placeholder) placeholder.style.display = "flex";
               }}
             />
           ) : null}
           <div
             className="w-12 h-12 bg-gradient-to-br from-purple-600 via-pink-500 to-blue-500 rounded-md shrink-0 flex items-center justify-center"
-            style={{
-              display: coverUrl || album?.cover_url ? "none" : "flex",
-            }}
+            style={{ display: coverUrl || album?.cover_url ? "none" : "flex" }}
           >
             <FaMusic className="text-white text-lg opacity-50" />
           </div>
           <div className="min-w-0">
-            <div
-              className={`truncate font-semibold ${
-                hovered ? "text-gray-100" : "text-gray-200"
-              }`}
-            >
+            <div className={`truncate font-semibold ${hovered ? "text-gray-100" : "text-gray-200"}`}>
               {title}
             </div>
             <div className="text-xs text-gray-400 truncate">
               {artists && artists.length > 0
                 ? artists.map((artist, idx) => (
-                    <React.Fragment key={artist.id}>
-                      {idx > 0 && ", "}
-                      <span
-                        onClick={(e) => handleArtistClick(e, artist.id)}
-                        className="hover:underline hover:text-white cursor-pointer transition-colors"
-                      >
-                        {artist.name}
-                      </span>
-                    </React.Fragment>
-                  ))
+                  <React.Fragment key={artist.id}>
+                    {idx > 0 && ", "}
+                    <span
+                      onClick={(e) => handleArtistClick(e, artist.id)}
+                      className="hover:underline hover:text-white cursor-pointer transition-colors"
+                    >
+                      {artist.name}
+                    </span>
+                  </React.Fragment>
+                ))
                 : "Unknown Artist"}
             </div>
           </div>
@@ -204,7 +264,7 @@ const Song: React.FC<SongProps> = ({
           </div>
         )}
 
-        {/* Metadata (e.g., Added Date, Play Count, etc.) */}
+        {/* Metadata */}
         {!hideAlbum && (
           <div className="hidden md:block md:col-span-2 text-sm text-gray-300">
             {metadata || "-"}
@@ -212,8 +272,9 @@ const Song: React.FC<SongProps> = ({
         )}
 
         {/* Heart & Duration */}
-        <div className="col-span-2 flex items-center justify-end gap-10 pr-2">
+        <div className="col-span-2 flex items-center justify-end gap-3 pr-2">
           <button
+            ref={heartButtonRef}
             onClick={handleHeartClick}
             className="hover:scale-110 transition-transform"
             aria-label={`favorite-${id}`}
@@ -230,7 +291,7 @@ const Song: React.FC<SongProps> = ({
         </div>
       </div>
 
-      {/* Context Menu */}
+      {/* ── Context menu ── */}
       {contextMenu && (
         <div
           ref={contextMenuRef}
@@ -251,22 +312,133 @@ const Song: React.FC<SongProps> = ({
                 size={14}
                 className={isFavorite ? "text-red-400" : "text-gray-300"}
               />
-              <span>
-                {isFavorite
-                  ? "Remove from Liked Songs"
-                  : "Save to Liked Songs"}
-              </span>
+              <span>{isFavorite ? "Remove from Liked Songs" : "Save to Liked Songs"}</span>
             </button>
           </div>
 
-          <div className="border-t border-gray-700/50 py-1">
+          {showAddToPlaylist && (
+            <div className="border-t border-gray-700/50 py-1">
+              <button
+                onClick={openPlaylistSelector}
+                className="w-full px-3 py-2.5 text-left hover:bg-gray-700/50 transition-colors flex items-center gap-3 text-sm"
+              >
+                <FaPlus size={14} className="text-gray-300" />
+                <span>Add to Playlist</span>
+              </button>
+            </div>
+          )}
+
+          {onRemoveFromPlaylist && (
+            <div className="border-t border-gray-700/50 py-1">
+              <button
+                onClick={(e) => {
+                  closeContextMenu();
+                  handleRemoveFromPlaylist(e);
+                }}
+                className="w-full px-3 py-2.5 text-left hover:bg-gray-700/50 transition-colors flex items-center gap-3 text-sm"
+              >
+                <FaTrash size={14} className="text-red-400" />
+                <span className="text-red-400">Remove from Playlist</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Playlist selector modal ── */}
+      {showAddToPlaylist && isPlaylistSelectorOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            onClick={closePlaylistSelector}
+          />
+          <div className="relative bg-[#181818] w-full max-w-md rounded-3xl p-8 border border-white/10 shadow-2xl">
+            <h2 className="text-2xl font-black text-white mb-6">Add to Playlist</h2>
+
             <button
-              onClick={handleAddToPlaylist}
-              className="w-full px-3 py-2.5 text-left hover:bg-gray-700/50 transition-colors flex items-center gap-3 text-sm"
+              onClick={openCreatePlaylist}
+              className="w-full mb-4 py-3 px-4 rounded-xl bg-white/5 border border-dashed border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all flex items-center gap-3 text-white font-semibold"
             >
-              <FaPlus size={14} className="text-gray-300" />
-              <span>Add to Playlist</span>
+              <FaPlus size={16} />
+              <span>Create New Playlist</span>
             </button>
+
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {playlists.length === 0 ? (
+                <p className="text-gray-400 text-center py-8">No playlists yet</p>
+              ) : (
+                playlists.map((playlist) => (
+                  <button
+                    key={playlist.id}
+                    onClick={() => handleSelectPlaylist(playlist.id)}
+                    className="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all flex items-center gap-3 text-left group"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-neutral-900 flex items-center justify-center shrink-0">
+                      <FaMusic
+                        size={20}
+                        className="text-neutral-700 group-hover:text-blue-500/50 transition"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold truncate">{playlist.name}</p>
+                      <p className="text-gray-400 text-sm">{playlist.song_count} songs</p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+
+            <button
+              onClick={closePlaylistSelector}
+              className="mt-6 w-full py-3 text-gray-400 font-bold hover:text-white transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Create playlist modal ── */}
+      {showAddToPlaylist && isCreatePlaylistOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            onClick={closeCreatePlaylist}
+          />
+          <div className="relative bg-[#181818] w-full max-w-sm rounded-3xl p-8 border border-white/10 shadow-2xl">
+            <h2 className="text-2xl font-black text-white mb-6">New Playlist</h2>
+            <input
+              autoFocus
+              type="text"
+              placeholder="Playlist name"
+              value={newPlaylistName}
+              onChange={(e) => setNewPlaylistName(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white mb-6 outline-none focus:border-blue-500 transition-all"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreatePlaylist();
+              }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={closeCreatePlaylist}
+                className="flex-1 py-3 text-gray-400 font-bold hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreatePlaylist}
+                disabled={!newPlaylistName.trim()}
+                className="flex-1 py-3 rounded-full font-bold bg-blue-500 text-white hover:bg-blue-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Create
+              </button>
+            </div>
           </div>
         </div>
       )}

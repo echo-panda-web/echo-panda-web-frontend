@@ -51,6 +51,7 @@ const getArtistName = (artistField: any, artistNameField?: string): string | nul
 
 import { getSignedSongCoverUrl } from "./songMediaApi";
 import { getSignedAlbumCoverUrl } from "./songMediaApi";
+import { resolveMediaUrl } from "./backendUrls";
 
 // Track a song play/listen
 export const trackSongPlay = async (songId: string): Promise<boolean> => {
@@ -215,19 +216,21 @@ export const getMostPlayedAlbums = async (limit: number = 10): Promise<any[]> =>
       `/stats/most-played-albums?limit=${limit}`
     );
 
-    return (result?.data || []).map((row: any) => {
+    return Promise.all((result?.data || []).map(async (row: any) => {
       const album = row.album;
+      const signedCoverUrl = album?.id ? await getSignedAlbumCoverUrl(album.id) : null;
+
       return {
         id: String(album.id),
         title: album.title,
-        cover_url: album.cover_url || null,
+        cover_url: signedCoverUrl || resolveMediaUrl(album.cover_url || album.cover_image || album.cover_key) || null,
         release_date: album.release_date,
         artists: getArtistName(album.artist, album.artist_name)
           ? [{ id: String(album.artist_id || album.id), name: String(getArtistName(album.artist, album.artist_name)), image_url: "" }]
           : [],
         play_count: row.play_count,
       };
-    });
+    }));
   } catch (error) {
     console.error("Error fetching most played albums:", error);
     return [];

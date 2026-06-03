@@ -8,7 +8,7 @@ import { trackSongPlay } from "../backend/playTrackingService";
 interface Artist {
   id: string;
   name: string;
-  image_url: string;
+  image_url?: string;
 }
 
 interface Album {
@@ -26,7 +26,7 @@ interface SongData {
   songCover_url: string | null;
   created_at: string;
   artists?: Artist[];
-  album?: Album;
+  album?: Album | null;
   added_at?: string;
 }
 
@@ -100,10 +100,10 @@ const Favorites: React.FC = () => {
               artists: song.artist ? [{ id: String(song.id), name: song.artist }] : [],
               album: song.album
                 ? {
-                    id: String(song.album.id),
-                    title: song.album.title,
-                    cover_url: song.album.cover_url || song.album.cover_image || undefined,
-                  }
+                  id: String(song.album.id),
+                  title: song.album.title,
+                  cover_url: song.album.cover_url || song.album.cover_image || undefined,
+                }
                 : null,
             };
           })
@@ -126,19 +126,6 @@ const Favorites: React.FC = () => {
   const handlePlay = (songId: string) => {
     trackSongPlay(songId);
     navigate(`/song/${songId}`);
-  };
-
-  const handleAddToPlaylist = (songId: string) => {
-    console.log('Add to playlist:', songId);
-    // Implement add to playlist logic
-  };
-
-  const handleRemoveFavorite = async (songId: string) => {
-    const success = await removeFromFavorites(songId);
-    if (success) {
-      // Refresh the list
-      await fetchFavoriteSongs();
-    }
   };
 
   const handleClearAll = async () => {
@@ -172,16 +159,16 @@ const Favorites: React.FC = () => {
       title: song.title,
       duration: song.duration,
       album_id: song.album_id ? String(song.album_id) : null,
-                    audio_url: song.audio_url || null,
-                    songCover_url: song.songCover_url || song.album?.cover_url || null,
+      audio_url: song.audio_url || null,
+      songCover_url: song.songCover_url || song.album?.cover_url || null,
       created_at: favorite.created_at || song.created_at || new Date().toISOString(),
       artists: song.artist ? [{ id: String(song.id), name: song.artist }] : [],
       album: song.album
         ? {
-            id: String(song.album.id),
-            title: song.album.title,
-                    cover_url: song.album.cover_url || song.album.cover_image || undefined,
-          }
+          id: String(song.album.id),
+          title: song.album.title,
+          cover_url: song.album.cover_url || song.album.cover_image || undefined,
+        }
         : null,
     };
   };
@@ -191,12 +178,12 @@ const Favorites: React.FC = () => {
   const songsList: SongData[] = Array.isArray(songs)
     ? songs
     : Array.isArray(songs?.data)
-    ? songs.data
-    : Array.isArray(rawResponse?.data)
-    ? rawResponse.data.map(toSongData).filter(Boolean) as SongData[]
-    : Array.isArray(rawResponse?.favorites)
-    ? rawResponse.favorites.map(toSongData).filter(Boolean) as SongData[]
-    : [];
+      ? songs.data
+      : Array.isArray(rawResponse?.data)
+        ? rawResponse.data.map(toSongData).filter(Boolean) as SongData[]
+        : Array.isArray(rawResponse?.favorites)
+          ? rawResponse.favorites.map(toSongData).filter(Boolean) as SongData[]
+          : [];
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white py-8">
@@ -204,7 +191,7 @@ const Favorites: React.FC = () => {
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-5xl font-black text-white tracking-tight">
-              Liked <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Songs</span>
+              Liked <span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-pink-400">Songs</span>
             </h1>
           </div>
           <p className="text-slate-400 text-lg">
@@ -245,27 +232,26 @@ const Favorites: React.FC = () => {
             {/* Song List */}
             <div className="space-y-2 mt-3">
               {songsList.map((song, index) => (
-                  <Song
-                    key={song.id}
-                    id={song.id}
-                    index={index + 1}
-                    title={song.title}
-                    artists={song.artists}
-                    album={song.album}
-                    duration={song.duration}
-                    coverUrl={song.songCover_url}
-                    metadata={formatDate(song.created_at)}
-                    onPlay={handlePlay}
-                    onAddToPlaylist={handleAddToPlaylist}
-                    onAddToFavorite={handleRemoveFavorite}
-                  />
+                <Song
+                  key={song.id}
+                  id={song.id}
+                  index={index + 1}
+                  title={song.title}
+                  artists={song.artists}
+                  album={song.album}
+                  duration={song.duration}
+                  coverUrl={song.songCover_url}
+                  metadata={formatDate(song.created_at)}
+                  onPlay={handlePlay}
+
+                />
               ))}
             </div>
           </div>
         )}
       </div>
 
-      
+
     </div>
   );
 };
