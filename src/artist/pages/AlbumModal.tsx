@@ -107,7 +107,7 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-slate-900 border border-white/10 w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl">
+      <div className="relative bg-slate-900 border border-white/10 w-full max-w-2xl rounded-4xl p-8 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-white">Add New Album</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white"><FaTimes size={20} /></button>
@@ -152,8 +152,8 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
 
           <div className="flex gap-3 justify-end">
             <button onClick={onClose} disabled={creating} className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10">Cancel</button>
-            <button onClick={handleCreate} disabled={creating || !title} className="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold">
-              {creating ? <><FaSpinner className="animate-spin mr-2"/> Creating...</> : 'Create Album'}
+            <button onClick={handleCreate} disabled={creating || !title} className="px-6 py-3 rounded-2xl bg-linear-to-r from-purple-500 to-pink-500 text-white font-bold">
+              {creating ? <><FaSpinner className="animate-spin mr-2" /> Creating...</> : 'Create Album'}
             </button>
           </div>
         </div>

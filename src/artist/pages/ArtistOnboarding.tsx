@@ -70,7 +70,7 @@ export default function ArtistOnboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 text-white flex items-center justify-center">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-900 p-6 text-white flex items-center justify-center">
       <div className="w-full max-w-2xl bg-white/3 border border-white/10 rounded-3xl p-8">
         <h1 className="text-3xl font-extrabold text-white mb-2">Create your Artist profile</h1>
         <p className="text-slate-300 mb-6">This is the only screen artists need to set up. Enter your artist name and upload a profile image.</p>
@@ -96,7 +96,7 @@ export default function ArtistOnboarding() {
           </div>
 
           <div className="flex flex-col items-end">
-            <button disabled={busy} onClick={handleCreate} className="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 font-bold">
+            <button disabled={busy} onClick={handleCreate} className="px-6 py-3 rounded-2xl bg-linear-to-r from-purple-500 to-pink-500 font-bold">
               {busy ? 'Creating...' : 'Create Artist'}
             </button>
           </div>

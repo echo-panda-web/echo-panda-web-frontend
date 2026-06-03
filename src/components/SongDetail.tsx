@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   FaEllipsisH, FaChevronLeft, FaPlus,
@@ -157,7 +157,7 @@ const SongDetails: React.FC = () => {
         title: songToPlay.title,
         artist: songToPlay.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
         coverUrl: songToPlay.songCover_url || currentSong?.album?.cover_url || '',
-        audioUrl: songToPlay.original_key || songToPlay.audio_url,
+        audioUrl: songToPlay.audio_url,
         duration: songToPlay.duration
       };
       console.log('🎵 Calling playSong with:', songData);

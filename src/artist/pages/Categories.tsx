@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  FaPlus, FaSearch, FaMusic, 
-  FaTrash, FaEdit, FaTimes, FaLayerGroup, FaSpinner 
+import {
+  FaPlus, FaSearch, FaMusic,
+  FaTrash, FaEdit, FaTimes, FaLayerGroup, FaSpinner
 } from "react-icons/fa";
 import { useDataCache } from "../../contexts/DataCacheContext";
 import { getAdminCategories } from "../../backend/adminApi";
@@ -99,11 +99,11 @@ export default function CategoriesManager() {
         setCategories(categories.map(c =>
           c.id === editingCat.id
             ? {
-                ...c,
-                name: formData.name,
-                description: formData.description,
-                updated_at: new Date().toISOString()
-              }
+              ...c,
+              name: formData.name,
+              description: formData.description,
+              updated_at: new Date().toISOString()
+            }
             : c
         ));
       } else {
@@ -126,7 +126,7 @@ export default function CategoriesManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-12 text-white">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-12 text-white">
       <div className="max-w-7xl mx-auto">
 
         {/* HEADER */}
@@ -143,7 +143,7 @@ export default function CategoriesManager() {
 
           <button
             onClick={openAddModal}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition"
+            className="bg-linear-to-r from-purple-500 to-pink-500 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition"
           >
             <FaPlus /> Create Category
           </button>
@@ -169,30 +169,30 @@ export default function CategoriesManager() {
           /* GRID */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map(cat => (
-              <div 
-                key={cat.id} 
+              <div
+                key={cat.id}
                 onClick={() => navigate(`/admin/CategoryAlbum/${cat.id}`)}
                 className="group bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition cursor-pointer hover:scale-105"
               >
                 <div className="flex justify-between mb-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                     <FaMusic />
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100">
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         openEditModal(cat);
-                      }} 
+                      }}
                       className="p-2 hover:bg-white/10 rounded-lg text-blue-400"
                     >
                       <FaEdit />
                     </button>
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDelete(cat.id);
-                      }} 
+                      }}
                       className="p-2 hover:bg-white/10 rounded-lg text-red-400"
                     >
                       <FaTrash />
@@ -210,7 +210,7 @@ export default function CategoriesManager() {
                 </div>
               </div>
             ))}
-            
+
             {filtered.length === 0 && (
               <div className="col-span-full text-center py-20">
                 <div className="text-6xl mb-4 opacity-20">🎵</div>
@@ -247,7 +247,7 @@ export default function CategoriesManager() {
               />
               <button
                 onClick={handleSave}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-4 rounded-xl font-bold"
+                className="w-full bg-linear-to-r from-purple-600 to-pink-600 py-4 rounded-xl font-bold"
               >
                 {editingCat ? "Update Category" : "Create Category"}
               </button>

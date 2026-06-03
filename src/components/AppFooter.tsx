@@ -5,7 +5,7 @@ import {
   FaTiktok,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import { isAuthenticated, getCurrentUser } from "../../routes/authContext";
+import { isAuthenticated, getCurrentUser } from "../routes/authContext";
 
 interface Props {
   isLightMode: boolean;
@@ -29,17 +29,17 @@ const AppFooter: React.FC<Props> = ({ isLightMode }) => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
 
           {/* About - Wide */}
-        <div className="lg:col-span-2">
-          <h3 className={`font-bold text-lg mb-2 ${textColor}`}>About</h3>
-          
-          <p className={`${textColor} text-sm leading-relaxed w-4/5`}>
-            EchoPanda is a platform created for over <span className="text-pink-500">5 years</span> now.
-            It is one of the most popular music streaming websites.
-            You can listen and download songs for free. 
-            If you want unlimited access, get our 
-            <span className="text-blue-500 font-semibold"> Premium Pass.</span>
-          </p>
-        </div>
+          <div className="lg:col-span-2">
+            <h3 className={`font-bold text-lg mb-2 ${textColor}`}>About</h3>
+
+            <p className={`${textColor} text-sm leading-relaxed w-4/5`}>
+              EchoPanda is a platform created for over <span className="text-pink-500">5 years</span> now.
+              It is one of the most popular music streaming websites.
+              You can listen and download songs for free.
+              If you want unlimited access, get our
+              <span className="text-blue-500 font-semibold"> Premium Pass.</span>
+            </p>
+          </div>
 
           {/* Explore */}
           <div>
@@ -56,7 +56,7 @@ const AppFooter: React.FC<Props> = ({ isLightMode }) => {
           <div>
             <h3 className={`font-semibold text-lg mb-3 ${textColor}`}>Support</h3>
             <ul className="space-y-1 text-sm">
-             <li><Link to="/AboutUs" className={linkColor}>About</Link></li>
+              <li><Link to="/AboutUs" className={linkColor}>About</Link></li>
               <li><Link to="/policy" className={linkColor}>Policy</Link></li>
               <li><Link to="/support" className={linkColor}>Help Center</Link></li>
             </ul>
@@ -70,33 +70,33 @@ const AppFooter: React.FC<Props> = ({ isLightMode }) => {
             </h3>
 
             <div className="flex gap-4 text-xl mt-4">
-                <a
-                  href="https://www.facebook.com/profile.php?id=61585927881035"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkColor}
-                >
-                  <FaFacebook />
-                </a>
+              <a
+                href="https://www.facebook.com/profile.php?id=61585927881035"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkColor}
+              >
+                <FaFacebook />
+              </a>
 
-                <a
-                  href="https://www.instagram.com/echo87526?igsh=OGp3cjFxdmdyMWpk"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkColor}
-                >
-                  <FaInstagram />
-                </a>
+              <a
+                href="https://www.instagram.com/echo87526?igsh=OGp3cjFxdmdyMWpk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkColor}
+              >
+                <FaInstagram />
+              </a>
 
-                <a
-                  href="https://www.tiktok.com/@echo.panda0?_r=1&_t=ZS-92Zgt6parkC"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={linkColor}
-                >
-                  <FaTiktok />
-                </a>
-              </div>
+              <a
+                href="https://www.tiktok.com/@echo.panda0?_r=1&_t=ZS-92Zgt6parkC"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkColor}
+              >
+                <FaTiktok />
+              </a>
+            </div>
 
           </div>
 
@@ -112,4 +112,3 @@ const AppFooter: React.FC<Props> = ({ isLightMode }) => {
 };
 
 export default AppFooter;
- 

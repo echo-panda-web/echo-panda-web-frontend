@@ -52,7 +52,7 @@ export default function ArtistLogin() {
       if (!["admin", "artist", "publicer"].includes(resolvedRole)) {
         setError(
           `Access denied. Backend role for ${user.email || email} is '${resolvedRole}'. ` +
-            "Set Laravel users.role to admin/artist/publicer for this same email."
+          "Set Laravel users.role to admin/artist/publicer for this same email."
         );
         await auth.signOut();
         setLoading(false);
@@ -77,7 +77,7 @@ export default function ArtistLogin() {
       navigate("/artist/dashboard");
     } catch (err: any) {
       console.error("Login error:", err);
-      
+
       switch (err.code) {
         case "auth/invalid-credential":
         case "auth/wrong-password":
@@ -114,11 +114,11 @@ export default function ArtistLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl mb-4 shadow-2xl shadow-purple-500/50">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-purple-500 to-pink-500 rounded-3xl mb-4 shadow-2xl shadow-purple-500/50">
             <FaShieldAlt className="text-white text-3xl" />
           </div>
           <h1 className="text-4xl font-black text-white tracking-tight mb-2">
@@ -128,12 +128,12 @@ export default function ArtistLogin() {
         </div>
 
         {/* Login Form */}
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] p-8 shadow-2xl">
+        <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-4xl p-8 shadow-2xl">
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Error Message */}
             {error && (
               <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-                <FaExclamationCircle className="text-red-400 text-xl flex-shrink-0 mt-0.5" />
+                <FaExclamationCircle className="text-red-400 text-xl shrink-0 mt-0.5" />
                 <p className="text-red-400 text-sm font-medium">{error}</p>
               </div>
             )}
@@ -178,7 +178,7 @@ export default function ArtistLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Signing In..." : "Sign In"}
             </button>

@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { getAlbums, getGenres } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import { getMostPlayedAlbums } from "../backend/playTrackingService";
-import SongSection from "./home/Songs";
-import ArtistSection from "./home/Artists";
+import SongSection from "../components/SongsSection";
+import ArtistSection from "../components/ArtistsSection";
 import AlbumCard from "../components/AlbumCard";
-import AppFooter from "./home/AppFooter";
+import AppFooter from "../components/AppFooter";
 import { FaSpinner } from "react-icons/fa";
 
 interface Category {

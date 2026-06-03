@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { FaPlay, FaRandom, FaMusic, FaTrash, FaList, FaPlus, FaSpinner } from 'react-icons/fa';
-import { PlaylistHero } from './playList/PlaylistHero';
-import AppFooter from './home/AppFooter';
+import { Music, Clock, User } from 'lucide-react';
+import AppFooter from '../components/AppFooter';
 import Song from '../components/Song';
 import { useDataCache } from '../contexts/DataCacheContext';
 import {
@@ -15,6 +14,8 @@ import {
 } from '../backend/playlistsService';
 import { trackSongPlay } from '../backend/playTrackingService';
 import { useAudioPlayer } from '../contexts/AudioPlayerContext';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Artist {
   id: string;
@@ -42,11 +43,12 @@ interface SongData {
   original_key: string;
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.ceil(Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
@@ -56,7 +58,60 @@ const formatDate = (dateString: string): string => {
   return `${Math.floor(diffDays / 365)} years ago`;
 };
 
-// --- Create Playlist Modal ---
+// ─── PlaylistHero ─────────────────────────────────────────────────────────────
+
+interface PlaylistHeroProps {
+  title: string;
+  songCount: number;
+  duration: string;
+}
+
+const PlaylistHero: React.FC<PlaylistHeroProps> = ({ title, songCount, duration }) => {
+  return (
+    <header className="relative px-4 sm:px-8 pt-20 sm:pt-24 pb-8 bg-linear-to-b from-blue-600/30 via-blue-950/20 to-black overflow-hidden">
+      {/* Background blur circle */}
+      <div className="absolute top-0 -left-16 sm:-left-20 w-75 sm:w-125 h-75 sm:h-125 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+      {/* Content */}
+      <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 relative z-10">
+        {/* Music icon / Album art */}
+        <div className="w-40 sm:w-52 lg:w-60 h-40 sm:h-52 lg:h-60 bg-linear-to-br from-white/10 to-white/5 backdrop-blur-md rounded-xl flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 group">
+          <Music className="text-white/20 w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 group-hover:scale-110 transition-transform duration-700" />
+        </div>
+
+        {/* Text Info */}
+        <div className="flex flex-col gap-2 sm:gap-3 text-center md:text-left">
+          <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.15em] text-blue-400">
+            Public Playlist
+          </span>
+          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-white tracking-tight truncate">
+            {title}
+          </h1>
+
+          {/* Meta info */}
+          <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium text-gray-300">
+            <div className="flex items-center gap-1">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                <User className="text-white w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              </div>
+              <span className="text-white hover:underline cursor-pointer">User</span>
+            </div>
+            <span>•</span>
+            <span>{songCount} songs</span>
+            <span>•</span>
+            <div className="flex items-center gap-1 text-gray-400">
+              <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span>{duration}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+// ─── CreatePlaylistModal ──────────────────────────────────────────────────────
+
 const CreatePlaylistModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -66,7 +121,7 @@ const CreatePlaylistModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-6 animate-in fade-in duration-200">
       <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
       <div className="relative bg-[#181818] w-full max-w-sm rounded-3xl p-8 border border-white/10 shadow-2xl">
         <h2 className="text-2xl font-black text-white mb-6">New Playlist</h2>
@@ -99,7 +154,8 @@ const CreatePlaylistModal: React.FC<{
   );
 };
 
-// --- Playlist Page ---
+// ─── PlaylistPage ─────────────────────────────────────────────────────────────
+
 const PlaylistPage: React.FC = () => {
   const { playSong } = useAudioPlayer();
   const { getCachedData } = useDataCache();
@@ -110,12 +166,10 @@ const PlaylistPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [playlistsLoading, setPlaylistsLoading] = useState(true);
 
-  // Load playlists on mount
   useEffect(() => {
     loadPlaylists();
   }, []);
 
-  // Load songs when playlist is selected
   useEffect(() => {
     if (selectedPlaylistId) {
       loadPlaylistSongs(selectedPlaylistId);
@@ -127,9 +181,7 @@ const PlaylistPage: React.FC = () => {
   const loadPlaylists = async () => {
     try {
       setPlaylistsLoading(true);
-      const data = await getCachedData('user_playlists', async () => {
-        return await getUserPlaylists();
-      });
+      const data = await getCachedData('user_playlists', async () => getUserPlaylists());
       setPlaylists(data);
     } catch (error) {
       console.error('Error loading playlists:', error);
@@ -141,9 +193,10 @@ const PlaylistPage: React.FC = () => {
   const loadPlaylistSongs = async (playlistId: string) => {
     try {
       setLoading(true);
-      const data = await getCachedData(`playlist_songs_${playlistId}`, async () => {
-        return await getPlaylistSongs(playlistId);
-      });
+      const data = await getCachedData(
+        `playlist_songs_${playlistId}`,
+        async () => getPlaylistSongs(playlistId)
+      );
       setSongs(data);
     } catch (error) {
       console.error('Error loading playlist songs:', error);
@@ -185,7 +238,7 @@ const PlaylistPage: React.FC = () => {
     try {
       await trackSongPlay(songId);
       const song = songs.find((s) => s.id === songId);
-      if (song && song.audio_url) {
+      if (song?.audio_url) {
         playSong({
           id: song.id,
           title: song.title,
@@ -205,7 +258,7 @@ const PlaylistPage: React.FC = () => {
     try {
       await removeSongFromPlaylist(selectedPlaylistId, songId);
       await loadPlaylistSongs(selectedPlaylistId);
-      await loadPlaylists(); // refresh song count
+      await loadPlaylists();
     } catch (error) {
       console.error('Error removing song from playlist:', error);
     }
@@ -278,7 +331,10 @@ const PlaylistPage: React.FC = () => {
                     <FaTrash size={12} />
                   </button>
                   <div className="aspect-square rounded-3xl bg-neutral-900 flex items-center justify-center mb-4 shadow-xl overflow-hidden">
-                    <FaMusic size={35} className="text-neutral-700 group-hover:text-blue-500/50 transition" />
+                    <FaMusic
+                      size={35}
+                      className="text-neutral-700 group-hover:text-blue-500/50 transition"
+                    />
                   </div>
                   <p className="text-sm font-bold truncate text-center px-2">{p.name}</p>
                   <p className="text-xs text-gray-500 text-center mt-1">{p.song_count} songs</p>
@@ -343,7 +399,6 @@ const PlaylistPage: React.FC = () => {
                     metadata={formatDate(song.added_at || song.created_at)}
                     onPlay={handlePlay}
                     hideAlbum={true}
-
                     onRemoveFromPlaylist={handleRemoveFromPlaylist}
                   />
                 ))}

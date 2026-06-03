@@ -108,7 +108,7 @@ const quickActions = [
 
 export default function ArtistsManager() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-12 text-white font-sans">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-12 text-white font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
           <div className="space-y-3 max-w-3xl">
@@ -161,10 +161,10 @@ export default function ArtistsManager() {
             <NavLink
               key={item.title}
               to={item.route}
-              className="group rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/10 transition-all hover:-translate-y-1 hover:border-purple-500/40 hover:bg-white/10"
+              className="group rounded-4xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/10 transition-all hover:-translate-y-1 hover:border-purple-500/40 hover:bg-white/10"
             >
               <div className="flex items-center justify-between gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xl shadow-lg shadow-purple-500/20">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-purple-500 to-pink-500 text-white text-xl shadow-lg shadow-purple-500/20">
                   {item.icon}
                 </div>
                 <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 group-hover:text-purple-300 transition-colors">
@@ -178,7 +178,7 @@ export default function ArtistsManager() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div className="rounded-[2rem] border border-white/10 bg-slate-950/60 p-6 backdrop-blur-md">
+          <div className="rounded-4xl border border-white/10 bg-slate-950/60 p-6 backdrop-blur-md">
             <h2 className="text-2xl font-black text-white">Artist release flow</h2>
             <div className="mt-5 space-y-4">
               {[
@@ -198,7 +198,7 @@ export default function ArtistsManager() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-6 backdrop-blur-md">
+          <div className="rounded-4xl border border-purple-500/20 bg-linear-to-br from-purple-500/10 to-pink-500/10 p-6 backdrop-blur-md">
             <h2 className="text-2xl font-black text-white">Artist rules</h2>
             <p className="mt-3 text-sm leading-relaxed text-slate-300">
               Artists must never manage other artists’ content. Every upload, release, lyric file,

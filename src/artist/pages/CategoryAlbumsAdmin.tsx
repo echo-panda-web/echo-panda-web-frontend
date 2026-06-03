@@ -100,7 +100,7 @@ export default function AdminCategoryAlbums() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-900 flex items-center justify-center">
         <FaSpinner className="text-purple-400 text-5xl animate-spin" />
       </div>
     );
@@ -108,11 +108,11 @@ export default function AdminCategoryAlbums() {
 
   if (!category) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-900 flex items-center justify-center text-white">
         <div className="text-center">
           <div className="text-6xl mb-4 opacity-20">🎵</div>
           <p className="text-slate-400 text-xl">Category not found</p>
-          <button 
+          <button
             onClick={() => navigate('/admin/categories')}
             className="mt-4 px-6 py-3 bg-purple-500 hover:bg-purple-600 rounded-xl font-bold transition-all"
           >
@@ -124,19 +124,19 @@ export default function AdminCategoryAlbums() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white p-6 md:p-12">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-900 text-white p-6 md:p-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <button 
+          <button
             onClick={() => navigate('/admin/categories')}
             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
           >
             <FaArrowLeft /> Back to Categories
           </button>
-          
+
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-4xl shadow-2xl">
+            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-4xl shadow-2xl">
               <FaMusic />
             </div>
             <div>
@@ -148,7 +148,7 @@ export default function AdminCategoryAlbums() {
               )}
             </div>
           </div>
-          
+
           <p className="text-slate-500 font-semibold">
             {albums.length} {albums.length === 1 ? 'album' : 'albums'} in this category
           </p>
@@ -176,13 +176,13 @@ export default function AdminCategoryAlbums() {
                 </thead>
                 <tbody>
                   {albums.map((album, idx) => (
-                    <tr 
+                    <tr
                       key={album.id}
                       className="border-b border-white/5 hover:bg-white/5 transition"
                     >
                       <td className="px-6 py-4">
-                        <img 
-                          src={album.cover_url || '/placeholder-album.png'} 
+                        <img
+                          src={album.cover_url || '/placeholder-album.png'}
                           alt={album.title}
                           className="w-12 h-12 rounded-lg object-cover"
                         />
@@ -196,11 +196,10 @@ export default function AdminCategoryAlbums() {
                           : 'Unknown Artist'}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          album.type === 'album' ? 'bg-purple-500/20 text-purple-300' :
-                          album.type === 'single' ? 'bg-pink-500/20 text-pink-300' :
-                          'bg-blue-500/20 text-blue-300'
-                        }`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${album.type === 'album' ? 'bg-purple-500/20 text-purple-300' :
+                            album.type === 'single' ? 'bg-pink-500/20 text-pink-300' :
+                              'bg-blue-500/20 text-blue-300'
+                          }`}>
                           {album.type || 'album'}
                         </span>
                       </td>

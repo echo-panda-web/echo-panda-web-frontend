@@ -230,7 +230,7 @@ const Song: React.FC<SongProps> = ({
             />
           ) : null}
           <div
-            className="w-12 h-12 bg-gradient-to-br from-purple-600 via-pink-500 to-blue-500 rounded-md shrink-0 flex items-center justify-center"
+            className="w-12 h-12 bg-linear-to-br from-purple-600 via-pink-500 to-blue-500 rounded-md shrink-0 flex items-center justify-center"
             style={{ display: coverUrl || album?.cover_url ? "none" : "flex" }}
           >
             <FaMusic className="text-white text-lg opacity-50" />
@@ -301,7 +301,7 @@ const Song: React.FC<SongProps> = ({
             left: `${contextMenu.x}px`,
             zIndex: 1000,
           }}
-          className="bg-[#282828] text-white rounded-md shadow-2xl min-w-[220px] py-1 border border-gray-700/50 animate-in fade-in slide-in-from-top-2 duration-150"
+          className="bg-[#282828] text-white rounded-md shadow-2xl min-w-55 py-1 border border-gray-700/50 animate-in fade-in slide-in-from-top-2 duration-150"
         >
           <div className="py-1">
             <button
@@ -348,7 +348,7 @@ const Song: React.FC<SongProps> = ({
       {/* ── Playlist selector modal ── */}
       {showAddToPlaylist && isPlaylistSelectorOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-100 flex items-center justify-center p-6 animate-in fade-in duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           <div
@@ -404,7 +404,7 @@ const Song: React.FC<SongProps> = ({
       {/* ── Create playlist modal ── */}
       {showAddToPlaylist && isCreatePlaylistOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-100 flex items-center justify-center p-6 animate-in fade-in duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           <div

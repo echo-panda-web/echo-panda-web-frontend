@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaCheckCircle, FaCompactDisc, FaImage, FaMusic, FaPlus, FaSave, FaTrash } from "react-icons/fa";
+import { FaCheckCircle, FaMusic, FaTrash } from "react-icons/fa";
 import {
   createArtistAlbum,
   deleteArtistAlbum,
@@ -176,7 +176,7 @@ export default function Albums() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-10 text-white">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-10 text-white">
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-4xl font-black">Release Studio</h1>

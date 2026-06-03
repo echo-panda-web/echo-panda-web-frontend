@@ -1,6 +1,5 @@
-import { Route, RouterProvider } from 'react-router-dom';
+import { RouterProvider } from 'react-router-dom';
 import router from './routes/route';
-import HomeLayout from './layouts/HomeLayout';
 import { AudioPlayerProvider } from './contexts/AudioPlayerContext';
 import { DataCacheProvider } from './contexts/DataCacheContext';
 

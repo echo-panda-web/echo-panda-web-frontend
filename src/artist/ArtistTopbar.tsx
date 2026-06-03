@@ -203,12 +203,12 @@ export default function AdminTopbar({
 
 
   return (
-    <header className="sticky top-0 z-40 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 shadow-lg border-b border-purple-500/20">
+    <header className="sticky top-0 z-40 bg-linear-to-r from-slate-900 via-purple-900 to-slate-900 shadow-lg border-b border-purple-500/20">
       <div className="flex items-center justify-between px-6 py-4 max-w-full">
         {/* Left Section*/}
         <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-400 to-pink-400"></div>
-         
+          <div className="w-3 h-3 rounded-full bg-linear-to-r from-purple-400 to-pink-400"></div>
+
         </div>
 
         {/* Center Section  */}
@@ -305,7 +305,7 @@ export default function AdminTopbar({
               onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
               className="flex items-center gap-3 px-3 py-2 rounded-full hover:bg-purple-500/10 transition-all group"
             >
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-sm">
+              <div className="w-9 h-9 rounded-full bg-linear-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-sm">
                 {signedImageUrl ? (
                   <img
                     src={signedImageUrl}
@@ -316,7 +316,7 @@ export default function AdminTopbar({
                   getInitials(admin.name)
                 )}
               </div>
-              <div className="flex flex-col items-start hidden sm:flex">
+              <div className="flex flex-col items-start sm:flex">
                 <span className="text-sm font-semibold text-white">{admin.name}</span>
                 <span className="text-xs text-slate-400">{admin.role}</span>
               </div>
@@ -346,11 +346,10 @@ export default function AdminTopbar({
                             setIsProfileDropdownOpen(false);
                             await Promise.resolve(item.onClick());
                           }}
-                          className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                            item.danger
+                          className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${item.danger
                               ? "text-red-400 hover:bg-red-500/10 hover:text-red-300"
                               : "text-slate-300 hover:bg-purple-500/10 hover:text-purple-300"
-                          } ${item.divider ? "" : "border-t border-slate-700"}`}
+                            } ${item.divider ? "" : "border-t border-slate-700"}`}
                         >
                           {item.icon && <span className="text-xs">{item.icon}</span>}
                           {item.label}

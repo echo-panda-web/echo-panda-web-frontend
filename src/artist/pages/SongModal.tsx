@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  FaTimes, FaMusic, FaClock, FaMicrophone, 
+  FaTimes, FaMusic, FaClock, FaMicrophone,
   FaCompactDisc, FaSpinner, FaUpload, FaImage
 } from "react-icons/fa";
 import { createSong, updateSong } from "../../backend/adminApi";
@@ -212,7 +212,7 @@ export default function SongModal({
         const audioResult = await uploadArtistMedia({ file: audioFile, purpose: 'song_audio' });
         audioKey = audioResult.key;
         setUploadProgress({ audio: 100 });
-        
+
         // Upload cover if present
         let coverKey: string | undefined = undefined;
         if (coverFile) {
@@ -279,18 +279,18 @@ export default function SongModal({
       <div className="relative bg-slate-900 border border-white/10 w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl">
         <div className="flex justify-between items-center mb-8">
           <h3 className="text-2xl font-bold text-white">{editingSong ? 'Update Track' : 'Add New Track'}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white"><FaTimes size={24}/></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white"><FaTimes size={24} /></button>
         </div>
-        
+
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase ml-1">Song Title</label>
-            <input 
+            <input
               required
-              value={formData.title || ''} 
-              onChange={(e) => setFormData({...formData, title: e.target.value})} 
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-purple-500 text-white" 
-              placeholder="e.g. Midnight Dreams" 
+              value={formData.title || ''}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-purple-500 text-white"
+              placeholder="e.g. Midnight Dreams"
             />
           </div>
 
@@ -317,7 +317,7 @@ export default function SongModal({
                   {audioFile ? audioFile.name : formData.audio_url ? 'Audio uploaded ✓' : 'Choose audio file (MP3, WAV, FLAC - Max 50MB)'}
                 </span>
               </div>
-              <input 
+              <input
                 type="file"
                 accept="audio/mpeg,audio/mp3,audio/wav,audio/flac,audio/aac"
                 onChange={handleAudioChange}
@@ -327,7 +327,7 @@ export default function SongModal({
             </label>
             {uploadProgress.audio > 0 && uploadProgress.audio < 100 && (
               <div className="w-full bg-slate-800 rounded-full h-2">
-                <div 
+                <div
                   className="bg-pink-500 h-2 rounded-full transition-all"
                   style={{ width: `${uploadProgress.audio}%` }}
                 />
@@ -340,11 +340,11 @@ export default function SongModal({
               <label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center gap-2">
                 <FaClock /> Duration (MM:SS)
               </label>
-              <input 
-                value={formatDuration(formData.duration || 0)} 
-                onChange={(e) => setFormData({...formData, duration: parseDuration(e.target.value)})} 
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-purple-500 text-white" 
-                placeholder="3:45" 
+              <input
+                value={formatDuration(formData.duration || 0)}
+                onChange={(e) => setFormData({ ...formData, duration: parseDuration(e.target.value) })}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-purple-500 text-white"
+                placeholder="3:45"
               />
             </div>
 
@@ -352,9 +352,9 @@ export default function SongModal({
               <label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center gap-2">
                 <FaCompactDisc /> Album
               </label>
-              <select 
-                value={formData.album_id || ''} 
-                onChange={(e) => setFormData({...formData, album_id: e.target.value || null})} 
+              <select
+                value={formData.album_id || ''}
+                onChange={(e) => setFormData({ ...formData, album_id: e.target.value || null })}
                 className="w-full bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-purple-500 text-white"
               >
                 <option value="">No Album</option>
@@ -377,7 +377,7 @@ export default function SongModal({
                 <div className="space-y-2">
                   {allArtists.map(artist => (
                     <label key={artist.id} className="flex items-center gap-3 cursor-pointer hover:bg-white/5 p-2 rounded-lg">
-                      <input 
+                      <input
                         type="checkbox"
                         checked={selectedArtistIds.includes(artist.id)}
                         onChange={(e) => {
@@ -389,7 +389,7 @@ export default function SongModal({
                         }}
                         className="w-4 h-4 accent-purple-500"
                       />
-                      <img 
+                      <img
                         src={artist.image_url || `https://ui-avatars.com/api/?name=${artist.name}&background=random`}
                         className="w-6 h-6 rounded-full object-cover"
                         alt=""
@@ -404,17 +404,17 @@ export default function SongModal({
         </div>
 
         <div className="mt-10 flex gap-4">
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             disabled={uploading}
             className="flex-1 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
-          <button 
-            onClick={handleSave} 
+          <button
+            onClick={handleSave}
             disabled={uploading}
-            className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 font-bold hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 px-6 py-4 rounded-2xl bg-linear-to-r from-purple-500 to-pink-500 font-bold hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {uploading ? (
               <>

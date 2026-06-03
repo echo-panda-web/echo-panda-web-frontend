@@ -99,7 +99,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-10 text-white">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-10 text-white">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-4xl font-black tracking-tight">Streaming Analytics</h1>

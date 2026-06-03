@@ -59,7 +59,7 @@ const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave, gen
   useEffect(() => {
     try {
       localStorage.setItem('onboardingDraft', JSON.stringify({ selections, currentStep }));
-    } catch (e) {}
+    } catch (e) { }
   }, [selections, currentStep]);
 
   if (!isOpen) return null;
@@ -79,7 +79,7 @@ const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave, gen
     try {
       const { trackEvent } = require('../../services/analyticsService');
       trackEvent('onboarding_option_toggled', { step: key, option });
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleNext = () => {
@@ -101,14 +101,14 @@ const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave, gen
         localStorage.setItem('onboardingPreferences', JSON.stringify(selections));
         localStorage.setItem('onboardingCompleted', '1');
         localStorage.removeItem('onboardingDraft');
-      } catch (e) {}
+      } catch (e) { }
 
       window.dispatchEvent(new CustomEvent("onboarding:completed", { detail: selections }));
       // Inform parent of selected interests
       try {
         const flattened = Object.values(selections).flat();
         onSave?.(flattened);
-      } catch (e) {}
+      } catch (e) { }
       onClose();
     } catch (e) {
       console.error(e);
@@ -119,14 +119,14 @@ const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave, gen
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-xl overflow-hidden bg-zinc-950 border border-zinc-800 rounded-[2rem] shadow-2xl">
+      <div className="relative w-full max-w-xl overflow-hidden bg-zinc-950 border border-zinc-800 rounded-4xl shadow-2xl">
 
         {/* Progress Bar */}
         <div className="absolute top-0 left-0 w-full h-1 flex">
           {STEPS.map((_, i) => (
             <div
               key={i}
-              className={`h-full flex-1 transition-all duration-500 ${i <= currentStep ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-zinc-800'}`}
+              className={`h-full flex-1 transition-all duration-500 ${i <= currentStep ? 'bg-linear-to-r from-purple-500 to-pink-500' : 'bg-zinc-800'}`}
             />
           ))}
         </div>
@@ -138,30 +138,29 @@ const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave, gen
 
           {/* Selection Area: Pinterest-style "Pills" */}
           <div className="flex flex-wrap gap-2 mb-10">
-              {stepData.options.map((option) => {
-                const arr = selections[stepData.id] || [];
-                const isSelected = arr.includes(option);
-                return (
-                  <button
-                    key={option}
-                    onClick={() => toggleOption(option)}
-                    className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all border-2 ${
-                      isSelected 
-                      ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]' 
+            {stepData.options.map((option) => {
+              const arr = selections[stepData.id] || [];
+              const isSelected = arr.includes(option);
+              return (
+                <button
+                  key={option}
+                  onClick={() => toggleOption(option)}
+                  className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all border-2 ${isSelected
+                      ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]'
                       : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600'
                     }`}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
+                >
+                  {option}
+                </button>
+              );
+            })}
           </div>
 
           <footer className="flex items-center justify-between">
-            <button 
+            <button
               onClick={() => {
-                try { localStorage.setItem('onboardingDraft', JSON.stringify({ selections, currentStep })); } catch (e) {}
-                try { localStorage.setItem('onboardingCompleted', '1'); } catch (e) {}
+                try { localStorage.setItem('onboardingDraft', JSON.stringify({ selections, currentStep })); } catch (e) { }
+                try { localStorage.setItem('onboardingCompleted', '1'); } catch (e) { }
                 window.dispatchEvent(new CustomEvent('onboarding:skipped'));
                 onClose();
               }}
@@ -172,7 +171,7 @@ const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave, gen
 
             <div className="flex gap-3">
               {currentStep > 0 && (
-                <button 
+                <button
                   onClick={() => setCurrentStep(currentStep - 1)}
                   className="px-6 py-3 rounded-2xl bg-zinc-800 text-white font-bold hover:bg-zinc-700 transition"
                 >
@@ -182,7 +181,7 @@ const InterestOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSave, gen
               <button
                 onClick={handleNext}
                 disabled={loading}
-                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black hover:opacity-90 transition disabled:opacity-50"
+                className="px-8 py-3 rounded-2xl bg-linear-to-r from-purple-600 to-pink-600 text-white font-black hover:opacity-90 transition disabled:opacity-50"
               >
                 {loading ? 'Processing...' : (currentStep === STEPS.length - 1 ? 'Finish ✨' : 'Next')}
               </button>

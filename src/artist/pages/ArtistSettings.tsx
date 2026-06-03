@@ -31,7 +31,7 @@ export default function ArtistSettings() {
         const data = await getMyProfile();
         setProfile(data);
         setNameInput(data.name);
-        
+
         // Fetch signed image URL if artist has an image
         if (data.artist?.id && data.artist?.image_url) {
           const signedUrl = await getSignedArtistImageUrl(data.artist.id);
@@ -63,7 +63,7 @@ export default function ArtistSettings() {
       // Refetch profile to ensure artist data is properly populated
       const updatedProfile = await getMyProfile();
       setProfile(updatedProfile);
-      
+
       // Fetch and set the signed image URL
       if (updatedProfile.artist?.id && updatedProfile.artist?.image_url) {
         const signedUrl = await getSignedArtistImageUrl(updatedProfile.artist.id);
@@ -113,7 +113,7 @@ export default function ArtistSettings() {
       // Refetch profile to get the updated artist object with image_url
       const updatedProfile = await getMyProfile();
       setProfile(updatedProfile);
-      
+
       // Fetch and set the signed image URL
       if (updatedProfile.artist?.id) {
         const signedUrl = await getSignedArtistImageUrl(updatedProfile.artist.id);
@@ -143,7 +143,7 @@ export default function ArtistSettings() {
   const profileImageUrl = signedImageUrl || "";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-10 text-white">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-10 text-white">
       <div className="max-w-3xl mx-auto space-y-6">
         <div>
           <h1 className="text-4xl font-black">Artist Profile</h1>
