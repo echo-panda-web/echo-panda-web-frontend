@@ -69,14 +69,14 @@ export default function AdminsManager() {
   };
 
   return (
-   <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200 p-6 font-sans">
+   <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-slate-200 p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* --- HEADER --- */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div>
              <h1 className="text-3xl font-black text-white tracking-tight">
-              Admin <span className="text-blue-400">Management</span>
+              Admin <span className="text-purple-400">Management</span>
             </h1>
             <p className="text-slate-500 mt-2 font-medium">Security & encrypted administrator credentials</p>
           </div>
@@ -87,7 +87,7 @@ export default function AdminsManager() {
               value={query} 
               onChange={(e) => setQuery(e.target.value)} 
               placeholder="Search admins..." 
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600" 
+              className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-purple-500 transition-all placeholder:text-slate-600" 
             />
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function AdminsManager() {
         <div className="bg-white/[0.02] backdrop-blur-md border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
           {loading ? (
             <div className="flex items-center justify-center py-24">
-              <FaSpinner className="text-blue-400 text-4xl animate-spin" />
+              <FaSpinner className="text-purple-400 text-4xl animate-spin" />
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -114,7 +114,7 @@ export default function AdminsManager() {
                     <tr key={a.id} className="group hover:bg-white/[0.03] transition-colors">
                       <td className="p-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold ring-2 ring-white/5 group-hover:ring-blue-500/30 transition-all">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold ring-2 ring-white/5 group-hover:ring-purple-500/30 transition-all">
                             {a.name.charAt(0).toUpperCase()}
                           </div>
                           <div>

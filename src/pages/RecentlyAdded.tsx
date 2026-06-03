@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useDataCache } from "../contexts/DataCacheContext";
-import { FaSpinner, FaMusic, FaPlus } from "react-icons/fa";
+import { FaSpinner, FaMusic } from "react-icons/fa";
 import Song from "../components/Song";
 import { trackSongPlay } from "../backend/playTrackingService";
 import { useAudioPlayer } from "../contexts/AudioPlayerContext";
@@ -33,7 +32,6 @@ interface Song {
 }
 
 const RecentlyAdded: React.FC = () => {
-  const navigate = useNavigate();
   const { playSong } = useAudioPlayer();
   const { getCachedData } = useDataCache();
   const [songs, setSongs] = useState<Song[]>([]);
@@ -83,15 +81,6 @@ const RecentlyAdded: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-
-
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
@@ -117,7 +106,7 @@ const RecentlyAdded: React.FC = () => {
         title: song.title,
         artist: song.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
         coverUrl: song.songCover_url || song.album?.cover_url || '',
-        audioUrl: song.original_key || song.audio_url,
+        audioUrl: song.audio_url,
         duration: song.duration
       });
     } else {

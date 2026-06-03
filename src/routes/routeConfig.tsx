@@ -10,10 +10,9 @@ import { IoMdDisc } from "react-icons/io";
 import { RiPlayListFill } from "react-icons/ri";
 import { MdOutlineExplore } from "react-icons/md";
 import Home from "../pages/Home";
-import Modify from "../pages/Modify";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
-import Alibum from "../pages/Alibum";
+import Album from "../pages/Album";
 import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
 import Artist from "../pages/Artist";
@@ -23,9 +22,9 @@ import RecentlyAdded from "../pages/RecentlyAdded";
 import MostPlayed from "../pages/MostPlayed";
 import FavoritesPage from "../pages/Favorites";
 import ContactUs from "../pages/ContactUs";
-import SongSection from "../pages/home/Songs";
+import SongSection from "../components/SongsSection";
 import SongDetails from "../components/SongDetail";
-import AlbumDetails from "../pages/Album/AlbumDetails";
+import AlbumDetails from "../pages/AlbumDetails";
 import SearchPage from "../pages/SearchPage";
 import Playlist from "../pages/Playlist";
 import Settings from "../pages/Settings";
@@ -33,7 +32,7 @@ import CategoryAlbums from "../pages/CategoryAlbums";
 
 // Admin 
 import { Navigate } from "react-router-dom";
-import ArtistLayout from "../artist/ArtistLayout";
+import ArtistLayout from "../layouts/ArtistLayout";
 import Dashboard from "../artist/pages/Dashboard";
 import Users from "../artist/pages/Users";
 import Favorites from "../artist/pages/Favorites";
@@ -52,8 +51,8 @@ export interface RouteConfig {
   group: "menu" | "library" | "playlist" | "general" | "auth" | "other" | "artist";
   requiresAuth?: boolean;
   showInSidebar?: boolean;
-  role?: "admin" | "artist" | "publicer" | "user"; 
-  layout?: React.ComponentType<any>; 
+  role?: "admin" | "artist" | "publicer" | "user";
+  layout?: React.ComponentType<any>;
 }
 const injectProps = (Component: React.ComponentType<any>, props: any) => {
   return () => <Component {...props} />;
@@ -80,7 +79,7 @@ export const routeConfig: RouteConfig[] = [
     path: "/albums",
     label: "Albums",
     icon: IoMdDisc,
-    component: Alibum,
+    component: Album,
     group: "menu",
     showInSidebar: true,
   },
@@ -153,14 +152,7 @@ export const routeConfig: RouteConfig[] = [
     group: "general",
     showInSidebar: true,
   },
-  {
-    path: "/modify",
-    label: "Modify",
-    icon: FaCog,
-    component: Modify,
-    group: "other",
-    showInSidebar: false,
-  },
+
   {
     path: "/profile",
     label: "Profile",
@@ -227,125 +219,125 @@ export const routeConfig: RouteConfig[] = [
     showInSidebar: false,
     icon: null,
   },
-{
-  path: "/search",
-  label: "Search",
-  component: injectProps(SearchPage, { isLightMode: true }),
-  group: "other",
-  showInSidebar: false,
-  icon: null,
-},
+  {
+    path: "/search",
+    label: "Search",
+    component: injectProps(SearchPage, { isLightMode: true }),
+    group: "other",
+    showInSidebar: false,
+    icon: null,
+  },
 
-// Artist routes 
-{
-  path: "/artist",
-  label: "Artist shortcut",
-  icon: null,
-  component: () => <Navigate to="/artist/dashboard" replace />,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
-{
-  path: "/artist/dashboard",
-  label: "Dashboard",
-  icon: null,
-  component: Dashboard,
+  // Artist routes 
+  {
+    path: "/artist",
+    label: "Artist shortcut",
+    icon: null,
+    component: () => <Navigate to="/artist/dashboard" replace />,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/dashboard",
+    label: "Dashboard",
+    icon: null,
+    component: Dashboard,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false, 
-  role: "artist",
-},
-{
-  path: "/artist/admins",
-  label: "Artists",
-  icon: null,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/admins",
+    label: "Artists",
+    icon: null,
     component: Artists,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
-{
-  path: "/artist/users",
-  label: "Users",
-  icon: null,
-  component: Users,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/users",
+    label: "Users",
+    icon: null,
+    component: Users,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
-{
-  path: "/artist/favorites",
-  label: "Favorites",
-  icon: null,
-  component: Favorites,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/favorites",
+    label: "Favorites",
+    icon: null,
+    component: Favorites,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
-{
-  path: "/artist/artists",
-  label: "Studio",
-  icon: null,
-  component: Artists,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/artists",
+    label: "Studio",
+    icon: null,
+    component: Artists,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
-{
-  path: "/artist/songs",
-  label: "Songs",
-  icon: null,
-  component: Songs,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/songs",
+    label: "Songs",
+    icon: null,
+    component: Songs,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
-{
-  path: "/artist/categories",
-  label: "Categories",
-  icon: null,
-  component: Categories,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/categories",
+    label: "Categories",
+    icon: null,
+    component: Categories,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
-{
-  path: "/artist/category-album/:id",
-  label: "Category Albums",
-  icon: null,
-  component: AdminCategoryAlbums,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/category-album/:id",
+    label: "Category Albums",
+    icon: null,
+    component: AdminCategoryAlbums,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
-{
-  path: "/artist/playlists-report",
-  label: "Playlists Report",
-  icon: null,
-  component: Albums,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/playlists-report",
+    label: "Playlists Report",
+    icon: null,
+    component: Albums,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
-{
-  path: "/artist/settings",
-  label: "Artist Settings",
-  icon: FaCog,
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
+  {
+    path: "/artist/settings",
+    label: "Artist Settings",
+    icon: FaCog,
     component: ArtistSettings,
     layout: ArtistLayout,
-  group: "artist",
-  showInSidebar: false,
-  role: "artist",
-},
+    group: "artist",
+    showInSidebar: false,
+    role: "artist",
+  },
 
 ]
 

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft, FaEllipsisH, FaSpinner } from "react-icons/fa";
-import { useDataCache } from "../../contexts/DataCacheContext";
-import { useAudioPlayer } from "../../contexts/AudioPlayerContext";
-import { trackSongPlay } from "../../backend/playTrackingService";
-import { buildApiUrl } from "../../backend/backendUrls";
-import { getSignedAlbumCoverUrl, getSignedSongCoverUrl } from "../../backend/songMediaApi";
-import Song from "../../components/Song";
+import { useDataCache } from "../contexts/DataCacheContext";
+import { useAudioPlayer } from "../contexts/AudioPlayerContext";
+import { trackSongPlay } from "../backend/playTrackingService";
+import { buildApiUrl } from "../backend/backendUrls";
+import { getSignedAlbumCoverUrl, getSignedSongCoverUrl } from "../backend/songMediaApi";
+import Song from "../components/Song";
 
 interface Artist {
   id: string;
@@ -124,10 +124,6 @@ const AlbumDetails: React.FC = () => {
       setLoading(false);
     }
   };
-  const handleAddToFavorite = (songId: string) => {
-    console.log('Add to favorite:', songId);
-  };
-
   const handlePlaySong = async (songId: string) => {
     const song = songs.find(s => s.id === songId);
     if (!song) {

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { getAlbums } from "../../backend/catalogService";
-import { useDataCache } from "../../contexts/DataCacheContext";
-import AlbumCard from "../../components/AlbumCard";
+import { getAlbums } from "../backend/catalogService";
+import { useDataCache } from "../contexts/DataCacheContext";
+import AlbumCard from "./AlbumCard";
 import { FaSpinner } from "react-icons/fa";
 
 interface Artist {
@@ -38,7 +37,6 @@ const SongSection: React.FC<Props> = ({
   const bgClass = "bg-black";
   const textColor = isLightMode ? "text-gray-900" : "text-white";
 
-  const navigate = useNavigate();
   const { getCachedData } = useDataCache();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,13 +77,6 @@ const SongSection: React.FC<Props> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-
-
-  const handlePlay = (id: string) => {
-    setPlayingId(id);
-    window.setTimeout(() => setPlayingId((current) => (current === id ? null : current)), 2000);
   };
 
   if (loading) {

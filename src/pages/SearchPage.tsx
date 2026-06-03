@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { searchContent, Song, Artist } from "../backend/searchService";
-import ArtistSection from "./home/Artists";
+import ArtistSection from "../components/ArtistsSection";
 
 interface SearchPageProps {
   isLightMode: boolean;
@@ -100,8 +100,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
                     {/* Song Cover Image */}
                     <div className="w-full aspect-square bg-zinc-700 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
                       {song.cover_url ? (
-                        <img 
-                          src={song.cover_url} 
+                        <img
+                          src={song.cover_url}
                           alt={song.title}
                           className="w-full h-full object-cover"
                         />

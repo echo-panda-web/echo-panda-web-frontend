@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { 
-  FaPlay, FaPause, FaStepBackward, FaStepForward, 
+import {
+  FaPlay, FaPause, FaStepBackward, FaStepForward,
   FaRedo, FaRandom, FaVolumeUp, FaVolumeDown, FaVolumeMute,
   FaTimes
 } from 'react-icons/fa';
@@ -87,7 +87,7 @@ const Player: React.FC = () => {
     const fetchRandomSongs = async () => {
       try {
         console.log('🎵 Fetching random songs from database');
-        
+
         const allSongs = await getSongs(100);
 
         if (allSongs && allSongs.length > 0) {
@@ -105,7 +105,7 @@ const Player: React.FC = () => {
                 audioUrl: song.original_key || song.audio_url || '',
               };
             })
-            .filter((song: any) => !!song.id);
+            .filter((song: any) => !!song.id && !!song.audioUrl);
 
           console.log('✅ Loaded random songs:', randomSongs.length);
           setSongQueue(randomSongs);
@@ -151,7 +151,7 @@ const Player: React.FC = () => {
     while (randomIndex === currentQueueIndex && songQueue.length > 1) {
       randomIndex = Math.floor(Math.random() * songQueue.length);
     }
-    
+
     const prevSong = songQueue[randomIndex];
     console.log('🎵 Playing random previous song:', prevSong.title, 'Index:', randomIndex);
     setCurrentQueueIndex(randomIndex);
@@ -232,7 +232,7 @@ const Player: React.FC = () => {
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 w-full bg-black/95 backdrop-blur-md border-t border-white/10 h-20 md:h-24 px-3 md:px-6 z-50 flex items-center pointer-events-none">
-      
+
       {/* LEFT: Song Info (flex-1) */}
       <div
         className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/info pointer-events-auto"
@@ -252,32 +252,32 @@ const Player: React.FC = () => {
       </div>
 
       {/* CENTER: Player Controls (flex-[2]) */}
-      <div className="flex-[2] flex flex-col items-center justify-center max-w-[400px] md:max-w-[600px] px-2 md:px-4">
+      <div className="flex-2 flex flex-col items-center justify-center max-w-100 md:max-w-150 px-2 md:px-4">
         {/* Buttons */}
         <div className="flex items-center gap-4 md:gap-6 text-gray-400 mb-1.5">
-          <FaRandom 
-            size={14} 
+          <FaRandom
+            size={14}
             className={`hidden sm:block cursor-pointer transition-colors pointer-events-auto ${isShuffled ? 'text-blue-500' : 'hover:text-white'}`}
             onClick={toggleShuffle}
           />
-          <FaStepBackward 
-            size={18} 
-            className="hover:text-white cursor-pointer transition-colors pointer-events-auto" 
+          <FaStepBackward
+            size={18}
+            className="hover:text-white cursor-pointer transition-colors pointer-events-auto"
             onClick={playPreviousSong}
           />
-          <button 
+          <button
             onClick={togglePlayPause}
             className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full flex items-center justify-center text-black hover:scale-105 active:scale-95 transition-all pointer-events-auto"
           >
             {isPlaying ? <FaPause size={14} /> : <FaPlay size={14} className="ml-0.5" />}
           </button>
-          <FaStepForward 
-            size={18} 
-            className="hover:text-white cursor-pointer transition-colors pointer-events-auto" 
+          <FaStepForward
+            size={18}
+            className="hover:text-white cursor-pointer transition-colors pointer-events-auto"
             onClick={playNextSong}
           />
-          <FaRedo 
-            size={14} 
+          <FaRedo
+            size={14}
             className={`hidden sm:block cursor-pointer transition-colors pointer-events-auto ${isRepeated ? 'text-blue-500' : 'hover:text-white'}`}
             onClick={toggleRepeat}
           />
@@ -286,16 +286,16 @@ const Player: React.FC = () => {
         {/* Progress Bar */}
         <div className="w-full flex items-center gap-2 md:gap-3">
           <span className="text-[10px] text-gray-500 w-8 text-right">{formatTime(currentTime)}</span>
-          <div 
+          <div
             ref={progressRef}
             className="flex-1 h-1 bg-white/20 rounded-full cursor-pointer group relative pointer-events-auto"
             onMouseDown={handleProgressMouseDown}
           >
-            <div 
+            <div
               className="h-full bg-white group-hover:bg-blue-500 rounded-full"
               style={{ width: `${progressPercentage}%` }}
             />
-            <div 
+            <div
               className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
               style={{ left: `calc(${progressPercentage}% - 5px)` }}
             />
@@ -306,22 +306,22 @@ const Player: React.FC = () => {
 
       {/* RIGHT: Extra Utilities (flex-1) */}
       <div className="flex-1 flex items-center justify-end gap-3 md:gap-5 text-gray-400">
-        
+
         <div className="flex items-center gap-2 group">
           <div className="cursor-pointer hover:text-white pointer-events-auto" onClick={toggleMute}>
             {getVolumeIcon()}
           </div>
-          <div 
+          <div
             ref={volumeRef}
             className="hidden sm:block w-16 md:w-24 h-1 bg-white/20 rounded-full cursor-pointer relative pointer-events-auto"
             onMouseDown={handleVolumeMouseDown}
             onClick={handleVolumeClick}
           >
-            <div 
+            <div
               className="h-full bg-white group-hover:bg-blue-500 rounded-full"
               style={{ width: `${volume * 100}%` }}
             />
-            <div 
+            <div
               className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
               style={{ left: `calc(${volume * 100}% - 6px)` }}
             />

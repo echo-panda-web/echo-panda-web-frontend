@@ -136,7 +136,7 @@ const MostPlayed: React.FC = () => {
         title: song.title,
         artist: song.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
         coverUrl: song.songCover_url || song.album?.cover_url || '',
-        audioUrl: song.original_key || song.audio_url,
+        audioUrl: song.audio_url,
         duration: song.duration
       });
 

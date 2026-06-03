@@ -3,7 +3,7 @@ import HomeLayout from "../layouts/HomeLayout";
 import AuthLayout from "../layouts/AuthLayout";
 import { routeConfig } from "./routeConfig";
 
-import ArtistLayout from "../artist/ArtistLayout";
+import ArtistLayout from "../layouts/ArtistLayout";
 import ProtectedAdminRoute from "../artist/ProtectedAdminRoute";
 import Dashboard from "../artist/pages/Dashboard";
 import Songs from "../artist/pages/Songs";
@@ -13,16 +13,6 @@ import DraftReleases from "../artist/pages/DraftReleases";
 import PublishRelease from "../artist/pages/PublishRelease";
 import ArtistSettings from "../artist/pages/ArtistSettings";
 import ArtistOnboarding from "../artist/pages/ArtistOnboarding";
-
-function RedirectCategoryAlbum() {
-  const { id } = useParams();
-  return <Navigate to={`/artist/dashboard?legacy=category-${id ?? ""}`} replace />;
-}
-
-function RedirectTagAlbums() {
-  const { tagId } = useParams();
-  return <Navigate to={`/artist/dashboard?legacy=tag-${tagId ?? ""}`} replace />;
-}
 
 // Get main routes (menu, library, playlist, general) for HomeLayout
 const mainRoutes = routeConfig.filter(
@@ -82,7 +72,7 @@ const router = createBrowserRouter([
       { path: "/artist/settings", element: <ArtistSettings /> },
     ],
   },
-  
+
 ]);
 
 export default router;

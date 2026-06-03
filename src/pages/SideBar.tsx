@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { 
-  FaSignOutAlt, FaPlus, FaChevronLeft, FaChevronRight 
+import {
+  FaSignOutAlt, FaPlus, FaChevronLeft, FaChevronRight
 } from "react-icons/fa";
 import { getSidebarLinks } from "../routes/routeConfig";
 
@@ -35,9 +35,8 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
   return (
     <>
       <aside
-        className={`h-screen flex flex-col transition-all duration-300 relative z-40 ${themeClasses.aside} ${
-          isCollapsed ? "w-20" : "w-64 md:w-72"
-        }`}
+        className={`h-screen flex flex-col transition-all duration-300 relative z-40 ${themeClasses.aside} ${isCollapsed ? "w-20" : "w-64 md:w-72"
+          }`}
       >
         {/* Toggle Button */}
         <button
@@ -46,7 +45,7 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
         >
           {isCollapsed ? <FaChevronRight size={10} /> : <FaChevronLeft size={10} />}
         </button>
-        
+
         {/* Navigation Section */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 hide-scrollbar">
           {!isCollapsed && (
@@ -67,14 +66,14 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
                     className={({ isActive }) => `
                       flex items-center rounded-2xl transition-all duration-200 group
                       ${/* BIGGER PADDING HERE */ isCollapsed ? "p-4 justify-center" : "py-4 px-5 justify-start"}
-                      ${isActive 
-                        ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                      ${isActive
+                        ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20"
                         : `text-gray-400 ${themeClasses.hover} hover:text-white`
                       }
                     `}
                   >
                     {/* BIGGER ICONS */}
-                    {Icon ? <Icon className={`h-6 w-6 flex-shrink-0 transition-transform group-hover:scale-110 ${isCollapsed ? "" : "mr-4"}`} /> : null}
+                    {Icon ? <Icon className={`h-6 w-6 shrink-0 transition-transform group-hover:scale-110 ${isCollapsed ? "" : "mr-4"}`} /> : null}
                     {!isCollapsed && <span className="font-bold text-[15px] truncate tracking-wide">{link.label}</span>}
                   </NavLink>
                 </li>

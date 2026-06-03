@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDerivedArtists } from "../../backend/catalogService";
-import { useDataCache } from "../../contexts/DataCacheContext";
-import { FaSpinner } from "react-icons/fa";
+import { getDerivedArtists } from "../backend/catalogService";
+import { useDataCache } from "../contexts/DataCacheContext";
 
 interface Artist {
   id: string;

@@ -114,15 +114,15 @@ export default function ArtistLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl mb-4 shadow-2xl shadow-blue-500/50">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl mb-4 shadow-2xl shadow-purple-500/50">
             <FaShieldAlt className="text-white text-3xl" />
           </div>
           <h1 className="text-4xl font-black text-white tracking-tight mb-2">
-            Artist <span className="text-blue-400">Portal</span>
+            Admin <span className="text-purple-400">Portal</span>
           </h1>
           <p className="text-slate-500 font-medium">Sign in to access the dashboard</p>
         </div>
@@ -144,7 +144,7 @@ export default function ArtistLogin() {
                 Email Address
               </label>
               <div className="relative group">
-                <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
                 <input
                   type="email"
                   value={email}
@@ -162,7 +162,7 @@ export default function ArtistLogin() {
                 Password
               </label>
               <div className="relative group">
-                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
                 <input
                   type="password"
                   value={password}
@@ -178,7 +178,7 @@ export default function ArtistLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Signing In..." : "Sign In"}
             </button>
@@ -196,7 +196,7 @@ export default function ArtistLogin() {
         <div className="mt-6 text-center">
           <button
             onClick={() => navigate("/")}
-            className="text-slate-500 hover:text-blue-400 text-sm font-medium transition-colors"
+            className="text-slate-500 hover:text-purple-400 text-sm font-medium transition-colors"
           >
             ← Back to Website
           </button>

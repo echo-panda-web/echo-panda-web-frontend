@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaImage, FaSpinner, FaChevronDown, FaCalendarAlt, FaMusic } from "react-icons/fa";
+import { FaTimes, FaImage, FaSpinner } from "react-icons/fa";
 import { createArtistAlbum, getArtistIdentity } from "../artistStudioApi";
 import { getDerivedCategories } from "../../backend/catalogService";
 
 interface Props {
   show: boolean;
   onClose: () => void;
-  onCreated: (album?: any) => void;
+  onCreated: () => void;
 }
 
 export default function AlbumModal({ show, onClose, onCreated }: Props) {
@@ -47,6 +47,31 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
     }
   }, [show]);
 
+  useEffect(() => {
+    // Auto-create when title + cover are present
+    if (coverFile && title && !creating) {
+      (async () => {
+        try {
+          setCreating(true);
+          await createArtistAlbum({
+            title: title.trim(),
+            artist: selectedArtist || "",
+            description: type,
+            release_status: "draft",
+            scheduled_at: releaseDate || undefined,
+            coverFile,
+          });
+          onCreated();
+          onClose();
+        } catch (err) {
+          console.error("Failed to auto-create album:", err);
+        } finally {
+          setCreating(false);
+        }
+      })();
+    }
+  }, [coverFile]);
+
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -57,10 +82,9 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
   };
 
   const handleCreate = async () => {
-    if (!title.trim()) return;
     try {
       setCreating(true);
-      const newAlbum = await createArtistAlbum({
+      await createArtistAlbum({
         title: title.trim(),
         artist: selectedArtist || "",
         description: type,
@@ -68,7 +92,7 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
         scheduled_at: releaseDate || undefined,
         coverFile,
       });
-      onCreated(newAlbum);
+      onCreated();
       onClose();
     } catch (err) {
       console.error(err);
@@ -81,126 +105,57 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:p-10">
-      <div className="fixed inset-0 bg-[#0a0a0c]/90 backdrop-blur-xl" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-slate-900 border border-white/10 w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-2xl font-bold text-white">Add New Album</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white"><FaTimes size={20} /></button>
+        </div>
 
-      <div className="relative bg-[#121214] border border-white/5 w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase ml-1">Album Title</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-purple-500 text-white" placeholder="Album Title" />
+          </div>
 
-        {/* Close Button */}
-        <button
-            onClick={onClose}
-            className="absolute top-2.5 right-2.5 z-10 w-5 h-5 rounded-md bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-500 transition-all active:scale-90"
-        >
-            <FaTimes size={6} />
-        </button>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <select value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 text-white">
+              <option value="album">Album</option>
+              <option value="single">Single</option>
+              <option value="ep">EP</option>
+            </select>
+            <input type="date" value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} className="w-full bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 text-white" />
+            <select value={selectedArtist} onChange={(e) => setSelectedArtist(e.target.value)} className="w-full bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 text-white">
+              <option value={selectedArtist}>{selectedArtist || 'Your artist'}</option>
+            </select>
+            <select value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 text-white">
+              <option value="">Select genre</option>
+              {genres.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex flex-col">
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase ml-1">Cover Art</label>
+            <label className="block cursor-pointer">
+              <div className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-10 hover:bg-white/10 transition-all flex items-center justify-center flex-col gap-2">
+                <FaImage className="text-purple-300 text-3xl" />
+                <div className="text-slate-300">Click to upload cover art</div>
+                <div className="text-xs text-slate-500">JPG, PNG, WEBP - Max 5MB</div>
+              </div>
+              <input type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+            </label>
+            {coverPreview && <img src={coverPreview} alt="preview" className="mt-3 h-28 w-28 rounded-lg object-cover border border-white/10" />}
+          </div>
 
-            {/* Top/Left Section: Artistic Header */}
-            <div className="bg-[#0e0e11]/50 p-4 flex items-center gap-4 border-b border-white/5">
-                <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#0a0a0c] border border-white/5 shadow-xl shrink-0 group relative">
-                    {coverPreview ? (
-                        <>
-                            <img src={coverPreview} alt="Preview" className="w-full h-full object-cover" />
-                            <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                                <span className="text-[6px] font-bold text-white uppercase">Edit</span>
-                                <input type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
-                            </label>
-                        </>
-                    ) : (
-                        <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer group">
-                            <FaImage className="text-slate-700 text-xs mb-1" />
-                            <span className="text-slate-500 font-bold text-[5px] uppercase tracking-widest">Art</span>
-                            <input type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
-                        </label>
-                    )}
-                </div>
-                <div className="min-w-0">
-                    <h3 className="text-xs font-black text-white tracking-tight truncate uppercase">{title || 'New Release'}</h3>
-                    <p className="text-[6px] font-black text-indigo-500/70 uppercase tracking-[0.3em] mt-0.5">
-                        {type} • Draft
-                    </p>
-                </div>
-            </div>
-
-            {/* Form Section */}
-            <div className="p-4 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2 space-y-1">
-                        <label className="text-[6px] font-black text-slate-500 uppercase tracking-widest ml-0.5">Title</label>
-                        <input
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            className="w-full bg-[#0a0a0c] border border-white/5 rounded-md px-2 py-1.5 outline-none focus:border-indigo-500/30 text-white font-bold text-[10px] transition-all"
-                            placeholder="Enter title..."
-                        />
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-[6px] font-black text-slate-500 uppercase tracking-widest ml-0.5">Type</label>
-                        <div className="relative">
-                            <select
-                                value={type}
-                                onChange={(e) => setType(e.target.value)}
-                                className="w-full bg-[#0a0a0c] border border-white/5 rounded-md px-2 py-1.5 text-white font-bold text-[10px] appearance-none cursor-pointer outline-none focus:border-indigo-500/30 transition-all"
-                            >
-                                <option value="album">Album</option>
-                                <option value="single">Single</option>
-                                <option value="ep">EP</option>
-                            </select>
-                            <FaChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-700 pointer-events-none text-[5px]" />
-                        </div>
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-[6px] font-black text-slate-500 uppercase tracking-widest ml-0.5">Genre</label>
-                        <div className="relative">
-                            <select
-                                value={genre}
-                                onChange={(e) => setGenre(e.target.value)}
-                                className="w-full bg-[#0a0a0c] border border-white/5 rounded-md px-2 py-1.5 text-white font-bold text-[10px] appearance-none cursor-pointer outline-none focus:border-indigo-500/30 transition-all"
-                            >
-                                <option value="">Genre</option>
-                                {genres.map((g) => (
-                                    <option key={g.id} value={g.id}>{g.name}</option>
-                                ))}
-                            </select>
-                            <FaChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-700 pointer-events-none text-[5px]" />
-                        </div>
-                    </div>
-
-                    <div className="col-span-2 space-y-1">
-                        <label className="text-[6px] font-black text-slate-500 uppercase tracking-widest ml-0.5">Release Date</label>
-                        <input
-                            type="date"
-                            value={releaseDate}
-                            onChange={(e) => setReleaseDate(e.target.value)}
-                            className="w-full bg-[#0a0a0c] border border-white/5 rounded-md px-2 py-1.5 text-white font-bold text-[10px] outline-none focus:border-indigo-500/30 transition-all [color-scheme:dark]"
-                        />
-                    </div>
-                </div>
-
-                <div className="pt-1 flex gap-2">
-                    <button
-                        onClick={onClose}
-                        disabled={creating}
-                        className="flex-1 h-7 rounded-md bg-white/[0.03] border border-white/5 hover:bg-white/10 text-slate-500 font-bold transition-all active:scale-95 text-[7px] uppercase tracking-widest"
-                    >
-                        Discard
-                    </button>
-                    <button
-                        onClick={handleCreate}
-                        disabled={creating || !title}
-                        className="flex-[2] h-7 rounded-md bg-indigo-500 hover:bg-indigo-400 text-white font-black transition-all shadow-md active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1 text-[7px] uppercase tracking-widest"
-                    >
-                        {creating ? (
-                            <><FaSpinner className="animate-spin" size={7} /> ...</>
-                        ) : (
-                            'Initialize'
-                        )}
-                    </button>
-                </div>
-            </div>
+          <div className="flex gap-3 justify-end">
+            <button onClick={onClose} disabled={creating} className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10">Cancel</button>
+            <button onClick={handleCreate} disabled={creating || !title} className="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold">
+              {creating ? <><FaSpinner className="animate-spin mr-2"/> Creating...</> : 'Create Album'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

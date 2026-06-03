@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import AppFooter from "./home/AppFooter";
+import AppFooter from "../components/AppFooter";
 import chyta from "../assets/chyta.webp";
 import mokot from "../assets/mokot.webp";
 import nimorl from "../assets/nimorl.webp";

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDerivedArtists } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
-import AppFooter from "./home/AppFooter";
+import AppFooter from "../components/AppFooter";
 import { FaSpinner } from "react-icons/fa";
 
 interface Artist {
@@ -63,7 +63,7 @@ const ArtistsList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
         <FaSpinner className="text-purple-400 text-5xl animate-spin" />
       </div>
     );
@@ -76,13 +76,13 @@ const ArtistsList: React.FC = () => {
         <div className="absolute inset-0 opacity-20 blur-3xl" style={{
           background: "linear-gradient(135deg, rgba(168,85,247,0.4), rgba(236,72,153,0.4))",
         }}></div>
-        
+
         <div className="relative z-10 p-8 max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-6xl font-black text-white mb-3">
-              Popular <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">artists</span>
+              Popular <span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 via-pink-400 to-purple-400">artists</span>
             </h1>
-            <div className="h-1 w-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div>
+            <div className="h-1 w-24 bg-linear-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div>
             <p className="text-slate-400 text-lg mt-4">Discover your favorite musicians</p>
           </div>
 
