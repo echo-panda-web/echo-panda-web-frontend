@@ -262,7 +262,7 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
         className="flex items-center gap-3 text-2xl md:text-3xl font-bold"
       >
         <img
-          src="/logo.webp"
+          src="https://www.echopanda.me/logo.webp"
           alt="Echo Panda Logo"
           className="h-10 md:h-12 w-auto"
         />

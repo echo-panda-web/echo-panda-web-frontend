@@ -1,13 +1,25 @@
 import { buildApiUrl } from "./backendUrls";
 
+const getToken = (): string | null => {
+  return localStorage.getItem("userToken") || localStorage.getItem("authToken");
+};
+
 async function fetchSignedUrl(path: string): Promise<string | null> {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const token = getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(buildApiUrl(path), {
-    headers: {
-      Accept: "application/json",
-    },
+    headers,
   });
 
   if (!response.ok) {
+    console.warn(`Failed to fetch signed URL from ${path}: ${response.status}`);
     return null;
   }
 

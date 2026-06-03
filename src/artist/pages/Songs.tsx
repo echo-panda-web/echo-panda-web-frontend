@@ -1,494 +1,223 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaEdit, FaFileUpload, FaMusic, FaSave, FaTrash, FaUpload } from "react-icons/fa";
+import { useSearchParams } from "react-router-dom";
 import {
-  createArtistSong,
-  deleteArtistSong,
+  FaPlus, FaMusic, FaPlay, FaEdit, FaTrash, FaSpinner, FaDotCircle, FaClock, FaChartBar, FaSearch, FaFilter
+} from "react-icons/fa";
+import { useAudioPlayer } from "../../contexts/AudioPlayerContext";
+import {
   getArtistIdentity,
-  getOwnedAlbums,
   getOwnedSongs,
-  updateArtistSong,
-  uploadArtistMedia,
+  getOwnedAlbums,
+  deleteArtistSong,
   type ArtistIdentity,
-  type ArtistAlbum,
   type ArtistSong,
+  type ArtistAlbum,
 } from "../artistStudioApi";
-
-interface SongFormState {
-  title: string;
-  duration: number;
-  albumId: string;
-  trackNumber: number;
-  lyrics: string;
-  lyricsUrl: string;
-  audioUrl: string;
-}
-
-const EMPTY_FORM: SongFormState = {
-  title: "",
-  duration: 180,
-  albumId: "",
-  trackNumber: 1,
-  lyrics: "",
-  lyricsUrl: "",
-  audioUrl: "",
-};
-
-const DRAFT_KEY = "artist_song_form_draft";
+import SongModal from "./SongModal";
 
 export default function SongsManager() {
+  const { playSong } = useAudioPlayer();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [songs, setSongs] = useState<ArtistSong[]>([]);
   const [albums, setAlbums] = useState<ArtistAlbum[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadTitle, setUploadTitle] = useState("");
-  const [uploadAlbumId, setUploadAlbumId] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadPhase, setUploadPhase] = useState("Idle");
-
-  const [editingSongId, setEditingSongId] = useState<string>("");
-  const [form, setForm] = useState<SongFormState>(EMPTY_FORM);
+  const [showSongModal, setShowSongModal] = useState(false);
+  const [editingSong, setEditingSong] = useState<ArtistSong | null>(null);
 
   const identity = useMemo<ArtistIdentity | null>(() => {
-    try {
-      return getArtistIdentity();
-    } catch {
-      return null;
-    }
+    try { return getArtistIdentity(); } catch { return null; }
   }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      setError("");
-
-      if (!identity) {
-        throw new Error("Missing artist_id in session. Please sign in again.");
-      }
-
+      if (!identity) throw new Error("Artist profile not found.");
       const [ownedSongs, ownedAlbums] = await Promise.all([
         getOwnedSongs(identity),
         getOwnedAlbums(identity),
       ]);
-
       setSongs(ownedSongs);
       setAlbums(ownedAlbums);
-    } catch (loadError) {
-      console.error(loadError);
-      setError(loadError instanceof Error ? loadError.message : "Failed to load songs");
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => { loadData(); }, []);
+
   useEffect(() => {
-    loadData();
+    if (searchParams.get("action") === "upload") {
+      setShowSongModal(true);
+    }
+  }, [searchParams]);
 
+  const handleDelete = async (songId: string) => {
+    if (!window.confirm("Permanently delete this track?")) return;
     try {
-      const saved = localStorage.getItem(DRAFT_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as SongFormState;
-        setForm({ ...EMPTY_FORM, ...parsed });
-      }
-    } catch {
-      localStorage.removeItem(DRAFT_KEY);
-    }
-  }, []);
-
-  const handleUploadSong = async () => {
-    if (!uploadFile) {
-      setError("Select an audio file before upload.");
-      return;
-    }
-
-    if (!uploadAlbumId) {
-      setError("Select an album before uploading a song.");
-      return;
-    }
-
-    if (!identity) {
-      setError("Missing artist_id in session. Please sign in again.");
-      return;
-    }
-
-    try {
-      setUploading(true);
-      setError("");
-      setUploadProgress(10);
-      setUploadPhase("Uploading");
-
-      const progressTimer = window.setInterval(() => {
-        setUploadProgress((current) => Math.min(current + 8, 75));
-      }, 250);
-
-      const uploaded = await uploadArtistMedia({
-        file: uploadFile,
-        purpose: "song_audio",
-      });
-
-      await createArtistSong({
-        title: uploadTitle || uploadFile.name,
-        duration: 180,
-        album_id: uploadAlbumId,
-        artist: identity.displayName,
-        track_number: 1,
-        original_key: uploaded.key,
-        cover_key: undefined,
-        preview_key: undefined,
-        lyrics: "",
-        lyrics_url: undefined,
-      });
-
-      window.clearInterval(progressTimer);
-      setUploadPhase("Processing");
-      setUploadProgress(85);
-      window.setTimeout(() => {
-        setUploadPhase("Converting");
-        setUploadProgress(95);
-      }, 250);
-      window.setTimeout(() => {
-        setUploadPhase("Published");
-        setUploadProgress(100);
-      }, 500);
-
-      setUploadFile(null);
-      setUploadTitle("");
-      setUploadAlbumId("");
+      await deleteArtistSong(songId);
       await loadData();
-    } catch (uploadError) {
-      console.error(uploadError);
-      setError(uploadError instanceof Error ? uploadError.message : "Failed to upload song");
-      setUploadPhase("Failed");
-    } finally {
-      setUploading(false);
+    } catch (err) {
+      alert("Failed to delete track");
     }
   };
 
-  const beginEdit = (song: ArtistSong) => {
-    setEditingSongId(song.id);
-    setForm({
+  const openEditSong = (song: ArtistSong) => {
+    setEditingSong(song);
+    setShowSongModal(true);
+  };
+
+  const modalArtists = useMemo(() => {
+    if (!identity) return [];
+    return [{ id: String(identity.artistId), name: identity.displayName, image_url: "" }];
+  }, [identity]);
+
+  const modalAlbums = useMemo(() => {
+    return albums.map(a => ({ id: a.id, title: a.title, cover_url: a.coverUrl }));
+  }, [albums]);
+
+  const songToModalFormat = (song: ArtistSong | null) => {
+    if (!song) return null;
+    return {
+      id: song.id,
       title: song.title,
-      duration: song.duration || 180,
-      albumId: song.albumId || "",
-      trackNumber: song.trackNumber || 1,
-      lyrics: song.lyrics || "",
-      lyricsUrl: "",
-        audioUrl: song.audioUrl || "",
-    });
+      duration: song.duration,
+      album_id: song.albumId,
+      track_number: song.trackNumber,
+      audio_url: song.audioUrl,
+      songCover_url: song.coverUrl,
+      lyrics: song.lyrics,
+      created_at: song.createdAt,
+      updated_at: song.createdAt,
+      artists: modalArtists,
+    };
   };
 
-  const saveDraftForm = () => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
-  };
+  const filteredSongs = useMemo(() => {
+    if (!searchTerm) return songs;
+    const lower = searchTerm.toLowerCase();
+    return songs.filter(s =>
+      s.title.toLowerCase().includes(lower) ||
+      s.albumTitle.toLowerCase().includes(lower)
+    );
+  }, [songs, searchTerm]);
 
-  const importLrcFile = async (file: File) => {
-    const content = await file.text();
-    setForm((current) => ({
-      ...current,
-      lyrics: content,
-      lyricsUrl: file.name,
-    }));
-  };
-
-  const saveSongMetadata = async () => {
-    if (!editingSongId) {
-      return;
-    }
-
-    if (!form.title.trim() || !form.albumId) {
-      setError("Title and album are required.");
-      return;
-    }
-
-    if (!identity) {
-      setError("Missing artist_id in session. Please sign in again.");
-      return;
-    }
-
-    try {
-      setError("");
-      await updateArtistSong(editingSongId, {
-        title: form.title.trim(),
-        duration: Math.max(1, Math.floor(form.duration)),
-        album_id: form.albumId,
-        artist: identity.displayName,
-        track_number: Math.max(1, Math.floor(form.trackNumber)),
-        original_key: form.audioUrl || undefined,
-        lyrics: form.lyrics || undefined,
-        lyrics_url: form.lyricsUrl || undefined,
-      });
-
-      setEditingSongId("");
-      setForm(EMPTY_FORM);
-      localStorage.removeItem(DRAFT_KEY);
-      await loadData();
-    } catch (saveError) {
-      console.error(saveError);
-      setError(saveError instanceof Error ? saveError.message : "Failed to update song");
-    }
-  };
-
-  const createSongManually = async () => {
-    if (!form.title.trim() || !form.albumId) {
-      setError("Title and album are required.");
-      return;
-    }
-
-    if (!identity) {
-      setError("Missing artist_id in session. Please sign in again.");
-      return;
-    }
-
-    try {
-      setError("");
-      await createArtistSong({
-        title: form.title.trim(),
-        duration: Math.max(1, Math.floor(form.duration)),
-        album_id: form.albumId,
-        artist: identity.displayName,
-        track_number: Math.max(1, Math.floor(form.trackNumber)),
-        original_key: form.audioUrl || undefined,
-        lyrics: form.lyrics || undefined,
-        lyrics_url: form.lyricsUrl || undefined,
-      });
-      setForm(EMPTY_FORM);
-      localStorage.removeItem(DRAFT_KEY);
-      await loadData();
-    } catch (createError) {
-      console.error(createError);
-      setError(createError instanceof Error ? createError.message : "Failed to create song metadata");
-    }
-  };
-
-  const removeSong = async (song: ArtistSong) => {
-    const confirmed = window.confirm(`Delete song: ${song.title}?`);
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await deleteArtistSong(song.id);
-      await loadData();
-    } catch (deleteError) {
-      console.error(deleteError);
-      setError(deleteError instanceof Error ? deleteError.message : "Failed to delete song");
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0c] flex flex-col items-center justify-center py-40 gap-6 text-white">
+        <div className="w-16 h-16 border-4 border-indigo-500/10 border-t-indigo-500 rounded-full animate-spin" />
+        <span className="text-slate-600 font-bold uppercase tracking-widest text-[10px]">Accessing Library</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-10 text-white">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-black">Songs Studio</h1>
-          <p className="text-slate-300 mt-2">
-            Upload songs, edit metadata, import synced lyrics (.lrc), and manage only your own tracks.
-          </p>
+    <div className="min-h-screen bg-[#0a0a0c] text-white selection:bg-indigo-500/30">
+      <div className="max-w-6xl mx-auto px-6 py-12 md:py-12 space-y-10">
+
+        {/* Tracks Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-white/5">
+          <div className="space-y-3">
+             <div className="flex items-center gap-3 text-indigo-500 font-bold uppercase tracking-[0.4em] text-[9px]">
+                <FaDotCircle className="animate-pulse" />
+                <span>Production Environment</span>
+             </div>
+             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">Song Management.</h1>
+             <p className="text-slate-500 text-sm font-medium max-w-lg leading-relaxed">
+                Manage your entire master recording library. Control metadata, monitor streams, and maintain synchronization.
+             </p>
+          </div>
+          <button
+              onClick={() => setShowSongModal(true)}
+              className="h-12 px-8 rounded-xl bg-white text-black font-black transition-all hover:bg-indigo-50 active:scale-95 flex items-center gap-3 shadow-2xl text-[10px] uppercase tracking-widest"
+          >
+              <FaPlus size={10} />
+              New Master
+          </button>
         </div>
 
-        {error && <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-200">{error}</div>}
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
-          <h2 className="text-2xl font-black flex items-center gap-2">
-            <FaUpload /> Upload Song File
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <input
-              type="text"
-              value={uploadTitle}
-              onChange={(event) => setUploadTitle(event.target.value)}
-              placeholder="Song title (optional)"
-              className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3"
-            />
-            <select
-              value={uploadAlbumId}
-              onChange={(event) => setUploadAlbumId(event.target.value)}
-              className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3"
-            >
-              <option value="">No album</option>
-              {albums.map((album) => (
-                <option key={album.id} value={album.id}>
-                  {album.title}
-                </option>
-              ))}
-            </select>
-            <label className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 cursor-pointer">
-              Select audio file
-              <input
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                onChange={(event) => setUploadFile(event.target.files?.[0] || null)}
-              />
-            </label>
-            <button
-              disabled={uploading}
-              onClick={handleUploadSong}
-              className="rounded-xl border border-purple-400/40 bg-purple-500/10 px-4 py-3 font-semibold"
-            >
-              Upload
-            </button>
-          </div>
-          {uploadFile && <p className="text-xs text-slate-300">Selected: {uploadFile.name}</p>}
-          {(uploading || uploadProgress > 0) && (
-            <div className="space-y-2">
-              <div className="h-2 w-full rounded-full bg-slate-800">
-                <div className="h-2 rounded-full bg-purple-500 transition-all" style={{ width: `${uploadProgress}%` }} />
-              </div>
-              <p className="text-xs text-slate-300">
-                {uploadPhase} {uploadProgress}%
-              </p>
+        {/* Filters */}
+        <div className="flex items-center gap-4">
+            <div className="relative flex-1 group">
+                <FaSearch size={14} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-indigo-500 transition-colors" />
+                <input
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    placeholder="Search by title or album..."
+                    className="w-full bg-[#121214] border border-white/5 rounded-xl pl-12 pr-5 py-3.5 outline-none focus:border-indigo-500/30 transition-all font-medium text-slate-300 text-sm"
+                />
             </div>
-          )}
+            <button className="h-12 px-6 rounded-xl bg-white/5 border border-white/5 flex items-center gap-3 text-slate-400 font-bold hover:text-white transition-all text-[10px] uppercase tracking-widest">
+                <FaFilter size={12} /> Filter
+            </button>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
-          <h2 className="text-2xl font-black flex items-center gap-2">
-            <FaEdit /> {editingSongId ? "Edit Song Metadata" : "Create Song Metadata"}
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              value={form.title}
-              onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-              placeholder="Song title"
-              className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3"
-            />
-            <select
-              value={form.albumId}
-              onChange={(event) => setForm((current) => ({ ...current, albumId: event.target.value }))}
-              className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3"
-            >
-              <option value="">Select album</option>
-              {albums.map((album) => (
-                <option key={album.id} value={album.id}>
-                  {album.title}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min={1}
-              value={form.duration}
-              onChange={(event) => setForm((current) => ({ ...current, duration: Number(event.target.value || 0) }))}
-              placeholder="Duration (seconds)"
-              className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3"
-            />
-            <input
-              type="number"
-              min={1}
-              value={form.trackNumber}
-              onChange={(event) => setForm((current) => ({ ...current, trackNumber: Number(event.target.value || 1) }))}
-              placeholder="Track number"
-              className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3"
-            />
-            <input
-              value={form.audioUrl}
-              onChange={(event) => setForm((current) => ({ ...current, audioUrl: event.target.value }))}
-              placeholder="Audio URL (optional)"
-              className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 md:col-span-2"
-            />
-          </div>
-
-          <textarea
-            value={form.lyrics}
-            onChange={(event) => setForm((current) => ({ ...current, lyrics: event.target.value }))}
-            rows={7}
-            placeholder="Paste lyrics or synced .lrc content"
-            className="w-full rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3"
-          />
-
-          <div className="flex flex-wrap gap-3">
-            <label className="rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 cursor-pointer">
-              <FaFileUpload className="inline mr-2" /> Import .lrc file
-              <input
-                type="file"
-                accept=".lrc,text/plain"
-                className="hidden"
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    await importLrcFile(file);
-                  }
-                }}
-              />
-            </label>
-            <button onClick={saveDraftForm} className="rounded-xl border border-white/20 bg-white/5 px-4 py-2.5">
-              <FaSave className="inline mr-2" /> Save Draft Form
-            </button>
-            {editingSongId ? (
-              <button
-                onClick={saveSongMetadata}
-                className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2.5"
-              >
-                Save Metadata
-              </button>
+        {/* Tracks List */}
+        <div className="space-y-2">
+            {filteredSongs.length === 0 ? (
+                <div className="py-24 flex flex-col items-center justify-center bg-white/[0.01] rounded-[3rem] border border-white/5 border-dashed">
+                    <FaMusic className="text-4xl text-slate-800 mb-6" />
+                    <p className="text-slate-500 font-bold uppercase tracking-widest text-[9px]">Empty Library</p>
+                </div>
             ) : (
-              <button
-                onClick={createSongManually}
-                className="rounded-xl border border-purple-400/40 bg-purple-500/10 px-4 py-2.5"
-              >
-                Create Metadata
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-2xl font-black flex items-center gap-2">
-            <FaMusic /> Your Songs
-          </h2>
-          {loading ? (
-            <p className="mt-4 text-slate-300">Loading songs...</p>
-          ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 text-slate-400">
-                    <th className="py-3">Title</th>
-                    <th className="py-3">Album</th>
-                    <th className="py-3">Processing</th>
-                    <th className="py-3">Plays</th>
-                    <th className="py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {songs.map((song) => (
-                    <tr key={song.id} className="border-b border-white/5">
-                      <td className="py-3 text-white font-semibold">{song.title}</td>
-                      <td className="py-3 text-slate-300">{song.albumTitle}</td>
-                      <td className="py-3">
-                        <span className="rounded-full px-3 py-1 text-xs font-semibold bg-white/10 text-slate-200 uppercase">
-                          {song.processingStatus}
-                        </span>
-                      </td>
-                      <td className="py-3 text-purple-200 font-semibold">{song.playCount.toLocaleString()}</td>
-                      <td className="py-3">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => beginEdit(song)}
-                            className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold"
-                          >
-                            <FaEdit className="inline mr-1" /> Edit
-                          </button>
-                          <button
-                            onClick={() => removeSong(song)}
-                            className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold"
-                          >
-                            <FaTrash className="inline mr-1" /> Delete
-                          </button>
+                filteredSongs.map((song, index) => {
+                    const albumCover = albums.find(a => a.id === song.albumId)?.coverUrl;
+                    return (
+                        <div key={song.id} className="group grid grid-cols-12 items-center gap-4 p-4 rounded-2xl bg-[#121214]/50 border border-transparent hover:border-white/10 hover:bg-[#121214] transition-all duration-300">
+                            <div className="col-span-1 text-center text-slate-800 font-bold text-xs group-hover:text-indigo-500 transition-colors">
+                                {(index + 1).toString().padStart(2, '0')}
+                            </div>
+                            <div className="col-span-4 flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-[#0e0e11] border border-white/5 shadow-lg">
+                                    {song.coverUrl || albumCover ? (
+                                        <img src={song.coverUrl || albumCover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    ) : <FaMusic className="w-full h-full p-4 text-slate-800" />}
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-base font-bold text-white truncate group-hover:text-indigo-400 transition-colors tracking-tight">{song.title}</h3>
+                                    <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5 truncate">{song.artist}</p>
+                                </div>
+                            </div>
+                            <div className="col-span-2 text-xs font-bold text-slate-500 truncate">
+                                {song.albumTitle}
+                            </div>
+                            <div className="col-span-1 text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                                <FaClock className="opacity-20" size={9} />
+                                {Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, '0')}
+                            </div>
+                            <div className="col-span-1 text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                                <FaChartBar className="opacity-20" size={9} />
+                                {song.playCount.toLocaleString()}
+                            </div>
+                            <div className="col-span-1">
+                                <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest border ${song.processingStatus === 'ready' ? 'bg-green-500/10 text-green-500 border-green-500/10' : 'bg-amber-500/10 text-amber-400 border-amber-500/10'}`}>
+                                    {song.processingStatus}
+                                </span>
+                            </div>
+                            <div className="col-span-2 flex items-center justify-end gap-2">
+                                <button onClick={() => playSong({ id: song.id, title: song.title, artist: song.artist, coverUrl: song.coverUrl || albumCover || '', audioUrl: song.audioUrl, duration: song.duration })} className="w-10 h-10 flex items-center justify-center rounded-lg bg-white text-black hover:bg-indigo-50 active:scale-90 transition-all shadow-lg"><FaPlay size={10} className="ml-0.5" /></button>
+                                <button onClick={() => openEditSong(song)} className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-slate-500 hover:text-white transition-all"><FaEdit size={12} /></button>
+                                <button onClick={() => handleDelete(song.id)} className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-slate-500 hover:text-red-400 transition-all"><FaTrash size={12} /></button>
+                            </div>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!loading && songs.length === 0 && <p className="py-6 text-slate-400">No songs available in your artist catalog yet.</p>}
-            </div>
-          )}
+                    );
+                })
+            )}
         </div>
       </div>
+
+      <SongModal
+        show={showSongModal}
+        editingSong={songToModalFormat(editingSong) as any}
+        allArtists={modalArtists}
+        allAlbums={modalAlbums}
+        onClose={() => { setShowSongModal(false); setEditingSong(null); }}
+        onSave={async () => { setShowSongModal(false); setEditingSong(null); await loadData(); }}
+        onAlbumsRefresh={loadData}
+      />
     </div>
   );
 }

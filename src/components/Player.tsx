@@ -1,12 +1,15 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { 
   FaPlay, FaPause, FaStepBackward, FaStepForward, 
-  FaRedo, FaRandom, FaVolumeUp, FaVolumeDown, FaVolumeMute
+  FaRedo, FaRandom, FaVolumeUp, FaVolumeDown, FaVolumeMute,
+  FaTimes
 } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { useAudioPlayer } from '../contexts/AudioPlayerContext';
 import { getSongs } from '../backend/catalogService';
 
 const Player: React.FC = () => {
+  const navigate = useNavigate();
   const {
     currentSong,
     isPlaying,
@@ -23,6 +26,7 @@ const Player: React.FC = () => {
     toggleShuffle,
     toggleRepeat,
     playSong,
+    closePlayer,
   } = useAudioPlayer();
 
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
@@ -89,14 +93,19 @@ const Player: React.FC = () => {
         if (allSongs && allSongs.length > 0) {
           // Convert to audio player format
           const randomSongs = allSongs
-            .map((song: any) => ({
-              id: String(song.id),
-              title: song.title || 'Unknown Song',
-              artist: song.artist || song.album?.artist || 'Unknown Artist',
-              coverUrl: song.songCover_url || '',
-              audioUrl: song.original_key || song.audio_url || '',
-            }))
-            .filter((song: any) => !!song.audioUrl);
+            .map((song: any) => {
+              // Extract artist name safely from CatalogSong format
+              const artistName = song.artists?.[0]?.name || song.artist || 'Unknown Artist';
+
+              return {
+                id: String(song.id),
+                title: song.title || 'Unknown Song',
+                artist: typeof artistName === 'string' ? artistName : 'Unknown Artist',
+                coverUrl: song.songCover_url || '',
+                audioUrl: song.original_key || song.audio_url || '',
+              };
+            })
+            .filter((song: any) => !!song.id);
 
           console.log('✅ Loaded random songs:', randomSongs.length);
           setSongQueue(randomSongs);
@@ -225,15 +234,18 @@ const Player: React.FC = () => {
     <footer className="fixed bottom-0 left-0 right-0 w-full bg-black/95 backdrop-blur-md border-t border-white/10 h-20 md:h-24 px-3 md:px-6 z-50 flex items-center pointer-events-none">
       
       {/* LEFT: Song Info (flex-1) */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="w-10 h-10 md:w-14 md:h-14 rounded overflow-hidden flex-shrink-0 shadow-md">
+      <div
+        className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/info pointer-events-auto"
+        onClick={() => currentSong?.id && navigate(`/song/${currentSong.id}`)}
+      >
+        <div className="w-10 h-10 md:w-14 md:h-14 rounded overflow-hidden flex-shrink-0 shadow-md group-hover/info:opacity-80 transition-opacity">
           <img src={currentSong.coverUrl} alt={currentSong.title} className="w-full h-full object-cover" />
         </div>
-        <div className="min-w-0 pointer-events-auto">
-          <h4 className="text-white text-[13px] md:text-sm font-semibold truncate hover:underline cursor-pointer">
+        <div className="min-w-0">
+          <h4 className="text-white text-[13px] md:text-sm font-semibold truncate group-hover/info:underline">
             {currentSong.title}
           </h4>
-          <p className="text-[11px] md:text-xs text-gray-400 truncate hover:text-white cursor-pointer">
+          <p className="text-[11px] md:text-xs text-gray-400 truncate group-hover/info:text-white transition-colors">
             {currentSong.artist}
           </p>
         </div>
@@ -293,7 +305,7 @@ const Player: React.FC = () => {
       </div>
 
       {/* RIGHT: Extra Utilities (flex-1) */}
-      <div className="flex-1 flex items-center justify-end gap-3 md:gap-4 text-gray-400">
+      <div className="flex-1 flex items-center justify-end gap-3 md:gap-5 text-gray-400">
         
         <div className="flex items-center gap-2 group">
           <div className="cursor-pointer hover:text-white pointer-events-auto" onClick={toggleMute}>
@@ -315,6 +327,18 @@ const Player: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Close Player Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            closePlayer();
+          }}
+          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 text-gray-400 hover:text-rose-500 transition-all pointer-events-auto ml-2 border border-transparent hover:border-white/5"
+          title="Close Player"
+        >
+          <FaTimes size={16} />
+        </button>
       </div>
     </footer>
   );

@@ -25,6 +25,7 @@ interface Song {
   duration: number;
   album_id: string | null;
   audio_url: string | null;
+  original_key?: string | null;
   songCover_url: string | null;
   created_at: string;
   artists?: Artist[];
@@ -65,6 +66,7 @@ const RecentlyAdded: React.FC = () => {
           duration: song.duration,
           album_id: song.album_id,
           audio_url: song.audio_url,
+          original_key: song.original_key,
           songCover_url: song.songCover_url,
           created_at: song.created_at,
           artists: song.artists || [],
@@ -104,11 +106,12 @@ const RecentlyAdded: React.FC = () => {
   };
 
   const handlePlay = async (songId: string) => {
-    await trackSongPlay(songId);
+    // We can try to track play, but it's okay if it fails for guests
+    trackSongPlay(songId).catch(() => {});
 
     // Find the song data
     const song = songs.find(s => s.id === songId);
-    if (song && song.audio_url) {
+    if (song) {
       playSong({
         id: song.id,
         title: song.title,
@@ -118,7 +121,7 @@ const RecentlyAdded: React.FC = () => {
         duration: song.duration
       });
     } else {
-      console.error('No audio URL available for this song');
+      console.error('Song data not found');
     }
   };
 

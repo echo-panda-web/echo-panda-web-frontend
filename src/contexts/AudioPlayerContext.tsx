@@ -29,6 +29,7 @@ interface AudioPlayerContextType {
   toggleRepeat: () => void;
   playNext: () => void;
   playPrevious: () => void;
+  closePlayer: () => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined);
@@ -73,29 +74,36 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
         getSignedSongCoverUrl(song.id),
       ]);
 
-      if (!signed) {
-        throw new Error('Missing signed URL');
+      // Fallback to existing URL if signing fails but we have a direct URL
+      const finalAudioUrl = signed || song.audioUrl;
+
+      if (!finalAudioUrl) {
+        throw new Error('Missing signed URL and no direct audio URL available');
+      }
+
+      if (finalAudioUrl.startsWith('http://localhost') || finalAudioUrl.startsWith('https://localhost')) {
+         // handle local dev edge cases if needed
       }
 
       const nextSong = {
         ...song,
         coverUrl: signedCover || song.coverUrl,
+        audioUrl: finalAudioUrl,
       };
 
       setCurrentSong(nextSong);
 
-      console.log('🎵 AudioContext: Audio signed URL:', signed);
+      console.log('🎵 AudioContext: Loading track:', song.title);
       try {
         audioRef.current.crossOrigin = 'anonymous';
       } catch (e) {
         /* ignore if not supported */
       }
-      audioRef.current.src = signed;
+      audioRef.current.src = finalAudioUrl;
       audioRef.current.load();
       setIsPlaying(true);
-      console.log('✅ AudioContext: Song loaded, isPlaying set to true');
     } catch (err) {
-      console.error('❌ AudioContext: Failed to acquire signed url:', err);
+      console.error('❌ AudioContext: Playback initialization failed:', err);
     }
   };
 
@@ -269,6 +277,15 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
     void loadSong(prevSong);
   };
 
+  const closePlayer = () => {
+    setIsPlaying(false);
+    setCurrentSong(null);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+  };
+
   return (
     <AudioPlayerContext.Provider
       value={{
@@ -289,6 +306,7 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
         toggleRepeat,
         playNext,
         playPrevious,
+        closePlayer,
       }}
     >
       {children}

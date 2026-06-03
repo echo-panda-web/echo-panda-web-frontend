@@ -169,24 +169,24 @@ export default function TagsManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-12 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 p-6 md:p-12 text-white">
       <div className="max-w-7xl mx-auto">
 
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
           <div>
             <h1 className="text-3xl font-black">
-              Collection <span className="text-purple-400">Tags</span>
+              Collection <span className="text-blue-400">Tags</span>
             </h1>
             <p className="text-slate-400 mt-2 flex items-center gap-2">
-              <FaTags className="text-purple-500" />
+              <FaTags className="text-blue-500" />
               Organize albums into custom sections for the home page
             </p>
           </div>
 
           <button
             onClick={openAddModal}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition"
+            className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition"
           >
             <FaPlus /> Create Tag
           </button>
@@ -206,7 +206,7 @@ export default function TagsManager() {
         {/* LOADING */}
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <FaSpinner className="text-purple-400 text-4xl animate-spin" />
+            <FaSpinner className="text-blue-400 text-4xl animate-spin" />
           </div>
         ) : (
           /* LIST */
@@ -234,7 +234,7 @@ export default function TagsManager() {
                     </button>
                   </div>
 
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg font-bold">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-lg font-bold">
                     {tag.display_order}
                   </div>
 
@@ -326,7 +326,7 @@ export default function TagsManager() {
               </div>
               <button
                 onClick={handleSave}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 py-4 rounded-xl font-bold"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 py-4 rounded-xl font-bold"
               >
                 {editingTag ? "Update Tag" : "Create Tag"}
               </button>

@@ -122,24 +122,24 @@ export default function UsersManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-slate-200 p-6 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200 p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <h1 className="text-3xl font-black text-white tracking-tight">
-              User <span className="text-purple-400">List</span>
+              User <span className="text-blue-400">List</span>
             </h1>
             <p className="text-slate-500 font-medium">Manage registered user accounts</p>
           </div>
 
           <div className="relative group">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name or email..."
-              className="pl-12 pr-6 py-4 w-full lg:w-[450px] rounded-2xl bg-slate-900/80 border border-white/5 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all shadow-2xl"
+              className="pl-12 pr-6 py-4 w-full lg:w-[450px] rounded-2xl bg-slate-900/80 border border-white/5 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-2xl"
             />
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function UsersManager() {
         <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
           {loading ? (
             <div className="flex items-center justify-center py-24">
-              <FaSpinner className="text-purple-400 text-4xl animate-spin" />
+              <FaSpinner className="text-blue-400 text-4xl animate-spin" />
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -169,11 +169,11 @@ export default function UsersManager() {
                           {u.photoURL ? (
                             <img 
                               src={u.photoURL} 
-                              className="w-12 h-12 rounded-2xl object-cover ring-2 ring-white/5 group-hover:ring-purple-500/50 transition-all" 
+                              className="w-12 h-12 rounded-2xl object-cover ring-2 ring-white/5 group-hover:ring-blue-500/50 transition-all" 
                               alt={u.displayName}
                             />
                           ) : (
-                            <div className="w-12 h-12 rounded-2xl bg-purple-500/20 ring-2 ring-white/5 group-hover:ring-purple-500/50 transition-all flex items-center justify-center text-purple-400 font-black text-lg">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-500/20 ring-2 ring-white/5 group-hover:ring-blue-500/50 transition-all flex items-center justify-center text-blue-400 font-black text-lg">
                               {u.displayName.charAt(0).toUpperCase()}
                             </div>
                           )}
@@ -184,7 +184,7 @@ export default function UsersManager() {
                                 e.stopPropagation();
                                 handleCopyId(u.id);
                               }}
-                              className="flex items-center gap-2 text-slate-500 hover:text-purple-400 text-xs font-medium transition-colors cursor-pointer group/id"
+                              className="flex items-center gap-2 text-slate-500 hover:text-blue-400 text-xs font-medium transition-colors cursor-pointer group/id"
                               title="Click to copy full ID"
                             >
                               <span>ID: {u.id.substring(0, 8)}...</span>
@@ -204,7 +204,7 @@ export default function UsersManager() {
 
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
-                          <FaCalendarAlt className="text-purple-500/50 text-[10px]" />
+                          <FaCalendarAlt className="text-blue-500/50 text-[10px]" />
                           {formatDate(u.registeredAt)}
                         </div>
                       </td>

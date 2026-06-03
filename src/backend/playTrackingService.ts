@@ -62,7 +62,7 @@ export const trackSongPlay = async (songId: string): Promise<boolean> => {
   }
 
   if (!getBackendToken()) {
-    console.error("User not logged in");
+    // Silently return for guests, tracking only for logged in users
     return false;
   }
 

@@ -115,14 +115,14 @@ export default function TagAlbumsManager() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 flex items-center justify-center">
-        <FaSpinner className="text-purple-400 text-4xl animate-spin" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 p-6 flex items-center justify-center">
+        <FaSpinner className="text-blue-400 text-4xl animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-12 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 p-6 md:p-12 text-white">
       <div className="max-w-7xl mx-auto">
 
         {/* HEADER */}
@@ -135,13 +135,13 @@ export default function TagAlbumsManager() {
           </button>
           <div className="flex-1">
             <h1 className="text-3xl font-black">
-              {tag?.name} <span className="text-purple-400">Albums</span>
+              {tag?.name} <span className="text-blue-400">Albums</span>
             </h1>
             <p className="text-slate-400 mt-2">{tag?.description}</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition"
+            className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition"
           >
             <FaPlus /> Add Album
           </button>
@@ -154,7 +154,7 @@ export default function TagAlbumsManager() {
             <p className="text-slate-400 text-lg">No albums assigned yet</p>
             <button
               onClick={() => setShowAddModal(true)}
-              className="mt-4 text-purple-400 hover:text-purple-300"
+              className="mt-4 text-blue-400 hover:text-blue-300"
             >
               Add your first album
             </button>

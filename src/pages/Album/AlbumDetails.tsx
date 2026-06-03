@@ -130,8 +130,8 @@ const AlbumDetails: React.FC = () => {
 
   const handlePlaySong = async (songId: string) => {
     const song = songs.find(s => s.id === songId);
-    if (!song || !song.audio_url) {
-      console.error('Song not found or missing audio URL');
+    if (!song) {
+      console.error('Song not found');
       return;
     }
 
@@ -144,7 +144,7 @@ const AlbumDetails: React.FC = () => {
       title: song.title,
       artist: artistNames,
       coverUrl: song.songCover_url || album?.cover_url || '',
-      audioUrl: song.original_key || song.audio_url,
+      audioUrl: song.audio_url || song.original_key,
       duration: song.duration,
     });
 

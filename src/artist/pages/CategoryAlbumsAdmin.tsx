@@ -100,21 +100,21 @@ export default function AdminCategoryAlbums() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 flex items-center justify-center">
-        <FaSpinner className="text-purple-400 text-5xl animate-spin" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 flex items-center justify-center">
+        <FaSpinner className="text-blue-400 text-5xl animate-spin" />
       </div>
     );
   }
 
   if (!category) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 flex items-center justify-center text-white">
         <div className="text-center">
           <div className="text-6xl mb-4 opacity-20">🎵</div>
           <p className="text-slate-400 text-xl">Category not found</p>
           <button 
             onClick={() => navigate('/admin/categories')}
-            className="mt-4 px-6 py-3 bg-purple-500 hover:bg-purple-600 rounded-xl font-bold transition-all"
+            className="mt-4 px-6 py-3 bg-blue-500 hover:bg-blue-600 rounded-xl font-bold transition-all"
           >
             Back to Categories
           </button>
@@ -124,7 +124,7 @@ export default function AdminCategoryAlbums() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white p-6 md:p-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 text-white p-6 md:p-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -136,7 +136,7 @@ export default function AdminCategoryAlbums() {
           </button>
           
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-4xl shadow-2xl">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-4xl shadow-2xl">
               <FaMusic />
             </div>
             <div>
@@ -197,7 +197,7 @@ export default function AdminCategoryAlbums() {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          album.type === 'album' ? 'bg-purple-500/20 text-purple-300' :
+                          album.type === 'album' ? 'bg-blue-500/20 text-blue-300' :
                           album.type === 'single' ? 'bg-pink-500/20 text-pink-300' :
                           'bg-blue-500/20 text-blue-300'
                         }`}>

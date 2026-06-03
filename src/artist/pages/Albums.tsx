@@ -1,273 +1,168 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaCheckCircle, FaCompactDisc, FaImage, FaMusic, FaPlus, FaSave, FaTrash } from "react-icons/fa";
 import {
-  createArtistAlbum,
+  FaCompactDisc, FaPlus, FaTrash, FaDotCircle, FaEdit, FaLayerGroup, FaClock
+} from "react-icons/fa";
+import {
   deleteArtistAlbum,
   getArtistIdentity,
   getOwnedAlbums,
-  updateArtistAlbum,
   type ArtistIdentity,
   type ArtistAlbum,
 } from "../artistStudioApi";
 import AlbumModal from "./AlbumModal";
 
-type ReleaseType = "album" | "single" | "ep";
-
-interface ReleaseDraft {
-  title: string;
-  type: ReleaseType;
-  scheduledAt: string;
-}
-
-const DRAFT_KEY = "artist_release_draft";
-
-export default function Albums() {
+export default function AlbumsManager() {
   const [albums, setAlbums] = useState<ArtistAlbum[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState<ReleaseType>("album");
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
-  const [creating, setCreating] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
   const identity = useMemo<ArtistIdentity | null>(() => {
-    try {
-      return getArtistIdentity();
-    } catch {
-      return null;
-    }
+    try { return getArtistIdentity(); } catch { return null; }
   }, []);
 
   const loadAlbums = async () => {
     try {
       setLoading(true);
-      setError("");
-      if (!identity) {
-        throw new Error("Missing artist_id in session. Please sign in again.");
-      }
+      if (!identity) throw new Error("Artist profile not found.");
       const data = await getOwnedAlbums(identity);
       setAlbums(data);
-    } catch (loadError) {
-      console.error(loadError);
-      setError(loadError instanceof Error ? loadError.message : "Failed to load releases");
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadAlbums();
+  useEffect(() => { loadAlbums(); }, []);
 
-    try {
-      const draft = localStorage.getItem(DRAFT_KEY);
-      if (draft) {
-        const parsed = JSON.parse(draft) as ReleaseDraft;
-        setTitle(parsed.title || "");
-        setType(parsed.type || "album");
-        setScheduledAt(parsed.scheduledAt || "");
-      }
-    } catch {
-      localStorage.removeItem(DRAFT_KEY);
-    }
-  }, []);
-
-  const handleCoverFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      setError("Please choose a valid image file for the album cover.");
-      return;
-    }
-
-    setError("");
-    if (coverPreview) {
-      URL.revokeObjectURL(coverPreview);
-    }
-    setCoverFile(file);
-    setCoverPreview(URL.createObjectURL(file));
-  };
-
-  const saveDraftLocal = () => {
-    const draft: ReleaseDraft = { title, type, scheduledAt };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  };
-
-  const createRelease = async (publishNow: boolean) => {
-    if (!title.trim()) {
-      setError("Release title is required.");
-      return;
-    }
-
-    if (!identity) {
-      setError("Missing artist_id in session. Please sign in again.");
-      return;
-    }
-
-    try {
-      setCreating(true);
-      setError("");
-
-      await createArtistAlbum({
-        title: title.trim(),
-        artist: identity.displayName,
-        description: type,
-        release_status: publishNow ? "published" : (scheduledAt ? "pending_review" : "draft"),
-        scheduled_at: scheduledAt || undefined,
-        coverFile,
-        release_date: publishNow ? new Date().toISOString().slice(0, 10) : undefined,
-      });
-
-      localStorage.removeItem(DRAFT_KEY);
-      setTitle("");
-      setType("album");
-      setCoverFile(null);
-      setCoverPreview("");
-      setScheduledAt("");
-      await loadAlbums();
-    } catch (createError) {
-      console.error(createError);
-      setError(createError instanceof Error ? createError.message : "Failed to create release");
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const publishRelease = async (album: ArtistAlbum) => {
-    if (!identity) {
-      setError("Missing artist_id in session. Please sign in again.");
-      return;
-    }
-
-    try {
-      await updateArtistAlbum(album.id, {
-        title: album.title,
-        artist: identity.displayName,
-        description: album.type,
-        release_status: "published",
-        release_date: new Date().toISOString().slice(0, 10),
-      });
-      await loadAlbums();
-    } catch (publishError) {
-      console.error(publishError);
-      setError(publishError instanceof Error ? publishError.message : "Failed to publish release");
-    }
-  };
-
-  const deleteRelease = async (album: ArtistAlbum) => {
-    const confirmed = window.confirm(`Delete release: ${album.title}?`);
-    if (!confirmed) {
-      return;
-    }
-
+  const handleDelete = async (album: ArtistAlbum) => {
+    if (!window.confirm(`Permanently delete release: ${album.title}?`)) return;
     try {
       await deleteArtistAlbum(album.id);
       await loadAlbums();
-    } catch (deleteError) {
-      console.error(deleteError);
-      setError(deleteError instanceof Error ? deleteError.message : "Failed to delete release");
+    } catch (err) {
+      alert("Delete failed");
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0c] flex flex-col items-center justify-center py-40 gap-6 text-white">
+        <div className="w-16 h-16 border-4 border-indigo-500/10 border-t-indigo-500 rounded-full animate-spin" />
+        <span className="text-slate-600 font-bold uppercase tracking-widest text-[10px]">Accessing Master Catalog</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-6 md:p-10 text-white">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-black">Release Studio</h1>
-          <p className="text-slate-300 mt-2">
-            Create albums and singles, upload album covers, save draft releases, and publish when ready.
-          </p>
-          <p className="text-xs text-purple-200 mt-1">Ownership scope: only your artist content is shown.</p>
-        </div>
+    <div className="min-h-screen bg-[#0a0a0c] text-white selection:bg-indigo-500/30">
+      <div className="max-w-6xl mx-auto px-6 py-12 md:py-20 space-y-16">
 
-        {error && <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-200">{error}</div>}
-
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-black">Your Releases</h2>
-            <button onClick={() => setShowAddModal(true)} className="rounded-xl border border-purple-400/40 bg-purple-500/10 px-4 py-2 font-semibold">+ Add Album</button>
+        {/* Discography Master Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 pb-10 border-b border-white/5">
+          <div className="space-y-4">
+             <div className="flex items-center gap-3 text-indigo-500 font-bold uppercase tracking-[0.4em] text-[10px]">
+                <FaLayerGroup />
+                <span>Discography Master</span>
+             </div>
+             <h1 className="text-5xl font-black tracking-tight text-white">Releases.</h1>
+             <p className="text-slate-500 text-sm font-medium max-w-lg leading-relaxed">
+                Management hub for your entire catalog of singles and albums. Monitor release statuses and track history.
+             </p>
           </div>
-          <p className="text-slate-400">Create albums and singles, upload album covers, save draft releases, and publish when ready.</p>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="group h-14 px-10 rounded-full bg-white text-black font-black transition-all hover:bg-indigo-50 active:scale-95 flex items-center gap-3 shadow-2xl text-[10px] uppercase tracking-widest"
+          >
+            <FaPlus size={10} className="group-hover:rotate-90 transition-transform duration-300" />
+            New Release
+          </button>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-2xl font-black">Your Releases</h2>
-
-          {loading ? (
-            <p className="text-slate-300 mt-4">Loading releases...</p>
-          ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 text-slate-400">
-                    <th className="py-3">Title</th>
-                    <th className="py-3">Type</th>
-                    <th className="py-3">Status</th>
-                    <th className="py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {albums.map((album) => {
-                    const statusMeta: Record<string, { label: string; className: string }> = {
-                      draft: { label: "Draft", className: "bg-amber-500/15 text-amber-200" },
-                      pending_review: { label: "Pending Review", className: "bg-blue-500/15 text-blue-200" },
-                      published: { label: "Published", className: "bg-emerald-500/15 text-emerald-200" },
-                      rejected: { label: "Rejected", className: "bg-red-500/15 text-red-200" },
-                    };
-                    const status = statusMeta[album.releaseStatus] || statusMeta.draft;
-                    return (
-                      <tr key={album.id} className="border-b border-white/5">
-                        <td className="py-3 font-semibold text-white">{album.title}</td>
-                        <td className="py-3 text-slate-300 capitalize">{album.type || "album"}</td>
-                        <td className="py-3">
-                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${status.className}`}>{status.label}</span>
-                        </td>
-                        <td className="py-3">
-                          <div className="flex flex-wrap gap-2">
-                            {album.releaseStatus !== "published" && (
-                              <button
-                                onClick={() => publishRelease(album)}
-                                className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold"
-                              >
-                                <FaCheckCircle className="inline mr-1" /> Publish
-                              </button>
-                            )}
-                            <button
-                              onClick={() => deleteRelease(album)}
-                              className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold"
-                            >
-                              <FaTrash className="inline mr-1" /> Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {!loading && albums.length === 0 && (
-                <p className="py-6 text-slate-400">No releases yet. Create your first album or single.</p>
-              )}
+        {/* Master Catalog List */}
+        <div className="space-y-6">
+            <div className="grid grid-cols-12 gap-4 px-8 text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 border-b border-white/5 pb-6">
+                <div className="col-span-1 text-center">#</div>
+                <div className="col-span-5">Identity</div>
+                <div className="col-span-2">Format</div>
+                <div className="col-span-2">Deployment</div>
+                <div className="col-span-2 text-right">Settings</div>
             </div>
-          )}
-        </div>
 
-        <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-6 text-sm text-slate-300">
-          <p>
-            <FaMusic className="inline mr-2 text-purple-300" />
-            Release singles by selecting type <strong>single</strong> while creating a release.
-          </p>
+            {albums.length === 0 ? (
+                <div className="py-40 flex flex-col items-center justify-center bg-white/[0.01] rounded-[4rem] border border-white/5 border-dashed group">
+                    <FaCompactDisc className="text-5xl text-slate-800 mb-8" />
+                    <p className="text-slate-500 font-bold uppercase tracking-widest text-[9px]">Master catalog empty</p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {albums.map((album, index) => {
+                        const isLive = album.releaseStatus === 'published';
+                        return (
+                            <div key={album.id} className="group grid grid-cols-12 items-center gap-4 p-5 rounded-[2rem] bg-white/[0.01] border border-transparent hover:border-white/5 hover:bg-white/[0.02] transition-all duration-300">
+
+                                <div className="col-span-1 text-center text-slate-800 font-bold text-xs group-hover:text-indigo-500 transition-colors">
+                                    {(index + 1).toString().padStart(2, '0')}
+                                </div>
+
+                                <div className="col-span-5 flex items-center gap-6">
+                                    <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-[#0e0e11] border border-white/5 shadow-lg relative">
+                                        {album.coverUrl ? (
+                                            <img src={album.coverUrl} alt={album.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <FaCompactDisc className="text-slate-800 text-xl" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="text-xl font-bold text-white truncate group-hover:text-indigo-400 transition-colors">{album.title}</h3>
+                                        <div className="flex items-center gap-3 mt-1 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+                                            {album.releaseDate || 'Mastering'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-span-2">
+                                    <span className="px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] bg-white/5 border border-white/5 text-slate-500">
+                                        {album.type}
+                                    </span>
+                                </div>
+
+                                <div className="col-span-2">
+                                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-xl border ${
+                                        isLive
+                                        ? 'bg-green-500/10 text-green-400 border-green-500/10'
+                                        : 'bg-amber-500/10 text-amber-500 border-amber-500/10'
+                                    }`}>
+                                        {album.releaseStatus}
+                                    </span>
+                                </div>
+
+                                <div className="col-span-2 flex items-center justify-end gap-2">
+                                    <button className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 text-slate-500 hover:text-white transition-all shadow-xl" title="Edit Metadata">
+                                        <FaEdit size={12} />
+                                    </button>
+                                    <button onClick={() => handleDelete(album)} className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-all shadow-xl" title="Delete Release">
+                                        <FaTrash size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
       </div>
-      {showAddModal && (
-        <AlbumModal show={showAddModal} onClose={() => setShowAddModal(false)} onCreated={async () => { setShowAddModal(false); await loadAlbums(); }} />
-      )}
+
+      <AlbumModal
+        show={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onCreated={async () => {
+          setShowAddModal(false);
+          await loadAlbums();
+        }}
+      />
     </div>
   );
 }

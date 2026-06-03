@@ -222,6 +222,18 @@ const normalizeCategories = (items: any[]): CatalogCategory[] => {
     .filter((item): item is CatalogCategory => Boolean(item));
 };
 
+const DEFAULT_GENRES: CatalogCategory[] = [
+  { id: "pop", name: "Pop", description: "Popular music" },
+  { id: "hip-hop", name: "Hip Hop", description: "Hip hop and rap" },
+  { id: "rnb", name: "R&B", description: "Rhythm and Blues" },
+  { id: "rock", name: "Rock", description: "Rock music" },
+  { id: "electronic", name: "Electronic", description: "EDM and electronic" },
+  { id: "jazz", name: "Jazz", description: "Jazz music" },
+  { id: "classical", name: "Classical", description: "Classical music" },
+  { id: "k-pop", name: "K-Pop", description: "Korean pop music" },
+  { id: "lo-fi", name: "Lo-Fi", description: "Low fidelity beats" },
+];
+
 export async function getGenres(): Promise<CatalogCategory[]> {
   const parseResponse = (data: any): CatalogCategory[] => {
     if (Array.isArray(data)) {
@@ -250,7 +262,7 @@ export async function getGenres(): Promise<CatalogCategory[]> {
     console.error("Error fetching genres from backend:", error);
   }
 
-  return [];
+  return DEFAULT_GENRES;
 }
 
 export async function getDerivedCategories(): Promise<CatalogCategory[]> {

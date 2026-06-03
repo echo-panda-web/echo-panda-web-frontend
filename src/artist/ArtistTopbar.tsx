@@ -203,11 +203,11 @@ export default function AdminTopbar({
 
 
   return (
-    <header className="sticky top-0 z-40 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 shadow-lg border-b border-purple-500/20">
+    <header className="sticky top-0 z-40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 shadow-lg border-b border-blue-500/20">
       <div className="flex items-center justify-between px-6 py-4 max-w-full">
         {/* Left Section*/}
         <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-400 to-pink-400"></div>
+          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"></div>
          
         </div>
 
@@ -220,9 +220,9 @@ export default function AdminTopbar({
               value={searchQuery}
               onChange={handleSearch}
               onKeyPress={handleSearchKeyPress}
-              className="w-full px-4 py-2 pl-10 pr-10 rounded-full bg-slate-800/50 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+              className="w-full px-4 py-2 pl-10 pr-10 rounded-full bg-slate-800/50 border border-blue-500/30 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 text-sm" />
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
@@ -233,7 +233,7 @@ export default function AdminTopbar({
             )}
             {isSearching && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
               </div>
             )}
           </div>
@@ -245,7 +245,7 @@ export default function AdminTopbar({
           <div className="relative group">
             <button
               onClick={handleNotificationClick}
-              className="relative p-2 rounded-full hover:bg-purple-500/10 text-slate-300 hover:text-purple-300 transition-all"
+              className="relative p-2 rounded-full hover:bg-blue-500/10 text-slate-300 hover:text-blue-300 transition-all"
             >
               <FaBell className="text-lg" />
               {unreadCount > 0 && (
@@ -257,11 +257,11 @@ export default function AdminTopbar({
             </span>
 
             {/* Notification Dropdown Preview */}
-            <div className="hidden group-hover:block absolute right-0 mt-2 w-64 bg-slate-800 border border-purple-500/30 rounded-lg shadow-lg overflow-hidden">
+            <div className="hidden group-hover:block absolute right-0 mt-2 w-64 bg-slate-800 border border-blue-500/30 rounded-lg shadow-lg overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-700 flex justify-between items-center">
                 <p className="text-sm font-semibold text-white">Notifications</p>
                 {unreadCount > 0 && (
-                  <span className="text-xs bg-pink-500 text-white px-2 py-1 rounded-full">
+                  <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
                     {unreadCount}
                   </span>
                 )}
@@ -271,7 +271,7 @@ export default function AdminTopbar({
                   notifications.map((notif) => (
                     <div
                       key={notif.id}
-                      className="px-4 py-3 border-b border-slate-700 hover:bg-purple-500/10 transition-colors cursor-pointer"
+                      className="px-4 py-3 border-b border-slate-700 hover:bg-blue-500/10 transition-colors cursor-pointer"
                     >
                       <p className="text-sm text-slate-300">{notif.message}</p>
                       <p className="text-xs text-slate-500 mt-1">
@@ -291,7 +291,7 @@ export default function AdminTopbar({
           {/* Settings Icon */}
           <button
             onClick={handleSettingsClick}
-            className="relative p-2 rounded-full hover:bg-purple-500/10 text-slate-300 hover:text-purple-300 transition-all group"
+            className="relative p-2 rounded-full hover:bg-blue-500/10 text-slate-300 hover:text-blue-300 transition-all group"
           >
             <FaCog className="text-lg" />
             <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 text-xs text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -303,9 +303,9 @@ export default function AdminTopbar({
           <div className="relative">
             <button
               onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-              className="flex items-center gap-3 px-3 py-2 rounded-full hover:bg-purple-500/10 transition-all group"
+              className="flex items-center gap-3 px-3 py-2 rounded-full hover:bg-blue-500/10 transition-all group"
             >
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-sm">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
                 {signedImageUrl ? (
                   <img
                     src={signedImageUrl}
@@ -324,11 +324,11 @@ export default function AdminTopbar({
 
             {/* Dropdown Menu */}
             {isProfileDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-purple-500/30 rounded-lg shadow-lg overflow-hidden z-50">
+              <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-blue-500/30 rounded-lg shadow-lg overflow-hidden z-50">
                 <div className="px-4 py-4 border-b border-slate-700">
                   <p className="text-sm font-semibold text-white">{admin.name}</p>
                   <p className="text-xs text-slate-400 mt-1">{admin.email}</p>
-                  <span className="inline-block mt-2 text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+                  <span className="inline-block mt-2 text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
                     {admin.role}
                   </span>
                 </div>
@@ -349,7 +349,7 @@ export default function AdminTopbar({
                           className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
                             item.danger
                               ? "text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                              : "text-slate-300 hover:bg-purple-500/10 hover:text-purple-300"
+                              : "text-slate-300 hover:bg-blue-500/10 hover:text-blue-300"
                           } ${item.divider ? "" : "border-t border-slate-700"}`}
                         >
                           {item.icon && <span className="text-xs">{item.icon}</span>}
@@ -363,7 +363,7 @@ export default function AdminTopbar({
                     {/* Default Menu Items */}
                     <button
                       onClick={handleProfileSettings}
-                      className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-purple-500/10 hover:text-purple-300 flex items-center gap-2 transition-colors"
+                      className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-blue-500/10 hover:text-blue-300 flex items-center gap-2 transition-colors"
                     >
                       <FaUser className="text-xs" />
                       Profile Settings

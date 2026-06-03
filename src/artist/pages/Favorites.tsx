@@ -89,12 +89,12 @@ export default function Favorites({ dateFilter: dateFilterProp, onFilterChange }
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-200 to-pink-200 bg-clip-text text-transparent">Favorites</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-200 to-blue-300 bg-clip-text text-transparent">Favorites</h1>
             <p className="text-slate-400 mt-1">Analyze popular content and trending songs</p>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-800/60 rounded-lg px-4 py-2 border border-purple-500/20">
-            <FaCalendarAlt className="text-purple-400" />
+          <div className="flex items-center gap-2 bg-slate-800/60 rounded-lg px-4 py-2 border border-blue-500/20">
+            <FaCalendarAlt className="text-blue-400" />
             <select value={dateFilter} onChange={(e) => handleFilterChange(e.target.value)} className="bg-transparent text-white focus:outline-none">
               <option value="7days">Last 7 days</option>
               <option value="30days">Last 30 days</option>
@@ -121,7 +121,7 @@ export default function Favorites({ dateFilter: dateFilterProp, onFilterChange }
                 songs.map((song) => (
                 <div key={song.rank} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors group">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold text-sm">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white font-bold text-sm">
                       {song.rank}
                     </div>
                     <div className="flex-1">
