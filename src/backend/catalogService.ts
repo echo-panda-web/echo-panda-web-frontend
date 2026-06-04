@@ -252,17 +252,41 @@ export async function getGenres(): Promise<CatalogCategory[]> {
   };
 
   try {
-    const genresRes = await request<any>("/genres");
-
-    const fromGenres = parseResponse(genresRes);
-    if (fromGenres.length > 0) {
-      return fromGenres;
+    const genresRes = await fetch(buildApiUrl("/genres"), {
+      headers: { Accept: "application/json" }
+    });
+    if (genresRes.ok) {
+      const data = await genresRes.json();
+      const fromGenres = parseResponse(data);
+      if (fromGenres.length > 0) {
+        return fromGenres;
+      }
     }
   } catch (error) {
     console.error("Error fetching genres from backend:", error);
   }
 
   return DEFAULT_GENRES;
+}
+
+export async function getDerivedTags(): Promise<CatalogCategory[]> {
+  try {
+    const res = await fetch(buildApiUrl("/tags"), {
+      headers: { Accept: "application/json" }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return normalizeCategories(data);
+    }
+  } catch (error) {
+    console.error("Error fetching tags from backend:", error);
+  }
+
+  return [
+    { id: "chill", name: "Chill", description: "Relaxing vibes" },
+    { id: "workout", name: "Workout", description: "High energy for the gym" },
+    { id: "party", name: "Party", description: "Upbeat celebration music" },
+  ];
 }
 
 export async function getDerivedCategories(): Promise<CatalogCategory[]> {

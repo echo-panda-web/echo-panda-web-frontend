@@ -5,7 +5,7 @@ import {
   FaQuoteLeft, FaTags, FaCheckCircle, FaTrashAlt, FaHeart, FaExclamationTriangle, FaUserPlus
 } from "react-icons/fa";
 import { createArtistSong, updateArtistSong, uploadArtistMedia } from "../artistStudioApi";
-import { getDerivedCategories } from "../../backend/catalogService";
+import { getDerivedCategories, getDerivedTags } from "../../backend/catalogService";
 
 interface Artist {
   id: string;
@@ -85,14 +85,19 @@ export default function SongModal({
   const [uploadProgress, setUploadProgress] = useState({ audio: 0 });
   const [uploading, setUploading] = useState(false);
   const [genres, setGenres] = useState<Array<{ id: string; name: string }>>([]);
+  const [tags, setTags] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     (async () => {
       try {
-        const cats = await getDerivedCategories();
+        const [cats, tgs] = await Promise.all([
+          getDerivedCategories(),
+          getDerivedTags()
+        ]);
         setGenres(cats.map((c: any) => ({ id: c.id, name: c.name })));
+        setTags(tgs.map((t: any) => ({ id: t.name, name: t.name }))); // Using name as value for mood/tags field usually
       } catch (err) {
-        console.warn('Failed to load genres', err);
+        console.warn('Failed to load genres and tags', err);
       }
     })();
   }, []);
@@ -297,7 +302,7 @@ export default function SongModal({
                       className={`${inputBase} appearance-none`}
                     >
                       <option value="">Select Mood</option>
-                      {MOODS.map(m => <option key={m} value={m}>{m}</option>)}
+                      {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                     <FaHeart size={10} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
                   </div>

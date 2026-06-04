@@ -31,7 +31,7 @@ import Settings from "../pages/Settings";
 import CategoryAlbums from "../pages/CategoryAlbums";
 
 // Admin 
-import { Navigate } from "react-router-dom";
+import { FaMagic } from "react-icons/fa";
 import ArtistLayout from "../layouts/ArtistLayout";
 import Dashboard from "../artist/pages/Dashboard";
 import Users from "../artist/pages/Users";

@@ -9,6 +9,7 @@ import {
   isSongInPlaylist,
   type Playlist,
 } from "../backend/playlistsService";
+import ReportModal from "./ReportModal";
 
 interface Artist {
   id: string;
@@ -67,6 +68,7 @@ const Song: React.FC<SongProps> = ({
   const [isPlaylistSelectorOpen, setIsPlaylistSelectorOpen] = useState(false);
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Check favorite status on mount
   useEffect(() => {
@@ -342,8 +344,30 @@ const Song: React.FC<SongProps> = ({
               </button>
             </div>
           )}
+
+          <div className="border-t border-gray-700/50 py-1">
+            <button
+              onClick={() => {
+                closeContextMenu();
+                setIsReportModalOpen(true);
+              }}
+              className="w-full px-3 py-2.5 text-left hover:bg-gray-700/50 transition-colors flex items-center gap-3 text-sm"
+            >
+              <FaFlag size={14} className="text-slate-400" />
+              <span>Report Song</span>
+            </button>
+          </div>
         </div>
       )}
+
+      {/* ── Report Modal ── */}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        type="song"
+        id={id}
+        title={title}
+      />
 
       {/* ── Playlist selector modal ── */}
       {showAddToPlaylist && isPlaylistSelectorOpen && (
