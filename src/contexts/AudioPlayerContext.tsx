@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback, ReactNode } from 'react';
 import { buildApiUrl } from '../backend/backendUrls';
 import { getSignedSongAudioUrl, getSignedSongCoverUrl } from '../backend/songMediaApi';
 
@@ -29,6 +29,7 @@ interface AudioPlayerContextType {
   toggleRepeat: () => void;
   playNext: () => void;
   playPrevious: () => void;
+  setAutoplayPool: (songs: SongData[]) => void;
   closePlayer: () => void;
 }
 
@@ -49,6 +50,7 @@ interface AudioPlayerProviderProps {
 export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ children }) => {
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const [queue, setQueue] = useState<SongData[]>([]);
+  const autoplayPoolRef = useRef<SongData[]>([]);
   const [queueIndex, setQueueIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -243,22 +245,48 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
   };
 
   const playNext = () => {
-    if (queue.length === 0) {
-      console.log('Next song - queue is empty');
+    const currentId = currentSong?.id ?? null;
+
+    // Prefer queue if it has a distinct next candidate.
+    if (queue.length > 0) {
+      if (!isShuffled) {
+        const nextLinearIndex = queueIndex + 1;
+        const nextSong = nextLinearIndex >= 0 && nextLinearIndex < queue.length
+          ? queue[nextLinearIndex]
+          : null;
+
+        if (nextSong && nextSong.id !== currentId) {
+          setQueueIndex(nextLinearIndex);
+          void loadSong(nextSong);
+          return;
+        }
+      } else {
+        const queueCandidates = queue
+          .map((song, index) => ({ song, index }))
+          .filter(({ song }) => song.id !== currentId);
+
+        if (queueCandidates.length > 0) {
+          const randomCandidate = queueCandidates[Math.floor(Math.random() * queueCandidates.length)];
+          setQueueIndex(randomCandidate.index);
+          void loadSong(randomCandidate.song);
+          return;
+        }
+      }
+    }
+
+    // Fall back to autoplay pool and avoid replaying current song when possible.
+    const pool = autoplayPoolRef.current;
+    const poolCandidates = pool.filter((song) => song.id !== currentId);
+    const pickFromPool = poolCandidates.length > 0 ? poolCandidates : pool;
+
+    if (pickFromPool.length > 0) {
+      console.log('Next song - using autoplay pool candidate');
+      const randomIndex = Math.floor(Math.random() * pickFromPool.length);
+      void loadSong(pickFromPool[randomIndex]);
       return;
     }
 
-    const nextIndex = isShuffled
-      ? Math.floor(Math.random() * queue.length)
-      : Math.min(queueIndex + 1, queue.length - 1);
-
-    const nextSong = queue[nextIndex];
-    if (!nextSong) {
-      return;
-    }
-
-    setQueueIndex(nextIndex);
-    void loadSong(nextSong);
+    console.log('Next song - no candidates available in queue or autoplay pool');
   };
 
   const playPrevious = () => {
@@ -286,6 +314,10 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
     }
   };
 
+  const setAutoplayPool = useCallback((songs: SongData[]) => {
+    autoplayPoolRef.current = songs;
+  }, []);
+
   return (
     <AudioPlayerContext.Provider
       value={{
@@ -306,6 +338,7 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
         toggleRepeat,
         playNext,
         playPrevious,
+        setAutoplayPool,
         closePlayer,
       }}
     >

@@ -51,7 +51,6 @@ interface SongModalProps {
   onSave: () => void;
 }
 
-const MOODS = ["Chill", "Energetic", "Dark", "Happy", "Sad", "Romantic", "Angry", "Calm"];
 const SONG_TYPES = ["Original", "Remix", "Cover", "Instrumental", "Live"];
 
 export default function SongModal({
@@ -95,7 +94,7 @@ export default function SongModal({
           getDerivedTags()
         ]);
         setGenres(cats.map((c: any) => ({ id: c.id, name: c.name })));
-        setTags(tgs.map((t: any) => ({ id: t.name, name: t.name }))); // Using name as value for mood/tags field usually
+        setTags(tgs.map((t: any) => ({ id: t.name, name: t.name })));
       } catch (err) {
         console.warn('Failed to load genres and tags', err);
       }
@@ -433,7 +432,7 @@ export default function SongModal({
               </div>
            </div>
            <div className="flex gap-4">
-              <button onClick={onClose} disabled={uploading} className="px-8 py-3 rounded-xl bg-white/5 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-white transition-all">Discard</button>
+              <button onClick={onClose} className="px-8 py-3 rounded-xl bg-white/5 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-white transition-all">Discard</button>
               <button onClick={handleSave} disabled={uploading} className="px-8 py-3 rounded-xl bg-white text-black font-black uppercase text-[10px] tracking-widest hover:bg-indigo-50 active:scale-95 transition-all shadow-2xl disabled:opacity-50 flex items-center gap-3">
                 {uploading ? <FaSpinner className="animate-spin" /> : <FaUpload size={10} />}
                 {uploading ? 'Processing' : editingSong ? 'Update Song' : 'Upload Song'}

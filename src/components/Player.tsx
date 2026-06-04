@@ -26,13 +26,14 @@ const Player: React.FC = () => {
     toggleShuffle,
     toggleRepeat,
     playSong,
+    playNext: playNextSong,
+    playPrevious: playPreviousSong,
+    setAutoplayPool,
     closePlayer,
   } = useAudioPlayer();
 
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
-  const [songQueue, setSongQueue] = useState<any[]>([]);
-  const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
   const progressRef = useRef<HTMLDivElement>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +81,7 @@ const Player: React.FC = () => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [togglePlayPause]);
+  }, [togglePlayPause, playNextSong, playPreviousSong]);
 
   // Fetch random songs from database when component mounts
   useEffect(() => {
@@ -108,55 +109,19 @@ const Player: React.FC = () => {
             .filter((song: any) => !!song.id && !!song.audioUrl);
 
           console.log('✅ Loaded random songs:', randomSongs.length);
-          setSongQueue(randomSongs);
-          setCurrentQueueIndex(0);
+          setAutoplayPool(randomSongs);
         }
       } catch (error) {
         if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('NetworkError'))) {
           return;
         }
         console.error('❌ Error fetching random songs:', error);
-        setSongQueue([]);
+        setAutoplayPool([]);
       }
     };
 
     fetchRandomSongs();
-  }, []);
-
-  // Play next song - random from database
-  const playNextSong = () => {
-    if (songQueue.length === 0) {
-      console.log('⚠️ No songs available in queue');
-      return;
-    }
-
-    // Get random song from entire queue
-    const randomIndex = Math.floor(Math.random() * songQueue.length);
-    const nextSong = songQueue[randomIndex];
-    console.log('🎵 Playing random next song:', nextSong.title, 'Index:', randomIndex);
-    setCurrentQueueIndex(randomIndex);
-    playSong(nextSong);
-  };
-
-  // Play previous song - random from database
-  const playPreviousSong = () => {
-    if (songQueue.length === 0) {
-      console.log('⚠️ No songs in queue');
-      return;
-    }
-
-    // Get another random song (different approach for "previous")
-    let randomIndex = Math.floor(Math.random() * songQueue.length);
-    // Make sure we don't play the same song
-    while (randomIndex === currentQueueIndex && songQueue.length > 1) {
-      randomIndex = Math.floor(Math.random() * songQueue.length);
-    }
-
-    const prevSong = songQueue[randomIndex];
-    console.log('🎵 Playing random previous song:', prevSong.title, 'Index:', randomIndex);
-    setCurrentQueueIndex(randomIndex);
-    playSong(prevSong);
-  };
+  }, [setAutoplayPool]);
 
   // Don't render if there's no song playing
   if (!currentSong) {

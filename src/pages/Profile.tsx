@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, signOut } from "../routes/authContext";
+import { getAdminBackendUrl } from "../routes/backendAuth";
 
 interface UserData {
   username?: string;
@@ -28,6 +29,17 @@ const Profile: React.FC = () => {
       navigate("/login");
       return;
     }
+
+    if (userData.backendRole === "admin") {
+      window.location.href = getAdminBackendUrl();
+      return;
+    }
+
+    if (["artist", "publicer"].includes(userData.backendRole || "")) {
+      navigate("/artist/dashboard", { replace: true });
+      return;
+    }
+
     setUser(userData);
     setFormData({
       username: userData.username || userData.displayName || "",
