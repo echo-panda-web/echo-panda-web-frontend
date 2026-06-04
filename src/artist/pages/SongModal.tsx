@@ -5,7 +5,7 @@ import {
   FaQuoteLeft, FaTags, FaCheckCircle, FaTrashAlt, FaHeart, FaExclamationTriangle, FaUserPlus
 } from "react-icons/fa";
 import { createArtistSong, updateArtistSong, uploadArtistMedia } from "../artistStudioApi";
-import { getDerivedCategories } from "../../backend/catalogService";
+import { getDerivedCategories, getTags } from "../../backend/catalogService";
 
 interface Artist {
   id: string;
@@ -51,7 +51,6 @@ interface SongModalProps {
   onSave: () => void;
 }
 
-const MOODS = ["Chill", "Energetic", "Dark", "Happy", "Sad", "Romantic", "Angry", "Calm"];
 const SONG_TYPES = ["Original", "Remix", "Cover", "Instrumental", "Live"];
 
 export default function SongModal({
@@ -85,14 +84,16 @@ export default function SongModal({
   const [uploadProgress, setUploadProgress] = useState({ audio: 0 });
   const [uploading, setUploading] = useState(false);
   const [genres, setGenres] = useState<Array<{ id: string; name: string }>>([]);
+  const [moodTags, setMoodTags] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     (async () => {
       try {
-        const cats = await getDerivedCategories();
+        const [cats, tags] = await Promise.all([getDerivedCategories(), getTags()]);
         setGenres(cats.map((c: any) => ({ id: c.id, name: c.name })));
+        setMoodTags(tags.map((t: any) => ({ id: String(t.id), name: t.name })));
       } catch (err) {
-        console.warn('Failed to load genres', err);
+        console.warn('Failed to load genres/tags', err);
       }
     })();
   }, []);
@@ -297,7 +298,7 @@ export default function SongModal({
                       className={`${inputBase} appearance-none`}
                     >
                       <option value="">Select Mood</option>
-                      {MOODS.map(m => <option key={m} value={m}>{m}</option>)}
+                      {moodTags.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                     <FaHeart size={10} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
                   </div>

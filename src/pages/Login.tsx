@@ -12,7 +12,7 @@ const redirectAfterLogin = (
   navigate: ReturnType<typeof useNavigate>,
   role?: string
 ): void => {
-  if (role === "artist") {
+  if (role === "artist" || role === "publicer") {
     void navigate("/artist/dashboard", { replace: true });
     return;
   }
@@ -71,7 +71,7 @@ const Login: React.FC = () => {
       const result = await signInWithEmail(formData.email, formData.password);
 
       if (!result.success) {
-        setError(result.error + 'debug here' || "Failed to log in");
+        setError(result.error || "Failed to log in");
         setLoading(false);
         return;
       }

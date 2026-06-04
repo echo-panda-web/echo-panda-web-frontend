@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import SideBar from "../pages/SideBar";
 import  NavBar  from '../pages/NavBar';
 import Player from '../components/Player';
 import { getCurrentUser } from "../routes/authContext";
+import { getAdminBackendUrl } from "../routes/backendAuth";
 
 const HomeLayout: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isLightMode, setIsLightMode] = useState(false);
   // Start collapsed by default on first run
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   // Keep the sidebar collapsed on small screens, but do not auto-expand on larger screens
   useEffect(() => {
@@ -29,14 +30,19 @@ const HomeLayout: React.FC = () => {
   // Persistent role-based redirection
   useEffect(() => {
     const user = getCurrentUser();
-    // If the user is an artist/publicer/admin and is at the root or public pages,
-    // redirect them to their dedicated dashboard to maintain their role UI.
-    if (user && ["artist", "publicer", "admin"].includes(user.role || "")) {
-      // Only redirect if they are not already navigating to a specific public page they might need
-      // but usually, artists want to stay in their dashboard.
-      if (location.pathname === "/" || location.pathname === "/login" || location.pathname === "/register") {
-        navigate("/artist/dashboard", { replace: true });
-      }
+    const role = user?.backendRole || user?.role;
+
+    if (!role) {
+      return;
+    }
+
+    if (role === "admin") {
+      window.location.href = getAdminBackendUrl();
+      return;
+    }
+
+    if (["artist", "publicer"].includes(role) && !location.pathname.startsWith("/artist")) {
+      navigate("/artist/dashboard", { replace: true });
     }
   }, [location.pathname, navigate]);
 

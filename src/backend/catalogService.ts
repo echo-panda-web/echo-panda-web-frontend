@@ -269,6 +269,18 @@ export async function getDerivedCategories(): Promise<CatalogCategory[]> {
   return getGenres();
 }
 
+export async function getTags(): Promise<Array<{ id: string; name: string; slug: string | null }>> {
+  try {
+    const url = buildApiUrl('/tags');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('Failed to load tags', err);
+    return [];
+  }
+}
+
 export async function getHomeTags(): Promise<Array<{ id: string; name: string; description: string; display_order: number; albums: CatalogAlbum[] }>> {
   const albums = await getAlbums(12, 0);
   const newReleases = albums.slice(0, 6);
