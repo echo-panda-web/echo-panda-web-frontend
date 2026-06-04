@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaImage, FaSpinner } from "react-icons/fa";
+import { FaTimes, FaImage, FaSpinner, FaDotCircle } from "react-icons/fa";
 import { createArtistAlbum, getArtistIdentity } from "../artistStudioApi";
-import { getDerivedCategories } from "../../backend/catalogService";
 
 interface Props {
   show: boolean;
@@ -17,23 +16,10 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
   const [creating, setCreating] = useState(false);
   const [releaseDate, setReleaseDate] = useState("");
   const [selectedArtist, setSelectedArtist] = useState("");
-  const [genre, setGenre] = useState("");
-  const [genres, setGenres] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     const identity = getArtistIdentity();
     if (identity) setSelectedArtist(identity.displayName || "");
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const cats = await getDerivedCategories();
-        setGenres(cats.map((c: any) => ({ id: c.id, name: c.name })));
-      } catch (err) {
-        console.warn('Failed to load genres', err);
-      }
-    })();
   }, []);
 
   useEffect(() => {
@@ -43,34 +29,8 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
       setCoverFile(null);
       setCoverPreview("");
       setReleaseDate("");
-      setGenre("");
     }
   }, [show]);
-
-  useEffect(() => {
-    // Auto-create when title + cover are present
-    if (coverFile && title && !creating) {
-      (async () => {
-        try {
-          setCreating(true);
-          await createArtistAlbum({
-            title: title.trim(),
-            artist: selectedArtist || "",
-            description: type,
-            release_status: "draft",
-            scheduled_at: releaseDate || undefined,
-            coverFile,
-          });
-          onCreated();
-          onClose();
-        } catch (err) {
-          console.error("Failed to auto-create album:", err);
-        } finally {
-          setCreating(false);
-        }
-      })();
-    }
-  }, [coverFile]);
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,6 +42,7 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
   };
 
   const handleCreate = async () => {
+    if (!title.trim()) return alert("Release title is required");
     try {
       setCreating(true);
       await createArtistAlbum({
@@ -96,7 +57,7 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Failed to create album");
+      alert("Failed to create release");
     } finally {
       setCreating(false);
     }
@@ -104,57 +65,124 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
 
   if (!show) return null;
 
+  const inputBase = "w-full bg-[#18181b] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-indigo-500/30 transition-all font-medium text-slate-300 text-sm placeholder:text-slate-700";
+  const labelBase = "text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 block ml-1";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-slate-900 border border-white/10 w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-white">Add New Album</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white"><FaTimes size={20} /></button>
+      <div className="absolute inset-0 bg-[#0a0a0c]/90 backdrop-blur-md" onClick={onClose} />
+
+      <div className="relative bg-[#121214] border border-white/10 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+
+        {/* Header */}
+        <div className="p-8 pb-0 flex justify-between items-start">
+           <div className="space-y-1">
+              <div className="flex items-center gap-3 text-indigo-500 font-bold uppercase tracking-[0.4em] text-[8px]">
+                 <FaDotCircle className="animate-pulse" />
+                 <span>Production Module</span>
+              </div>
+              <h3 className="text-2xl font-black text-white">Initialize New Release.</h3>
+           </div>
+           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-slate-500 hover:text-white transition-all">
+              <FaTimes size={16} />
+           </button>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase ml-1">Album Title</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-purple-500 text-white" placeholder="Album Title" />
+        <div className="p-8 space-y-8">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+               <div>
+                 <label className={labelBase}>Release Title</label>
+                 <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className={inputBase}
+                    placeholder="e.g. Midnight Melodies"
+                 />
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelBase}>Release Type</label>
+                    <select
+                       value={type}
+                       onChange={(e) => setType(e.target.value)}
+                       className={`${inputBase} appearance-none`}
+                    >
+                       <option value="album">Album</option>
+                       <option value="single">Single</option>
+                       <option value="ep">EP</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelBase}>Release Date</label>
+                    <input
+                        type="date"
+                        value={releaseDate}
+                        onChange={(e) => setReleaseDate(e.target.value)}
+                        className={inputBase}
+                    />
+                  </div>
+               </div>
+
+               <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                     <span className="text-indigo-400 font-bold">Pro Tip:</span> Detailed metadata like genres and lyrics will be added during the track upload stage for better precision.
+                  </p>
+               </div>
+            </div>
+
+            {/* Cover Art Upload */}
+            <div className="flex flex-col h-full">
+              <label className={labelBase}>Master Artwork</label>
+              <label className="flex-1 group cursor-pointer">
+                <div className={`h-full min-h-[220px] border-2 border-dashed ${coverPreview ? 'border-transparent' : 'border-white/5 group-hover:border-indigo-500/30'} rounded-3xl transition-all relative overflow-hidden flex flex-col items-center justify-center gap-4 bg-white/[0.02] group-hover:bg-white/[0.04]`}>
+                  {coverPreview ? (
+                    <>
+                       <img src={coverPreview} alt="preview" className="absolute inset-0 w-full h-full object-cover" />
+                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest">Update Artwork</span>
+                       </div>
+                    </>
+                  ) : (
+                    <>
+                       <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-slate-700 group-hover:text-indigo-500 transition-colors">
+                          <FaImage size={24} />
+                       </div>
+                       <div className="text-center">
+                          <div className="text-slate-300 font-bold text-xs">Drop Cover Art</div>
+                          <div className="text-[9px] text-slate-600 font-black uppercase tracking-widest mt-1">1000x1000 Master Quality</div>
+                       </div>
+                    </>
+                  )}
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+              </label>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <select value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 text-white">
-              <option value="album">Album</option>
-              <option value="single">Single</option>
-              <option value="ep">EP</option>
-            </select>
-            <input type="date" value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} className="w-full bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 text-white" />
-            <select value={selectedArtist} onChange={(e) => setSelectedArtist(e.target.value)} className="w-full bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 text-white">
-              <option value={selectedArtist}>{selectedArtist || 'Your artist'}</option>
-            </select>
-            <select value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 text-white">
-              <option value="">Select genre</option>
-              {genres.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase ml-1">Cover Art</label>
-            <label className="block cursor-pointer">
-              <div className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-10 hover:bg-white/10 transition-all flex items-center justify-center flex-col gap-2">
-                <FaImage className="text-purple-300 text-3xl" />
-                <div className="text-slate-300">Click to upload cover art</div>
-                <div className="text-xs text-slate-500">JPG, PNG, WEBP - Max 5MB</div>
-              </div>
-              <input type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
-            </label>
-            {coverPreview && <img src={coverPreview} alt="preview" className="mt-3 h-28 w-28 rounded-lg object-cover border border-white/10" />}
-          </div>
-
-          <div className="flex gap-3 justify-end">
-            <button onClick={onClose} disabled={creating} className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10">Cancel</button>
-            <button onClick={handleCreate} disabled={creating || !title} className="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold">
-              {creating ? <><FaSpinner className="animate-spin mr-2"/> Creating...</> : 'Create Album'}
-            </button>
+          {/* Footer Actions */}
+          <div className="flex items-center justify-between pt-6 border-t border-white/5">
+            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest max-w-xs">
+              This release will be saved as a draft. You can add tracks and publish it later from your catalog.
+            </p>
+            <div className="flex gap-4">
+               <button
+                  onClick={onClose}
+                  disabled={creating}
+                  className="px-8 py-3 rounded-xl bg-white/5 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-white transition-all"
+               >
+                  Cancel
+               </button>
+               <button
+                  onClick={handleCreate}
+                  disabled={creating || !title}
+                  className="px-8 py-3 rounded-xl bg-white text-black font-black uppercase text-[10px] tracking-widest hover:bg-indigo-50 active:scale-95 transition-all shadow-2xl disabled:opacity-50 disabled:pointer-events-none"
+               >
+                  {creating ? <><FaSpinner className="animate-spin mr-2 inline-block"/> Processing</> : 'Create Release'}
+               </button>
+            </div>
           </div>
         </div>
       </div>

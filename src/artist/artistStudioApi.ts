@@ -35,8 +35,16 @@ export interface ArtistSong {
   lyrics: string;
   createdAt: string;
   coverUrl: string;
+  coverKey?: string | null;
+  originalKey?: string | null;
   playCount: number;
   processingStatus: string;
+  mood?: string;
+  song_type?: string;
+  bpm?: number;
+  is_explicit?: boolean;
+  featured_artists?: string;
+  category_id?: string;
 }
 
 export interface ArtistProfilePayload {
@@ -130,7 +138,7 @@ export function getArtistIdentity(): ArtistIdentity | null {
 }
 
 export async function getOwnedAlbums(identity: ArtistIdentity): Promise<ArtistAlbum[]> {
-  const payload = await request<PaginatedResponse<any>>("/albums?per_page=300&sort_by=latest");
+  const payload = await request<PaginatedResponse<any>>("/albums?per_page=300&sort_by=latest", {}, true);
   const rows = Array.isArray(payload.data) ? payload.data : [];
 
   return rows
@@ -159,7 +167,7 @@ export async function getOwnedAlbums(identity: ArtistIdentity): Promise<ArtistAl
 }
 
 export async function getOwnedSongs(identity: ArtistIdentity): Promise<ArtistSong[]> {
-  const payload = await request<PaginatedResponse<any>>("/songs?per_page=500&sort_by=latest");
+  const payload = await request<PaginatedResponse<any>>("/songs?per_page=500&sort_by=latest", {}, true);
   const rows = Array.isArray(payload.data) ? payload.data : [];
 
   return rows
@@ -183,8 +191,16 @@ export async function getOwnedSongs(identity: ArtistIdentity): Promise<ArtistSon
       lyrics: row.lyrics || "",
       createdAt: row.created_at || new Date().toISOString(),
       coverUrl: row.songCover_url || "",
+      coverKey: row.cover_key || null,
+      originalKey: row.original_key || null,
       playCount: Number(row.play_count || 0),
       processingStatus: String(row.processing_status || "ready"),
+      mood: row.mood,
+      song_type: row.song_type,
+      bpm: row.bpm,
+      is_explicit: Boolean(row.is_explicit),
+      featured_artists: row.featured_artists,
+      category_id: row.category_id,
     };
     });
 }
@@ -277,6 +293,12 @@ export async function createArtistSong(payload: {
   preview_key?: string | null;
   lyrics?: string;
   lyrics_url?: string;
+  mood?: string;
+  song_type?: string;
+  bpm?: number;
+  is_explicit?: boolean;
+  featured_artists?: string;
+  category_id?: string;
 }) {
   return request("/songs", {
     method: "POST",
@@ -297,6 +319,12 @@ export async function updateArtistSong(
     preview_key?: string | null;
     lyrics?: string;
     lyrics_url?: string;
+    mood?: string;
+    song_type?: string;
+    bpm?: number;
+    is_explicit?: boolean;
+    featured_artists?: string;
+    category_id?: string;
   }
 ) {
   return request(`/songs/${songId}`, {
@@ -309,7 +337,7 @@ export async function deleteArtistSong(songId: string) {
   return request(`/songs/${songId}`, { method: "DELETE" }, true);
 }
 
-export async function uploadArtistMedia(payload: { file: File; purpose: "album_cover" | "song_audio" | "artist_image" | "song_lyrics" }) {
+export async function uploadArtistMedia(payload: { file: File; purpose: "album_cover" | "song_cover" | "song_audio" | "artist_image" | "song_lyrics" }) {
   return uploadMediaDirectly(payload.file, payload.purpose);
 }
 
