@@ -4,7 +4,6 @@ import SideBar from "../pages/SideBar";
 import  NavBar  from '../pages/NavBar';
 import Player from '../components/Player';
 import { getCurrentUser } from "../routes/authContext";
-import { getAdminBackendUrl } from "../routes/backendAuth";
 import { useTheme } from "../contexts/ThemeContext";
 
 const HomeLayout: React.FC = () => {
@@ -34,11 +33,6 @@ const HomeLayout: React.FC = () => {
     const role = user?.backendRole || user?.role;
 
     if (!role) {
-      return;
-    }
-
-    if (role === "admin") {
-      window.location.href = getAdminBackendUrl();
       return;
     }
 

@@ -38,8 +38,8 @@ const SideBar: React.FC<SideBarProps> = ({ isCollapsed = false, onToggleCollapse
     if (onToggleCollapse) onToggleCollapse(!isCollapsed);
   };
 
-  const handleLogout = () => {
-    signOut();
+  const handleLogout = async () => {
+    await signOut();
     void navigate("/login");
   };
 

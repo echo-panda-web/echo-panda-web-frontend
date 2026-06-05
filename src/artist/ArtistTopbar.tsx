@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { FaSearch, FaUser, FaSignOutAlt, FaBell, FaCog } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../routes/firebaseConfig";
+import { signOut } from "../routes/authContext";
 import { getSignedArtistImageUrl } from "../backend/songMediaApi";
-import { signOut as clearAuthStorage } from "../routes/authContext";
 
 interface AdminTopbarProps {
   onSearch?: (query: string) => void;
@@ -153,9 +152,7 @@ export default function AdminTopbar({
       if (onLogout) {
         await onLogout();
       } else {
-        // Default logout logic
-        await auth.signOut();
-        clearAuthStorage();
+        await signOut();
         navigate("/login");
       }
     } catch (error) {

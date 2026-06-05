@@ -301,12 +301,20 @@ export async function signInWithEmail(email: string, password: string): Promise<
 }
 //================================================================================
 
-// Sign Out
-export function signOut(): void {
-  localStorage.removeItem("isAuthenticated");
-  localStorage.removeItem("user");
+const AUTH_STORAGE_KEYS = ["isAuthenticated", "user", "artistUser"] as const;
+
+export function clearAuthStorage(): void {
+  AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
   clearBackendTokenStorage();
-  localStorage.removeItem("artistUser");
+}
+
+export async function signOut(): Promise<void> {
+  clearAuthStorage();
+  try {
+    await firebaseSignOut(auth);
+  } catch (error) {
+    console.error("Firebase sign out failed:", error);
+  }
 }
 
 //+++++++++++++++++++++++++++++=++++++++++++++

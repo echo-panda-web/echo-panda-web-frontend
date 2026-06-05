@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { clearAuthStorage } from "../routes/authContext";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { app } from "../routes/firebaseConfig";
 import { getAdminBackendUrl, loginFirebaseUserToBackend } from "../routes/backendAuth";
@@ -50,7 +51,7 @@ export default function ProtectedAdminRoute({ children }: ProtectedAdminRoutePro
           if (artistData && artistData.status !== "active") {
             console.error("Account inactive per Firestore artist doc");
             await auth.signOut();
-            localStorage.removeItem("artistUser");
+            clearAuthStorage();
             navigate("/login", { replace: true });
             setIsChecking(false);
             return;
