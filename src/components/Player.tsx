@@ -98,7 +98,7 @@ const Player: React.FC = () => {
             id: String(item.song?.id || item.id),
             title: item.song?.title || item.title || 'Unknown Song',
             artist: item.song?.artist || 'Unknown Artist',
-            coverUrl: item.song?.cover_key || item.song?.album?.cover_url || '',
+            coverUrl: item.song?.songCover_url || item.song?.cover_url || item.song?.album?.cover_url || '',
             audioUrl: item.song?.audio_url || null,
             duration: item.song?.duration || 0,
             recommendationScore: Number(item.recommendation_score || 0),

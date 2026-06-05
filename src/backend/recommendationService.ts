@@ -1,5 +1,6 @@
 import { buildApiUrl } from "./backendUrls";
 import { getSongs } from "./catalogService";
+import { getSignedAlbumCoverUrl, getSignedSongCoverUrl } from "./songMediaApi";
 
 const viteEnv = (import.meta as any).env || {};
 const BACKEND_API_BASE_URL =
@@ -71,8 +72,42 @@ export interface AdaptiveRecommendation {
     play_count: number;
     audio_url: string | null;
     cover_key: string | null;
+    songCover_url?: string | null;
+    cover_url?: string | null;
   };
 }
+
+const enrichRecommendations = async (
+  recommendations: AdaptiveRecommendation[]
+): Promise<AdaptiveRecommendation[]> => {
+  return Promise.all(
+    recommendations.map(async (rec) => {
+      const song = rec.song;
+      if (!song?.id) return rec;
+
+      const coverUrl = await getSignedSongCoverUrl(song.id);
+      const albumCoverUrl = song.album?.id
+        ? await getSignedAlbumCoverUrl(song.album.id)
+        : null;
+      const resolvedCover = coverUrl || albumCoverUrl || song.album?.cover_url || null;
+
+      return {
+        ...rec,
+        song: {
+          ...song,
+          songCover_url: resolvedCover,
+          cover_url: resolvedCover,
+          album: song.album
+            ? {
+                ...song.album,
+                cover_url: albumCoverUrl || song.album?.cover_url || null,
+              }
+            : song.album,
+        },
+      };
+    })
+  );
+};
 
 export type RecommendationEventType =
   | "recommendation_shown"
@@ -177,7 +212,7 @@ export async function getAdaptiveRecommendations(limit: number = 20): Promise<Ad
       `/recommendations?limit=${Math.max(1, Math.min(limit, 50))}`
     );
 
-    return payload?.data || [];
+    return enrichRecommendations(payload?.data || []);
   } catch (error) {
     console.error("Error fetching adaptive recommendations:", error);
     return [];
@@ -190,7 +225,7 @@ export async function getColdStartRecommendations(limit: number = 20): Promise<A
       `/recommendations/cold-start?limit=${Math.max(1, Math.min(limit, 50))}`
     );
 
-    return payload?.data || [];
+    return enrichRecommendations(payload?.data || []);
   } catch (error) {
     console.error("Error fetching cold-start recommendations:", error);
     return [];
@@ -203,7 +238,7 @@ export async function getSimilarRecommendations(songId: string | number, limit: 
       `/recommendations/similar/${songId}?limit=${Math.max(1, Math.min(limit, 20))}`
     );
 
-    return payload?.data || [];
+    return enrichRecommendations(payload?.data || []);
   } catch (error) {
     console.error("Error fetching similar recommendations:", error);
     return [];

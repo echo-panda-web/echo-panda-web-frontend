@@ -74,10 +74,13 @@ const NavBar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!location.pathname.startsWith("/search") && searchQuery) {
+    if (location.pathname.startsWith("/search")) {
+      const q = new URLSearchParams(location.search).get("q") || "";
+      setSearchQuery(q);
+    } else {
       setSearchQuery("");
     }
-  }, [location.pathname, searchQuery]);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     if (!voiceText) {
