@@ -7,8 +7,7 @@ import AppFooter from "../components/AppFooter";
 import ArtistSection from "../components/ArtistsSection";
 import AlbumCard from "../components/AlbumCard";
 import Song from "../components/Song";
-import { FaSpinner, FaCheckCircle, FaFlag, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import ReportModal from "../components/ReportModal";
+import { FaSpinner, FaCheckCircle, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useTheme } from "../contexts/ThemeContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -54,8 +53,6 @@ function HeroBanner({
   onRefresh?: () => void;
   loading?: boolean;
 }) {
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-
   return (
     <div className="relative w-full bg-linear-to-b from-slate-900 via-slate-900 to-slate-950 p-6">
       <div
@@ -86,13 +83,6 @@ function HeroBanner({
             <span className="text-white text-sm font-semibold">
               Verified Artist
             </span>
-            <button
-              onClick={() => setIsReportModalOpen(true)}
-              className="ml-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
-            >
-              <FaFlag size={10} />
-              Report
-            </button>
             {onRefresh && (
               <button
                 onClick={onRefresh}
@@ -127,13 +117,6 @@ function HeroBanner({
         </div>
       </div>
 
-      <ReportModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        type="artist"
-        id={artist.id}
-        title={artist.name}
-      />
     </div>
   );
 }

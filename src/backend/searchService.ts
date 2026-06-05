@@ -1,4 +1,9 @@
-import { buildApiUrl } from "./backendUrls";
+import { buildApiUrl, resolveMediaUrl } from "./backendUrls";
+import {
+  getSignedAlbumCoverUrl,
+  getSignedArtistImageUrl,
+  getSignedSongCoverUrl,
+} from "./songMediaApi";
 
 export interface Song {
   id: string;
@@ -155,27 +160,46 @@ export async function searchContent(query: string): Promise<{ songs: Song[]; art
     }
   });
 
-  const filteredSongs = Array.from(uniqueSongs.values())
-    .sort((a, b) => scoreSong(b, query) - scoreSong(a, query))
-    .slice(0, 50)
-    .map((song: any) => ({
-    id: String(song.id),
-    title: song.title,
-    artist_name:
-      song.artist?.stage_name || song.artist?.name || song.artist_name || song.artist || "Unknown Artist",
-    cover_url: song.cover_key || song.album?.cover_url || song.album?.cover_image || undefined,
-    audio_url: song.audio_url || song.original_key || null,
-    duration: song.duration,
-  }));
+  const filteredSongs = await Promise.all(
+    Array.from(uniqueSongs.values())
+      .sort((a, b) => scoreSong(b, query) - scoreSong(a, query))
+      .slice(0, 50)
+      .map(async (song: any) => {
+        const signedCoverUrl = await getSignedSongCoverUrl(song.id);
+        const albumCoverUrl = song.album?.id
+          ? await getSignedAlbumCoverUrl(song.album.id)
+          : null;
 
-  const filteredArtists = Array.from(uniqueArtists.values())
-    .sort((a, b) => scoreArtist(b, query) - scoreArtist(a, query))
-    .slice(0, 30)
-    .map((artist: any) => ({
-      id: String(artist.id),
-      name: artist.name,
-      image_url: artist.image_url,
-    }));
+        return {
+          id: String(song.id),
+          title: song.title,
+          artist_name:
+            song.artist?.stage_name || song.artist?.name || song.artist_name || song.artist || "Unknown Artist",
+          cover_url:
+            signedCoverUrl ||
+            albumCoverUrl ||
+            resolveMediaUrl(song.songCover_url || song.album?.cover_url || song.album?.cover_image) ||
+            undefined,
+          audio_url: song.audio_url || song.original_key || null,
+          duration: song.duration,
+        };
+      })
+  );
+
+  const filteredArtists = await Promise.all(
+    Array.from(uniqueArtists.values())
+      .sort((a, b) => scoreArtist(b, query) - scoreArtist(a, query))
+      .slice(0, 30)
+      .map(async (artist: any) => {
+        const signedImageUrl = artist.id ? await getSignedArtistImageUrl(artist.id) : null;
+
+        return {
+          id: String(artist.id),
+          name: artist.name,
+          image_url: signedImageUrl || artist.image_url || undefined,
+        };
+      })
+  );
 
   return {
     songs: filteredSongs,

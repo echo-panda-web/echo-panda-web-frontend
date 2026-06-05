@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaFlag, FaExclamationTriangle, FaTimes } from "react-icons/fa";
 import { buildApiUrl } from "../backend/backendUrls";
+import { isAuthenticated } from "../routes/authContext";
 
 interface ReportModalProps {
     isOpen: boolean;
     onClose: () => void;
-    type: "song" | "album" | "artist";
     id: string;
     title: string;
 }
@@ -19,43 +20,65 @@ const REASONS = [
     "Other"
 ];
 
-const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, type, id, title }) => {
+const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, id, title }) => {
+    const navigate = useNavigate();
+    const loggedIn = isAuthenticated();
     const [reason, setReason] = useState(REASONS[0]);
     const [details, setDetails] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        setSubmitted(false);
+        setError(null);
+        setReason(REASONS[0]);
+        setDetails("");
+    }, [isOpen, id]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!loggedIn) {
+            navigate("/login");
+            return;
+        }
+
         setSubmitting(true);
         setError(null);
 
         try {
-            const token = localStorage.getItem("userToken") || localStorage.getItem("authToken") || localStorage.getItem('token');
+            const token = localStorage.getItem("userToken") || localStorage.getItem("authToken");
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
             const response = await fetch(buildApiUrl("/reports"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Accept": "application/json",
-                    "Authorization": `Bearer ${token}`
+                    "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    type,
-                    id: parseInt(id),
+                    type: "song",
+                    id: parseInt(id, 10),
                     reason,
-                    details
+                    details: details.trim() || null,
                 }),
             });
 
+            const data = await response.json().catch(() => ({}));
+
             if (!response.ok) {
-                const data = await response.json();
                 throw new Error(data.message || "Failed to submit report");
             }
 
             setSubmitted(true);
         } catch (err: any) {
-            setError(err.message);
+            setError(err.message || "Failed to submit report");
         } finally {
             setSubmitting(false);
         }
@@ -85,7 +108,25 @@ const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, type, id, ti
                 </div>
 
                 <div className="p-8">
-                    {submitted ? (
+                    {!loggedIn ? (
+                        <div className="text-center py-6">
+                            <h3 className="text-2xl font-bold text-white mb-3">Sign in required</h3>
+                            <p className="text-slate-400 text-sm leading-relaxed px-4">
+                                You need to be logged in to report a song. Sign in to continue.
+                            </p>
+                            <div className="mt-8 flex gap-4">
+                                <button onClick={onClose} className="flex-1 py-4 text-slate-500 font-black uppercase tracking-widest text-[10px] hover:text-white transition">
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => navigate("/login")}
+                                    className="flex-1 py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-[10px] hover:bg-rose-500 hover:text-white transition shadow-xl"
+                                >
+                                    Log In
+                                </button>
+                            </div>
+                        </div>
+                    ) : submitted ? (
                         <div className="text-center py-6">
                             <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 mx-auto mb-6">
                                 <FaExclamationTriangle size={32} />

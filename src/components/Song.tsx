@@ -12,6 +12,7 @@ import {
 import ReportModal from "./ReportModal";
 import ShareModal from "./ShareModal";
 import { useTheme } from "../contexts/ThemeContext";
+import { isAuthenticated } from "../routes/authContext";
 
 interface Artist {
   id: string;
@@ -374,6 +375,10 @@ const Song: React.FC<SongProps> = ({
             <button
               onClick={() => {
                 closeContextMenu();
+                if (!isAuthenticated()) {
+                  navigate("/login");
+                  return;
+                }
                 setIsReportModalOpen(true);
               }}
               className={`w-full px-3 py-2.5 text-left ${isLightMode ? "hover:bg-gray-100" : "hover:bg-gray-700/50"} transition-colors flex items-center gap-3 text-sm`}
@@ -389,7 +394,6 @@ const Song: React.FC<SongProps> = ({
       <ReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
-        type="song"
         id={id}
         title={title}
       />
