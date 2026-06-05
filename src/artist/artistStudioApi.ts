@@ -376,19 +376,38 @@ export async function getMyProfile(): Promise<ArtistProfilePayload> {
 }
 
 export async function updateMyProfile(payload: { name: string; image_url?: string | null }) {
-  const current = await getMyProfile();
+  // Preferred route for artist profile (accepts artist image keys)
+  try {
+    const current = await getMyProfile();
+    const artistId = current.artist?.id;
 
-  return request<{ user: ArtistProfilePayload }>(
-    "/profile",
-    {
-      method: "PUT",
-      body: JSON.stringify({
-        ...payload,
-        email: current.email,
-      }),
-    },
-    true
-  );
+    return await request(
+      "/artist/profile",
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          id: artistId,
+          name: payload.name,
+          image_url: payload.image_url ?? null,
+        }),
+      },
+      true
+    );
+  } catch (error) {
+    // Fallback for non-artist accounts or older backend behavior
+    const current = await getMyProfile();
+    return request<{ user: ArtistProfilePayload }>(
+      "/profile",
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          ...payload,
+          email: current.email,
+        }),
+      },
+      true
+    );
+  }
 }
 
 export async function getArtistAnalytics(): Promise<{
