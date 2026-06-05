@@ -3,13 +3,31 @@ import SongSection from "../components/SongsSection";
 import ArtistSection from "../components/ArtistsSection";
 import AppFooter from "../components/AppFooter";
 import ContactUs from "./ContactUs";
+import Song from "../components/Song";
 import { useNavigate, Link } from "react-router-dom";
 import InterestOnboardingModal from "../components/InterestOnboardingModal";
-import { getRecommendationsForInterests, type AlbumRef } from "../backend/recommendationService";
-import { getDerivedCategories, getHomeTags, getSongs, type CatalogSong } from "../backend/catalogService";
+import {
+  getRecommendationsForInterests,
+  getAdaptiveRecommendations,
+  getColdStartRecommendations,
+  trackRecommendationEvent,
+  type AlbumRef,
+  type AdaptiveRecommendation
+} from "../backend/recommendationService";
+import {
+  getDerivedCategories,
+  getHomeTags,
+  getSongs,
+  getNewReleasesToday,
+  getPopularArtists,
+  type CatalogSong
+} from "../backend/catalogService";
+import { getMostPlayedSongs, getRecentlyPlayed, trackSongPlay } from "../backend/playTrackingService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { FaHeart, FaPlay, FaPlus } from "react-icons/fa";
+import { useAudioPlayer } from "../contexts/AudioPlayerContext";
+import { FaHeart, FaPlay, FaClock, FaPlus } from "react-icons/fa";
+import AlbumCard from "../components/AlbumCard";
 
 interface Tag {
   id: string;
@@ -17,6 +35,22 @@ interface Tag {
   description: string;
   display_order: number;
   albums: any[];
+}
+
+interface HomeAlbum {
+  id: string;
+  title: string;
+  cover_url?: string;
+  release_date?: string;
+  artists?: Array<{ id: string; name: string; image_url?: string }>;
+}
+
+interface HomeArtist {
+  id: string;
+  name: string;
+  image_url?: string;
+  play_count?: number;
+  monthly_listeners?: string;
 }
 
 // Reusable Scroll Animation Wrapper Component
@@ -58,12 +92,24 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { isLightMode } = useTheme();
   const { getCachedData } = useDataCache();
+  const { playSong } = useAudioPlayer();
 
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [recommendedAlbums, setRecommendedAlbums] = useState<AlbumRef[] | undefined>(undefined);
   const [tags, setTags] = useState<Tag[]>([]);
   const [genreOptions, setGenreOptions] = useState<string[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<CatalogSong[]>([]);
+
+  // Adaptive states
+  const [adaptiveRecommendations, setAdaptiveRecommendations] = useState<AdaptiveRecommendation[]>([]);
+  const [continueListening, setContinueListening] = useState<any[]>([]);
+  const [newReleaseAlbums, setNewReleaseAlbums] = useState<HomeAlbum[]>([]);
+  const [popularArtists, setPopularArtists] = useState<HomeArtist[]>([]);
+  const [loadingAdaptive, setLoadingAdaptive] = useState(true);
+  const [loadingContinue, setLoadingContinue] = useState(true);
+  const [loadingNewReleases, setLoadingNewReleases] = useState(true);
+  const [loadingPopularArtists, setLoadingPopularArtists] = useState(true);
+  const [adaptiveError, setAdaptiveError] = useState<string | null>(null);
 
   const handleDiscover = () => navigate("/discover");
   const handleCreatePlaylist = () => navigate("/playlist");
@@ -84,7 +130,56 @@ const Home: React.FC = () => {
     fetchGenres();
     fetchTags();
     fetchTrendingSongs();
+    fetchAdaptiveSections();
+    fetchRealTimeDiscoveries();
   }, []);
+
+  const fetchRealTimeDiscoveries = async () => {
+    try {
+      setLoadingNewReleases(true);
+      setNewReleaseAlbums(await getNewReleasesToday(12));
+    } catch (error) {
+      console.error('Error fetching today new releases:', error);
+      setNewReleaseAlbums([]);
+    } finally {
+      setLoadingNewReleases(false);
+    }
+
+    try {
+      setLoadingPopularArtists(true);
+      setPopularArtists(await getPopularArtists(12));
+    } catch (error) {
+      console.error('Error fetching popular artists:', error);
+      setPopularArtists([]);
+    } finally {
+      setLoadingPopularArtists(false);
+    }
+  };
+
+  const fetchAdaptiveSections = async () => {
+    try {
+      setLoadingAdaptive(true);
+      setAdaptiveError(null);
+      const recs = await getAdaptiveRecommendations(12);
+      const fallback = recs.length === 0 ? await getColdStartRecommendations(12) : recs;
+      setAdaptiveRecommendations(fallback || []);
+    } catch (error) {
+      setAdaptiveError("Unable to load recommendations right now.");
+      console.error("Error loading adaptive recommendations:", error);
+    } finally {
+      setLoadingAdaptive(false);
+    }
+
+    try {
+      setLoadingContinue(true);
+      setContinueListening(await getRecentlyPlayed(10));
+    } catch (error) {
+      console.error("Error loading continue listening:", error);
+      setContinueListening([]);
+    } finally {
+      setLoadingContinue(false);
+    }
+  };
 
   const fetchTrendingSongs = async () => {
     try {
@@ -92,6 +187,42 @@ const Home: React.FC = () => {
       setTrendingSongs(data);
     } catch (e) {
       console.error('Error fetching trending songs:', e);
+    }
+  };
+
+  const handlePlaySong = async (song: any, source: "recommended" | "continue" | "trending") => {
+    if (!song?.audio_url) {
+      return;
+    }
+
+    playSong({
+      id: String(song.id),
+      title: song.title,
+      artist: song.artists?.map((a: any) => a.name).join(", ") || song.artist || "Unknown Artist",
+      coverUrl: song.songCover_url || song.cover_url || song.album?.cover_url || "",
+      audioUrl: song.audio_url,
+      duration: song.duration || 0,
+    });
+
+    trackSongPlay(String(song.id)).catch(() => undefined);
+
+    if (source === "recommended") {
+      const rec = adaptiveRecommendations.find((item) => String(item.song.id) === String(song.id));
+      if (rec) {
+        trackRecommendationEvent({
+          songId: Number(song.id),
+          eventType: "recommendation_clicked",
+          recommendationScore: rec.recommendation_score,
+          recommendationReason: rec.recommendation_reason,
+        }).catch(() => undefined);
+
+        trackRecommendationEvent({
+          songId: Number(song.id),
+          eventType: "recommendation_played",
+          recommendationScore: rec.recommendation_score,
+          recommendationReason: rec.recommendation_reason,
+        }).catch(() => undefined);
+      }
     }
   };
 
@@ -185,16 +316,71 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Recommended Section */}
-      {recommendedAlbums && recommendedAlbums.length > 0 && (
-        <ScrollReveal>
-          <div className="px-4 md:px-8">
-            <SongSection title="Recommended for you" songs={recommendedAlbums} viewAllLink="/songs?type=recommended" />
-          </div>
-        </ScrollReveal>
-      )}
+      {/* Recommended Section (Adaptive) */}
+      <ScrollReveal>
+        <div className="px-4 md:px-8">
+           <h2 className={`text-2xl md:text-3xl font-black mb-8 ${isLightMode ? 'text-gray-900' : 'text-white'} tracking-tight`}>
+            Recommended <span className="text-blue-500">For You</span>
+          </h2>
+          {loadingAdaptive ? (
+            <div className="text-sm text-zinc-500 py-6">Loading personalized recommendations...</div>
+          ) : adaptiveError ? (
+            <div className="text-sm text-rose-400 py-6">{adaptiveError}</div>
+          ) : adaptiveRecommendations.length === 0 ? (
+            <div className="text-sm text-zinc-500 py-6">No recommendations yet. Start listening to personalize your feed.</div>
+          ) : (
+            <div className="space-y-1">
+              {adaptiveRecommendations.map((item, index) => (
+                <Song
+                  key={item.song.id}
+                  id={String(item.song.id)}
+                  index={index + 1}
+                  title={item.song.title}
+                  duration={item.song.duration || 0}
+                  artists={item.song.artist ? [{ id: String(item.song.artist_id || item.song.id), name: item.song.artist, image_url: "" }] : []}
+                  album={item.song.album ? { id: String(item.song.album.id), title: item.song.album.title, cover_url: item.song.album.cover_url } : null}
+                  coverUrl={item.song.cover_key || item.song.album?.cover_url || null}
+                  metadata={item.recommendation_reason}
+                  onPlay={() => handlePlaySong(item.song, "recommended")}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </ScrollReveal>
 
-      {/* Trending Songs Section */}
+      {/* Continue Listening */}
+      <ScrollReveal>
+        <div className="px-4 md:px-8">
+           <h2 className={`text-2xl md:text-3xl font-black mb-8 ${isLightMode ? 'text-gray-900' : 'text-white'} tracking-tight`}>
+            Continue <span className="text-blue-500">Listening</span>
+          </h2>
+          {loadingContinue ? (
+            <div className="text-sm text-zinc-500 py-6">Loading your recent songs...</div>
+          ) : continueListening.length === 0 ? (
+            <div className="text-sm text-zinc-500 py-6">You have no recent songs yet.</div>
+          ) : (
+            <div className="space-y-1">
+              {continueListening.map((song, index) => (
+                <Song
+                  key={song.id}
+                  id={String(song.id)}
+                  index={index + 1}
+                  title={song.title}
+                  duration={song.duration || 0}
+                  artists={song.artists || []}
+                  album={song.album || null}
+                  coverUrl={song.songCover_url || song.album?.cover_url || null}
+                  metadata={song.listened_at ? `Last listened: ${new Date(song.listened_at).toLocaleDateString()}` : undefined}
+                  onPlay={() => handlePlaySong(song, "continue")}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </ScrollReveal>
+
+      {/* Trending Songs Section (User's Styled UI) */}
       <ScrollReveal delay="100ms">
         <div className="px-4 md:px-8">
           <h2 className={`text-2xl md:text-3xl font-black mb-10 ${isLightMode ? 'text-gray-900' : 'text-white'} tracking-tight`}>
@@ -280,10 +466,69 @@ const Home: React.FC = () => {
         </div>
       </ScrollReveal>
 
-      {/* Popular Artists */}
+      {/* New Releases Today */}
       <ScrollReveal>
         <div className="px-4 md:px-8">
-          <ArtistSection title="Popular Artists" layout="carousel" viewAllLink="/artist" />
+           <div className="flex items-end justify-between gap-4 mb-8">
+            <h2 className={`text-2xl md:text-3xl font-black ${isLightMode ? 'text-gray-900' : 'text-white'} tracking-tight`}>
+              New Releases <span className="text-blue-500">Today</span>
+            </h2>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold">Live feed</span>
+          </div>
+          {loadingNewReleases ? (
+            <div className="flex items-center justify-center py-12">
+              <span className="text-zinc-500 text-sm">Loading new releases...</span>
+            </div>
+          ) : newReleaseAlbums.length === 0 ? (
+            <div className="text-zinc-500 py-6 text-sm">No releases today yet.</div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+              {newReleaseAlbums.map((album) => (
+                <AlbumCard key={album.id} album={album} />
+              ))}
+            </div>
+          )}
+        </div>
+      </ScrollReveal>
+
+      {/* Popular Artists Today */}
+      <ScrollReveal>
+        <div className="px-4 md:px-8">
+          <div className="flex items-end justify-between gap-4 mb-8">
+            <h2 className={`text-2xl md:text-3xl font-black ${isLightMode ? 'text-gray-900' : 'text-white'} tracking-tight`}>
+              Popular <span className="text-blue-500">Artists</span>
+            </h2>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold">Real-time plays</span>
+          </div>
+          {loadingPopularArtists ? (
+            <div className="flex items-center justify-center py-12">
+              <span className="text-zinc-500 text-sm">Loading popular artists...</span>
+            </div>
+          ) : popularArtists.length === 0 ? (
+            <div className="text-zinc-500 py-6 text-sm">No popular artists found yet.</div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8">
+              {popularArtists.map((artist) => (
+                <button
+                  key={artist.id}
+                  onClick={() => navigate(`/artist/${artist.id}`)}
+                  className="group text-center flex flex-col items-center"
+                >
+                  <div className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden transition-all duration-500 group-hover:scale-105 shadow-xl ${isLightMode ? 'bg-zinc-200' : 'bg-zinc-800'} relative`}>
+                    {artist.image_url ? (
+                      <img src={artist.image_url} alt={artist.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                         <span className="text-white text-2xl font-black uppercase">{artist.name.charAt(0)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className={`mt-3 font-bold truncate w-full text-sm ${isLightMode ? 'text-zinc-900' : 'text-white'} group-hover:text-blue-500 transition-colors`}>{artist.name}</p>
+                  <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-wider">{artist.monthly_listeners || `${artist.play_count || 0} plays`}</p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </ScrollReveal>
 
@@ -309,6 +554,9 @@ const Home: React.FC = () => {
         </div>
       </ScrollReveal>
 
+      {/* Footer */}
+      <AppFooter isLightMode={isLightMode} />
+
       {/* Onboarding modal */}
       <InterestOnboardingModal
         isOpen={isOnboardingOpen}
@@ -316,9 +564,6 @@ const Home: React.FC = () => {
         onSave={handleOnboardingSave}
         genreOptions={genreOptions}
       />
-
-      {/* Footer */}
-      <AppFooter isLightMode={isLightMode} />
     </div>
   );
 };

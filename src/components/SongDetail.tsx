@@ -6,7 +6,8 @@ import {
   FaTimes, FaShare, FaPlus
 } from 'react-icons/fa';
 import { trackSongPlay } from '../backend/playTrackingService';
-import { useAudioPlayer } from '../contexts/AudioPlayerContextCore';
+import { getSimilarRecommendations, trackRecommendationEvent, type AdaptiveRecommendation } from '../backend/recommendationService';
+import { useAudioPlayer } from '../contexts/AudioPlayerContext';
 import { isSongFavorite, toggleFavorite } from '../backend/favoritesService';
 import { getSignedSongCoverUrl, getSignedArtistImageUrl } from '../backend/songMediaApi';
 import { useTheme } from '../contexts/ThemeContext';
@@ -40,6 +41,8 @@ const SongDetails: React.FC = () => {
   const [albumSongs, setAlbumSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
+  const [similarSongs, setSimilarSongs] = useState<AdaptiveRecommendation[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
 
   // Share & Playlist States
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -59,8 +62,22 @@ const SongDetails: React.FC = () => {
     if (id) {
       fetchSongAndAlbum();
       checkLikedStatus();
+      fetchSimilarSongs(id);
     }
   }, [id]);
+
+  const fetchSimilarSongs = async (songId: string) => {
+    try {
+      setLoadingSimilar(true);
+      const rows = await getSimilarRecommendations(songId, 10);
+      setSimilarSongs(rows || []);
+    } catch (error) {
+      console.error('Error fetching similar songs:', error);
+      setSimilarSongs([]);
+    } finally {
+      setLoadingSimilar(false);
+    }
+  };
 
   // Close share menu if clicked outside
   useEffect(() => {
@@ -210,8 +227,39 @@ const SongDetails: React.FC = () => {
     });
   };
 
+  const handlePlaySimilar = (item: AdaptiveRecommendation) => {
+    const song = item.song;
+    if (!song?.audio_url) {
+       return;
+    }
+
+    trackSongPlay(String(song.id));
+    playSong({
+       id: String(song.id),
+       title: song.title,
+       artist: song.artist || 'Unknown Artist',
+       coverUrl: song.cover_key || song.album?.cover_url || '',
+       audioUrl: song.audio_url,
+       duration: song.duration || 0,
+    });
+
+    trackRecommendationEvent({
+       songId: Number(song.id),
+       eventType: 'recommendation_clicked',
+       recommendationScore: item.recommendation_score,
+       recommendationReason: item.recommendation_reason,
+    }).catch(() => undefined);
+
+    trackRecommendationEvent({
+       songId: Number(song.id),
+       eventType: 'recommendation_played',
+       recommendationScore: item.recommendation_score,
+       recommendationReason: item.recommendation_reason,
+    }).catch(() => undefined);
+  };
+
   if (loading) return (
-    <div className="flex items-center justify-center h-full min-h-[400px] bg-black">
+    <div className={`flex items-center justify-center h-full min-h-[400px] ${isLightMode ? "bg-white" : "bg-black"}`}>
       <FaSpinner className="animate-spin text-indigo-500" size={40} />
     </div>
   );
@@ -424,6 +472,37 @@ const SongDetails: React.FC = () => {
                </div>
             </div>
          </div>
+
+         {/* Similar Songs Section */}
+         <section className={`rounded-[2rem] border ${isLightMode ? "bg-white border-gray-200 shadow-sm" : "border-white/[0.06] bg-white/[0.01]"} p-8 backdrop-blur-md`}>
+            <h3 className="text-sm font-bold uppercase tracking-[0.24em] text-indigo-400 mb-6">More Like This</h3>
+            {loadingSimilar ? (
+               <div className="text-sm text-slate-400">Loading similar songs...</div>
+            ) : similarSongs.length === 0 ? (
+               <div className="text-sm text-slate-500">No similar songs available right now.</div>
+            ) : (
+               <div className="space-y-2">
+                  {similarSongs.map((item, index) => (
+                     <div
+                        key={item.id}
+                        onClick={() => handlePlaySimilar(item)}
+                        className={`rounded-xl border ${isLightMode ? "bg-gray-50 border-gray-100 hover:bg-gray-100" : "border-white/10 bg-white/[0.02] hover:bg-white/[0.05]"} px-5 py-4 cursor-pointer transition flex items-center justify-between gap-4`}
+                     >
+                        <div className="flex items-center gap-4 min-w-0">
+                           <span className={`text-xs font-bold ${isLightMode ? "text-gray-400" : "text-slate-600"}`}>{(index + 1).toString().padStart(2, '0')}</span>
+                           <div className="min-w-0">
+                              <p className={`text-sm font-bold truncate ${isLightMode ? "text-gray-900" : "text-white"}`}>{item.song.title}</p>
+                              <p className={`text-xs ${isLightMode ? "text-gray-500" : "text-slate-400"} truncate`}>{item.song.artist || 'Unknown Artist'}</p>
+                           </div>
+                        </div>
+                        <div className="text-[10px] font-bold text-indigo-400/80 uppercase tracking-widest bg-indigo-500/5 px-2 py-1 rounded border border-indigo-500/10 whitespace-nowrap">
+                           {item.recommendation_reason}
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            )}
+         </section>
       </div>
 
       <ShareModal

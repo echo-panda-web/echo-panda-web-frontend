@@ -1,14 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { getAlbums, getGenres, getSongs, type CatalogSong } from "../backend/catalogService";
+import {
+  getAlbums,
+  getGenres,
+  getSongs,
+  getNewReleasesToday,
+  getPopularArtists,
+  type CatalogSong,
+  type CatalogAlbum
+} from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
-import { getMostPlayedAlbums } from "../backend/playTrackingService";
-import SongSection from "../components/SongsSection";
-import ArtistSection from "../components/ArtistsSection";
+import { getMostPlayedAlbums, trackSongPlay } from "../backend/playTrackingService";
+import {
+  getAdaptiveRecommendations,
+  trackRecommendationEvent,
+  type AdaptiveRecommendation
+} from "../backend/recommendationService";
 import AlbumCard from "../components/AlbumCard";
+import Song from "../components/Song";
+import ArtistSection from "../components/ArtistsSection";
+import SongSection from "../components/SongsSection";
 import AppFooter from "../components/AppFooter";
 import { FaSpinner, FaChevronLeft, FaChevronRight, FaClock, FaHeart, FaPlay } from "react-icons/fa";
 import { useTheme } from "../contexts/ThemeContext";
+import { useAudioPlayer } from "../contexts/AudioPlayerContext";
 
 interface Category {
   id: string;
@@ -16,25 +31,37 @@ interface Category {
   description: string;
 }
 
-interface Album {
+type Album = CatalogAlbum;
+
+type ArtistCard = {
   id: string;
-  title: string;
-  cover_url: string;
-  release_date: string;
-  artists: Array<{ id: string; name: string; image_url: string }>;
-}
+  name: string;
+  image_url?: string;
+  play_count?: number;
+  monthly_listeners?: string;
+};
 
 const Discover: React.FC = () => {
   const navigate = useNavigate();
+  const { playSong } = useAudioPlayer();
   const { getCachedData } = useDataCache();
   const { isLightMode } = useTheme();
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [newReleaseAlbums, setNewReleaseAlbums] = useState<Album[]>([]);
   const [topAlbums, setTopAlbums] = useState<Album[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<CatalogSong[]>([]);
+  const [popularArtists, setPopularArtists] = useState<ArtistCard[]>([]);
+
   const [loadingNewReleases, setLoadingNewReleases] = useState(true);
   const [loadingTopAlbums, setLoadingTopAlbums] = useState(true);
+  const [loadingPopularArtists, setLoadingPopularArtists] = useState(true);
+
+  const [recommendations, setRecommendations] = useState<AdaptiveRecommendation[]>([]);
+  const [recommendationLimit, setRecommendationLimit] = useState(10);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+  const [recommendationError, setRecommendationError] = useState<string | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textColor = isLightMode ? "text-gray-900" : "text-white";
@@ -44,6 +71,8 @@ const Discover: React.FC = () => {
     fetchNewReleaseAlbums();
     fetchTopAlbums();
     fetchTrendingSongs();
+    fetchPopularArtists();
+    fetchRecommendations(10);
   }, []);
 
   const fetchTrendingSongs = async () => {
@@ -55,23 +84,49 @@ const Discover: React.FC = () => {
     }
   };
 
-  const scrollGenres = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, clientWidth } = scrollContainerRef.current;
-      const scrollTo = direction === 'left' ? scrollLeft - clientWidth * 0.8 : scrollLeft + clientWidth * 0.8;
-      scrollContainerRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+  const fetchRecommendations = async (limit: number) => {
+    try {
+      setLoadingRecommendations(true);
+      setRecommendationError(null);
+
+      const data = await getAdaptiveRecommendations(limit);
+      setRecommendations(data || []);
+      setRecommendationLimit(limit);
+    } catch (error) {
+      console.error("Error fetching discover recommendations:", error);
+      setRecommendationError("Failed to load recommended songs");
+    } finally {
+      setLoadingRecommendations(false);
     }
   };
 
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const handleLoadMoreRecommendations = async () => {
+    await fetchRecommendations(recommendationLimit + 10);
   };
 
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const handlePlayRecommendation = async (item: AdaptiveRecommendation) => {
+    const song = item.song;
+    if (!song?.audio_url) {
+      return;
+    }
+
+    playSong({
+      id: String(song.id),
+      title: song.title,
+      artist: song.artist || "Unknown Artist",
+      coverUrl: song.cover_key || song.album?.cover_url || "",
+      audioUrl: song.audio_url,
+      duration: song.duration || 0,
+    });
+
+    trackSongPlay(String(song.id)).catch(() => undefined);
+
+    trackRecommendationEvent({
+      songId: Number(song.id),
+      eventType: "recommendation_played",
+      recommendationScore: item.recommendation_score,
+      recommendationReason: item.recommendation_reason,
+    }).catch(() => undefined);
   };
 
   const fetchCategories = async () => {
@@ -93,20 +148,29 @@ const Discover: React.FC = () => {
     try {
       setLoadingNewReleases(true);
       const data = await getCachedData('new_release_albums', async () => {
-        const albumsData = await getAlbums(10, 0);
-        return (albumsData || []).map((album: any) => ({
-          id: album.id,
-          title: album.title,
-          cover_url: album.cover_url,
-          release_date: album.release_date,
-          artists: album.artists || [],
-        }));
+        const albumsData = await getNewReleasesToday(10);
+        return albumsData || [];
       });
       setNewReleaseAlbums(data);
     } catch (error) {
       console.error('Error fetching new release albums:', error);
     } finally {
       setLoadingNewReleases(false);
+    }
+  };
+
+  const fetchPopularArtists = async () => {
+    try {
+      setLoadingPopularArtists(true);
+      const data = await getCachedData('discover_popular_artists', async () => {
+        const artistsData = await getPopularArtists(12);
+        return artistsData;
+      });
+      setPopularArtists(data);
+    } catch (error) {
+      console.error('Error fetching popular artists:', error);
+    } finally {
+      setLoadingPopularArtists(false);
     }
   };
 
@@ -123,6 +187,26 @@ const Discover: React.FC = () => {
     } finally {
       setLoadingTopAlbums(false);
     }
+  };
+
+  const scrollGenres = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, clientWidth } = scrollContainerRef.current;
+      const scrollTo = direction === 'left' ? scrollLeft - clientWidth * 0.8 : scrollLeft + clientWidth * 0.8;
+      scrollContainerRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+    }
+  };
+
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return "Unknown Date";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -177,14 +261,86 @@ const Discover: React.FC = () => {
         </div>
       )}
 
-      {/* 2. Featured Charts */}
-      <div className="animate-fade-up" style={{ animationDelay: '100ms' }}>
-        <SongSection title="Featured Charts" limit={5} offset={0} viewAllLink="/songs?type=trending" />
-      </div>
+      {/* 2. Recommended For You */}
+      <section className="px-4 md:px-8 py-8 max-w-7xl mx-auto">
+        <h2 className={`text-2xl md:text-4xl font-black mb-6 ${textColor} tracking-tight`}>
+          Recommended <span className="text-blue-500">For You</span>
+        </h2>
+        {loadingRecommendations ? (
+          <div className="flex items-center justify-center py-12">
+            <FaSpinner className="text-blue-500 text-3xl animate-spin" />
+          </div>
+        ) : recommendationError ? (
+          <div className="text-rose-400 py-6">{recommendationError}</div>
+        ) : recommendations.length === 0 ? (
+          <div className="text-zinc-500 py-6">No personalized recommendations yet.</div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              {recommendations.map((item, index) => (
+                <Song
+                  key={item.id}
+                  id={String(item.song.id)}
+                  index={index + 1}
+                  title={item.song.title}
+                  duration={item.song.duration || 0}
+                  artists={item.song.artist ? [{ id: String(item.song.artist_id || item.song.id), name: item.song.artist, image_url: "" }] : []}
+                  album={item.song.album ? { id: String(item.song.album.id), title: item.song.album.title, cover_url: item.song.album.cover_url } : null}
+                  coverUrl={item.song.cover_key || item.song.album?.cover_url || null}
+                  metadata={item.recommendation_reason}
+                  onPlay={() => handlePlayRecommendation(item)}
+                />
+              ))}
+            </div>
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={handleLoadMoreRecommendations}
+                className={`px-8 py-2.5 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all ${isLightMode ? "border-zinc-200 text-zinc-700 hover:bg-zinc-100" : "border-white/10 text-white hover:bg-white/5"}`}
+              >
+                Load More
+              </button>
+            </div>
+          </>
+        )}
+      </section>
 
       {/* 3. Popular Artists */}
-      <div className="animate-fade-up" style={{ animationDelay: '200ms' }}>
-        <ArtistSection title="Popular Artists" layout="carousel" viewAllLink="/artist" />
+      <div className="animate-fade-up max-w-7xl mx-auto" style={{ animationDelay: '200ms' }}>
+         <div className="px-4 md:px-8 py-8">
+            <div className="flex items-end justify-between gap-4 mb-8 px-2">
+               <h2 className={`text-2xl md:text-4xl font-black ${textColor} tracking-tight`}>
+                  Popular <span className="text-blue-500">Artists</span>
+               </h2>
+               <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold">Real-time plays</span>
+            </div>
+            {loadingPopularArtists ? (
+               <div className="flex items-center justify-center py-12">
+                  <FaSpinner className="text-blue-500 text-3xl animate-spin" />
+               </div>
+            ) : popularArtists.length === 0 ? (
+               <div className="text-zinc-500 py-6">No popular artists available.</div>
+            ) : (
+               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8">
+                  {popularArtists.map((artist) => (
+                     <button
+                        key={artist.id}
+                        onClick={() => navigate(`/artist/${artist.id}`)}
+                        className="group text-center flex flex-col items-center"
+                     >
+                        <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden transition-all duration-300 group-hover:scale-105 shadow-xl ${isLightMode ? 'bg-zinc-200' : 'bg-white/5 ring-1 ring-white/10'} relative`}>
+                           {artist.image_url ? (
+                              <img src={artist.image_url} alt={artist.name} className="w-full h-full object-cover" />
+                           ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600" />
+                           )}
+                        </div>
+                        <p className={`mt-3 font-bold truncate w-full text-sm ${isLightMode ? 'text-zinc-900' : 'text-white'} group-hover:text-blue-500 transition-colors`}>{artist.name}</p>
+                        <p className="text-[10px] font-bold text-zinc-500 mt-1 uppercase tracking-wider">{artist.monthly_listeners || `${artist.play_count || 0} plays`}</p>
+                     </button>
+                  ))}
+               </div>
+            )}
+         </div>
       </div>
 
       {/* 4. Trending Songs List View */}
@@ -252,14 +408,46 @@ const Discover: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. New Release Songs */}
-      <div className="animate-fade-up" style={{ animationDelay: '400ms' }}>
-        <SongSection title="New Release Songs" limit={7} offset={6} viewAllLink="/songs?type=new" />
+      {/* 5. New Release Songs Today */}
+      <div className="px-4 md:px-8 py-8 max-w-7xl mx-auto animate-fade-up" style={{ animationDelay: '400ms' }}>
+         <h2 className={`text-2xl md:text-4xl font-black mb-8 ${textColor} tracking-tight px-2`}>
+            New Release <span className="text-blue-500">Today</span>
+         </h2>
+         {loadingNewReleases ? (
+            <div className="flex items-center justify-center py-12">
+               <FaSpinner className="text-blue-500 text-3xl animate-spin" />
+            </div>
+         ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+               {newReleaseAlbums.map((album) => (
+                  <AlbumCard
+                     key={album.id}
+                     album={album}
+                  />
+               ))}
+            </div>
+         )}
       </div>
 
       {/* 6. Top Albums */}
-      <div className="animate-fade-up" style={{ animationDelay: '500ms' }}>
-        <SongSection title="Top Albums" limit={7} offset={12} viewAllLink="/albums" />
+      <div className="px-4 md:px-8 py-8 max-w-7xl mx-auto animate-fade-up" style={{ animationDelay: '500ms' }}>
+         <h2 className={`text-2xl md:text-4xl font-black mb-8 ${textColor} tracking-tight px-2`}>
+            Top <span className="text-blue-500">Albums</span>
+         </h2>
+         {loadingTopAlbums ? (
+            <div className="flex items-center justify-center py-12">
+               <FaSpinner className="text-blue-500 text-3xl animate-spin" />
+            </div>
+         ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+               {topAlbums.map((album) => (
+                  <AlbumCard
+                     key={album.id}
+                     album={album}
+                  />
+               ))}
+            </div>
+         )}
       </div>
 
       <AppFooter isLightMode={isLightMode} />

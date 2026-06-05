@@ -95,6 +95,28 @@ export async function getAlbums(limit = 10, offset = 0): Promise<CatalogAlbum[]>
   })));
 }
 
+export async function getNewReleasesToday(limit = 10): Promise<CatalogAlbum[]> {
+  try {
+    const data = await request<{ data?: any[] }>(`/albums/new-releases-today?limit=${Math.max(1, limit)}`);
+    const rows = Array.isArray(data?.data) ? data.data : [];
+
+    return Promise.all(rows.map(async (album: any) => ({
+      id: String(album.id),
+      title: album.title,
+      cover_key: album.cover_key || null,
+      cover_url: (await getSignedAlbumCoverUrl(album.id)) || album.cover_url || undefined,
+      release_date: album.release_date || undefined,
+      type: album.type || undefined,
+      artists: getArtistName(album.artist, album.artist_name)
+        ? [{ id: String(album.artist_id || album.id), name: String(getArtistName(album.artist, album.artist_name)), image_url: undefined }]
+        : [],
+    })));
+  } catch (error) {
+    console.error('Error fetching today new releases:', error);
+    return [];
+  }
+}
+
 export async function getSongs(limit = 25): Promise<CatalogSong[]> {
   const data = await request<{ data?: any[] }>(`/songs?per_page=${Math.max(1, limit)}&sort_by=latest`);
   const rows = Array.isArray(data?.data) ? data.data : [];
@@ -201,6 +223,24 @@ export async function getDerivedArtists(limit = 10, search = ""): Promise<Catalo
   );
 
   return list.slice(0, Math.max(1, limit));
+}
+
+export async function getPopularArtists(limit = 10): Promise<Array<CatalogArtist & { play_count?: number; monthly_listeners?: string }>> {
+  try {
+    const data = await request<{ data?: any[] }>(`/artists/popular?limit=${Math.max(1, limit)}`);
+    const rows = Array.isArray(data?.data) ? data.data : [];
+
+    return Promise.all(rows.map(async (artist: any) => ({
+      id: String(artist.id),
+      name: artist.name,
+      image_url: artist.image_url || undefined,
+      play_count: artist.play_count,
+      monthly_listeners: artist.monthly_listeners,
+    })));
+  } catch (error) {
+    console.error('Error fetching popular artists:', error);
+    return [];
+  }
 }
 
 const normalizeCategories = (items: any[]): CatalogCategory[] => {
