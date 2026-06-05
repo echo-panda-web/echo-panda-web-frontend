@@ -41,48 +41,7 @@ export default function SongsSection({ title, songs, albums, viewAllLink }: Prop
           {title.split(" ")[0]} <span className="text-blue-500">{title.split(" ").slice(1).join(" ")}</span>
         </h2>
 
-        {/* Navigation Control Area positioned precisely like image_a86c5b.png */}
-        <div className="flex items-center gap-4">
-          {/* View All Text Action Link shifted right next to buttons */}
-          {viewAllLink && (
-            <Link
-              to={viewAllLink}
-              className={`text-xs font-black uppercase tracking-[0.15em] transition-colors ${
-                isLightMode
-                  ? "text-gray-500 hover:text-blue-500"
-                  : "text-zinc-400 hover:text-blue-400"
-              }`}
-            >
-              View All
-            </Link>
-          )}
-
-          {/* Carousel Arrow Buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => scroll("left")}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                isLightMode
-                  ? "bg-gray-200/70 hover:bg-gray-200 text-gray-700"
-                  : "bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white"
-              } border ${isLightMode ? 'border-gray-300/30' : 'border-white/5'}`}
-              aria-label="Scroll left"
-            >
-              <FaChevronLeft size={11} />
-            </button>
-            <button
-              onClick={() => scroll("right")}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                isLightMode
-                  ? "bg-gray-200/70 hover:bg-gray-200 text-gray-700"
-                  : "bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-white"
-              } border ${isLightMode ? 'border-gray-300/30' : 'border-white/5'}`}
-              aria-label="Scroll right"
-            >
-              <FaChevronRight size={11} />
-            </button>
-          </div>
-        </div>
+        {/* Navigation Control Area positioned precisely like image_a86c5b.png removed */}
       </div>
 
       {/* Smooth Horizontal Scrolling Row Track */}

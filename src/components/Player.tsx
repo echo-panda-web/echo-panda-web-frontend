@@ -98,7 +98,7 @@ const Player: React.FC = () => {
               title: song.title || 'Unknown Song',
               artist: song.artists?.[0]?.name || song.artist || 'Unknown Artist',
               coverUrl: song.songCover_url || '',
-              audioUrl: song.original_key || song.audio_url || '',
+              audioUrl: song.audio_url || '',
             }))
             .filter((song: any) => !!song.id && !!song.audioUrl);
           setAutoplayPool(randomSongs);

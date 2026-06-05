@@ -132,7 +132,7 @@ export async function getSongs(limit = 25): Promise<CatalogSong[]> {
       original_key: song.original_key || null,
       cover_key: song.cover_key || null,
       preview_key: song.preview_key || null,
-      audio_url: song.original_key || null,
+      audio_url: resolveMediaUrl(song.original_key || song.preview_key),
       songCover_url: coverUrl || resolveMediaUrl(song.songCover_url || song.album?.cover_url || song.album?.cover_image),
       created_at: song.created_at,
       artists: getArtistName(song.artist, song.artist_name)

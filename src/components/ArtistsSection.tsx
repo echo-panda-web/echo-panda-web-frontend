@@ -80,46 +80,7 @@ const ArtistSection: React.FC<Props> = ({ title = "Artists", limit = 10, layout 
           </h2>
         </div>
 
-        {/* Action Controls Side Wrapper */}
-        <div className="flex items-center gap-4">
-          {viewAllLink && (
-            <Link
-              to={viewAllLink}
-              className={`text-[11px] font-bold uppercase tracking-[0.2em] transition-colors ${
-                isLightMode ? "text-zinc-500 hover:text-pink-500" : "text-zinc-400 hover:text-pink-400"
-              }`}
-            >
-              View All
-            </Link>
-          )}
-
-          {layout === "carousel" && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => scroll('left')}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  isLightMode
-                    ? "bg-zinc-200 hover:bg-zinc-300 text-zinc-700"
-                    : "bg-[#181818] hover:bg-[#282828] text-zinc-400 hover:text-white"
-                }`}
-                aria-label="Scroll left"
-              >
-                <FaChevronLeft size={10} />
-              </button>
-              <button
-                onClick={() => scroll('right')}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  isLightMode
-                    ? "bg-zinc-200 hover:bg-zinc-300 text-zinc-700"
-                    : "bg-[#181818] hover:bg-[#282828] text-zinc-400 hover:text-white"
-                }`}
-                aria-label="Scroll right"
-              >
-                <FaChevronRight size={10} />
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Action Controls Side Wrapper removed */}
       </div>
 
       {/* Artists Track Container Row */}
@@ -139,39 +100,34 @@ const ArtistSection: React.FC<Props> = ({ title = "Artists", limit = 10, layout 
           >
             <div
               onClick={() => navigate(`/artist/${artist.id}`)}
-              className={`cursor-pointer group relative h-full flex flex-col p-4 rounded-xl transition-colors duration-300 ${
-                isLightMode ? "bg-zinc-100 hover:bg-zinc-200/70" : "bg-[#181818] hover:bg-[#282828]"
-              }`}
+              className="cursor-pointer group flex flex-col items-center text-center"
             >
               {/* Profile Image Frame Wrapper */}
-              <div className="w-full aspect-square bg-zinc-800 rounded-lg overflow-hidden mb-4 relative shadow-md">
+              <div className={`w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden mb-4 relative shadow-xl transition-transform duration-500 group-hover:scale-105 ${isLightMode ? 'bg-zinc-200' : 'bg-zinc-800'}`}>
                 {artist.image_url ? (
                   <img
                     src={artist.image_url}
                     alt={artist.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full bg-zinc-800/80 flex items-center justify-center">
-                    <span className="text-zinc-500 text-3xl font-black uppercase">{artist.name.charAt(0)}</span>
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-white text-3xl font-black uppercase">{artist.name.charAt(0)}</span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 
-              {/* Title & Role Descriptor Box */}
-              <div className="flex-1 flex flex-col justify-between min-w-0">
-                <div className="space-y-1">
+              <div className="min-w-0 w-full space-y-1">
                   <h3 className={`font-bold text-sm tracking-tight truncate ${
                     isLightMode ? "text-zinc-900" : "text-white"
-                  }`}>
+                  } group-hover:text-pink-500 transition-colors`}>
                     {artist.name}
                   </h3>
-                  <p className={`text-xs ${isLightMode ? "text-zinc-500" : "text-zinc-400"}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest ${isLightMode ? "text-zinc-500" : "text-zinc-500"}`}>
                     Artist
                   </p>
-                </div>
               </div>
             </div>
           </div>
