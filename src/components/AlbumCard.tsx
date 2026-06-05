@@ -19,8 +19,32 @@ interface Album {
   type?: string;
   year?: number | string;
   songs?: number | string;
+  songs_count?: number;
+  release_date?: string;
+  scheduled_at?: string;
+  created_at?: string;
   artists?: Artist[];
 }
+
+const resolveSongCount = (album: Album): number => {
+  const type = String(album.type || "").toLowerCase();
+  if (type === "song") return 1;
+  if (typeof album.songs === "number") return album.songs;
+  if (Array.isArray(album.songs)) return album.songs.length;
+  return album.songs_count ?? 0;
+};
+
+const resolveReleaseYear = (album: Album): number | string => {
+  if (album.year != null && album.year !== "") return album.year;
+
+  const dateSource = album.release_date || album.scheduled_at || album.created_at;
+  if (dateSource) {
+    const year = new Date(dateSource).getFullYear();
+    if (!Number.isNaN(year)) return year;
+  }
+
+  return "Unknown";
+};
 
 interface Props {
   album: Album;
@@ -50,6 +74,9 @@ export default function AlbumCard({ album, onClick }: Props) {
     album.artists && album.artists.length > 0
       ? album.artists.map((a) => a.name).join(", ")
       : "Various Artists";
+
+  const songCount = resolveSongCount(album);
+  const releaseYear = resolveReleaseYear(album);
 
   return (
     <div
@@ -107,7 +134,7 @@ export default function AlbumCard({ album, onClick }: Props) {
         </div>
 
         <p className="text-xs text-zinc-400 mt-auto">
-          {album.songs ?? 0} songs • {album.year ?? "Unknown"}
+          {songCount} songs • {releaseYear}
         </p>
       </div>
     </div>

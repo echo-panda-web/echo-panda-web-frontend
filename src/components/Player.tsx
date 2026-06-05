@@ -27,7 +27,7 @@ const Player: React.FC = () => {
     toggleMute,
     toggleShuffle,
     toggleRepeat,
-    playSong,
+    playbackMode,
     playNext: playNextSong,
     playPrevious: playPreviousSong,
     setAutoplayPool,
@@ -88,6 +88,8 @@ const Player: React.FC = () => {
   }, [togglePlayPause, playNextSong, playPreviousSong]);
 
   useEffect(() => {
+    if (playbackMode === 'queue') return;
+
     const fetchRecommendationPool = async () => {
       try {
         const adaptive = await getAdaptiveRecommendations(50);
@@ -119,7 +121,7 @@ const Player: React.FC = () => {
       }
     };
     fetchRecommendationPool();
-  }, [setAutoplayPool]);
+  }, [setAutoplayPool, playbackMode]);
 
   if (!currentSong) return null;
 

@@ -209,6 +209,34 @@ export const getUserListeningStats = async (): Promise<{
   }
 };
 
+const resolveAlbumSongsCount = (album: any): number | undefined => {
+  if (typeof album?.songs_count === "number") {
+    return album.songs_count;
+  }
+  if (Array.isArray(album?.songs)) {
+    return album.songs.length;
+  }
+  return undefined;
+};
+
+const fetchAlbumSongCounts = async (): Promise<Map<string, number>> => {
+  const counts = new Map<string, number>();
+
+  try {
+    const list = await backendRequest<{ data?: any[] }>("/albums?per_page=200&sort_by=latest");
+    for (const album of list?.data || []) {
+      const count = resolveAlbumSongsCount(album);
+      if (typeof count === "number") {
+        counts.set(String(album.id), count);
+      }
+    }
+  } catch (error) {
+    console.error("Error enriching album song counts:", error);
+  }
+
+  return counts;
+};
+
 // Get most played albums
 export const getMostPlayedAlbums = async (limit: number = 10): Promise<any[]> => {
   try {
@@ -216,7 +244,7 @@ export const getMostPlayedAlbums = async (limit: number = 10): Promise<any[]> =>
       `/stats/most-played-albums?limit=${limit}`
     );
 
-    return Promise.all((result?.data || []).map(async (row: any) => {
+    const albums = await Promise.all((result?.data || []).map(async (row: any) => {
       const album = row.album;
       const signedCoverUrl = album?.id ? await getSignedAlbumCoverUrl(album.id) : null;
 
@@ -225,12 +253,25 @@ export const getMostPlayedAlbums = async (limit: number = 10): Promise<any[]> =>
         title: album.title,
         cover_url: signedCoverUrl || resolveMediaUrl(album.cover_url || album.cover_image || album.cover_key) || null,
         release_date: album.release_date,
+        scheduled_at: album.scheduled_at,
+        created_at: album.created_at,
+        songs_count: resolveAlbumSongsCount(album),
         artists: getArtistName(album.artist, album.artist_name)
           ? [{ id: String(album.artist_id || album.id), name: String(getArtistName(album.artist, album.artist_name)), image_url: "" }]
           : [],
         play_count: row.play_count,
       };
     }));
+
+    if (albums.some((album) => album.songs_count == null)) {
+      const countsById = await fetchAlbumSongCounts();
+      return albums.map((album) => ({
+        ...album,
+        songs_count: album.songs_count ?? countsById.get(album.id) ?? 0,
+      }));
+    }
+
+    return albums;
   } catch (error) {
     console.error("Error fetching most played albums:", error);
     return [];

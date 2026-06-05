@@ -12,7 +12,7 @@ import { getMostPlayedAlbums, getMostPlayedSongs, trackSongPlay } from "../backe
 import AlbumCard from "../components/AlbumCard";
 import Song from "../components/Song";
 import AppFooter from "../components/AppFooter";
-import { FaSpinner, FaClock, FaHeart, FaPlay, FaPlus } from "react-icons/fa";
+import { FaSpinner, FaPlus } from "react-icons/fa";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAudioPlayer } from "../contexts/AudioPlayerContext";
 
@@ -50,6 +50,7 @@ const Discover: React.FC = () => {
   const [loadingTopAlbums, setLoadingTopAlbums] = useState(true);
   const [loadingPopularArtists, setLoadingPopularArtists] = useState(true);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
+  const [loadingTrending, setLoadingTrending] = useState(true);
 
   useEffect(() => {
     fetchCategories();
@@ -62,10 +63,13 @@ const Discover: React.FC = () => {
 
   const fetchTrendingSongs = async () => {
     try {
+      setLoadingTrending(true);
       const data = await getMostPlayedSongs(7);
       setTrendingSongs(data);
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoadingTrending(false);
     }
   };
 
@@ -146,18 +150,6 @@ const Discover: React.FC = () => {
     }
   };
 
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return "Unknown Date";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
   const handlePlaySong = (song: any) => {
     if (!song.audio_url) return;
     playSong({
@@ -169,6 +161,11 @@ const Discover: React.FC = () => {
       duration: song.duration || 0,
     });
     trackSongPlay(String(song.id)).catch(() => undefined);
+  };
+
+  const handleTrendingPlay = (songId: string) => {
+    const song = trendingSongs.find((s) => String(s.id) === String(songId));
+    if (song) handlePlaySong(song);
   };
 
   const SectionTitle = ({ main, accent }: { main: string, accent: string }) => (
@@ -290,66 +287,51 @@ const Discover: React.FC = () => {
         {/* 4. Trending Songs Section */}
         <section>
           <SectionTitle main="Trending" accent="Songs" />
-          <div className="w-full">
-            <div className={`grid grid-cols-12 gap-4 px-6 py-3 text-[11px] font-black uppercase tracking-[0.2em] border-b ${isLightMode ? 'text-zinc-400 border-zinc-200' : 'text-zinc-500 border-white/5'}`}>
-              <div className="col-span-1 text-center">#</div>
-              <div className="col-span-5 md:col-span-4">Title</div>
-              <div className="hidden md:block col-span-2 text-center">Release Date</div>
-              <div className="col-span-4 text-center">album</div>
-              <div className="col-span-2 md:col-span-1 text-right flex justify-end items-center pr-4">
-                Time
+          {loadingTrending ? (
+            <div className="flex justify-center py-12">
+              <FaSpinner className="animate-spin text-blue-500 text-3xl" />
+            </div>
+          ) : (
+            <div className={`w-full rounded-lg ${isLightMode ? "bg-white border border-gray-100 shadow-sm" : "bg-transparent"}`}>
+              <div className={`grid grid-cols-12 gap-4 text-xs md:text-[10px] font-black uppercase tracking-[0.2em] ${isLightMode ? "text-gray-400" : "text-slate-500"} border-b ${isLightMode ? "border-gray-100" : "border-white/5"} pb-4 px-4 md:px-6`}>
+                <div className="col-span-1 text-center">#</div>
+                <div className="col-span-5 md:col-span-4">Title</div>
+                <div className="hidden md:block md:col-span-3">Album</div>
+                <div className="hidden md:block md:col-span-2">Plays</div>
+                <div className="col-span-2 text-right">Time</div>
+              </div>
+
+              <div className="space-y-1 mt-2 px-2 md:px-4 pb-4">
+                {trendingSongs.map((song, index) => (
+                  <Song
+                    key={song.id}
+                    id={song.id}
+                    index={index + 1}
+                    title={song.title}
+                    artists={song.artists}
+                    album={song.album}
+                    duration={song.duration}
+                    coverUrl={song.songCover_url}
+                    metadata={song.play_count > 0 ? `${song.play_count} plays` : "-"}
+                    onPlay={handleTrendingPlay}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-6 pb-4 flex justify-center">
+                <Link
+                  to="/songs?type=trending"
+                  className={`flex items-center gap-2 px-10 py-3 rounded-full text-[11px] font-black uppercase tracking-[0.2em] transition-all border ${
+                    isLightMode
+                      ? 'border-zinc-200 text-zinc-800 hover:bg-zinc-900 hover:text-white'
+                      : 'border-white/10 text-white hover:bg-white hover:text-black'
+                  }`}
+                >
+                  <FaPlus size={10} /> View All
+                </Link>
               </div>
             </div>
-
-            <div className="mt-4 space-y-1">
-              {trendingSongs.map((song, i) => (
-                <div
-                  key={song.id}
-                  className={`grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-2xl transition-all duration-300 group cursor-pointer ${isLightMode ? 'hover:bg-zinc-100' : 'hover:bg-white/5'}`}
-                  onClick={() => handlePlaySong(song)}
-                >
-                  <div className="col-span-1 text-center text-sm font-black text-zinc-500 group-hover:text-blue-500 transition-colors">
-                    #{i + 1}
-                  </div>
-                  <div className="col-span-11 md:col-span-4 flex items-center gap-4 min-w-0">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-lg relative group/cover bg-zinc-800">
-                      <img src={song.songCover_url || "/logo.webp"} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                      <div className="absolute inset-0 bg-blue-600/40 opacity-0 group-hover/cover:opacity-100 transition-opacity flex items-center justify-center">
-                        <FaPlay size={14} className="text-white" />
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className={`text-sm md:text-base font-bold truncate ${isLightMode ? 'text-zinc-900' : 'text-white'} group-hover:text-blue-500 transition-colors`}>{song.title}</h4>
-                      <p className={`text-[10px] font-bold truncate ${isLightMode ? 'text-zinc-500' : 'text-zinc-500'} uppercase tracking-wider`}>{song.artists[0]?.name}</p>
-                    </div>
-                  </div>
-                  <div className={`hidden md:block col-span-2 text-xs font-bold text-center ${isLightMode ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                    {formatDate(song.created_at)}
-                  </div>
-                  <div className={`col-span-12 md:col-span-4 text-xs font-bold truncate text-center ${isLightMode ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                    {song.album?.title || "Single"}
-                  </div>
-                  <div className="col-span-12 md:col-span-1 flex items-center justify-end gap-5 pr-2">
-                    <FaHeart size={14} className="text-zinc-600 hover:text-pink-500 transition-colors" />
-                    <span className={`text-xs font-mono font-bold ${isLightMode ? 'text-zinc-400' : 'text-zinc-500'}`}>{formatDuration(song.duration)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-10 flex justify-center">
-              <Link
-                to="/songs?type=trending"
-                className={`flex items-center gap-2 px-10 py-3 rounded-full text-[11px] font-black uppercase tracking-[0.2em] transition-all border ${
-                  isLightMode
-                    ? 'border-zinc-200 text-zinc-800 hover:bg-zinc-900 hover:text-white'
-                    : 'border-white/10 text-white hover:bg-white hover:text-black'
-                }`}
-              >
-                <FaPlus size={10} /> View All
-              </Link>
-            </div>
-          </div>
+          )}
         </section>
 
         {/* 5. New Release Songs Section */}

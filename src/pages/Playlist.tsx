@@ -282,19 +282,22 @@ const PlaylistPage: React.FC = () => {
     }
   };
 
+  const toPlayerSong = (song: SongData) => ({
+    id: song.id,
+    title: song.title,
+    artist: song.artists?.map((a) => a.name).join(', ') || 'Various Artists',
+    coverUrl: song.songCover_url || song.album?.cover_url || '',
+    audioUrl: song.original_key || song.audio_url || '',
+    duration: song.duration,
+  });
+
   const handlePlay = async (songId: string) => {
     try {
       await trackSongPlay(songId);
-      const song = songs.find((s) => s.id === songId);
+      const queue = songs.map(toPlayerSong);
+      const song = queue.find((s) => s.id === songId);
       if (song) {
-        playSong({
-          id: song.id,
-          title: song.title,
-          artist: song.artists?.map((a) => a.name).join(', ') || 'Various Artists',
-          coverUrl: song.songCover_url || song.album?.cover_url || '',
-          audioUrl: song.original_key || song.audio_url || '',
-          duration: song.duration,
-        });
+        playSong(song, { queue });
       }
     } catch (error) {
       console.error('Playback Error:', error);

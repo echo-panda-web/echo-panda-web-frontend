@@ -11,6 +11,11 @@ export interface SongData {
   similarityScore?: number;
 }
 
+export interface PlaySongOptions {
+  /** When set, next/previous and autoplay stay within this list only. */
+  queue?: SongData[];
+}
+
 export interface AudioPlayerContextType {
   currentSong: SongData | null;
   isPlaying: boolean;
@@ -20,7 +25,8 @@ export interface AudioPlayerContextType {
   isMuted: boolean;
   isShuffled: boolean;
   isRepeated: boolean;
-  playSong: (song: SongData) => void;
+  playbackMode: 'autoplay' | 'queue';
+  playSong: (song: SongData, options?: PlaySongOptions) => void;
   togglePlayPause: () => void;
   seekTo: (time: number) => void;
   setVolume: (volume: number) => void;

@@ -18,9 +18,22 @@ export interface CatalogAlbum {
   cover_url?: string;
   cover_key?: string | null;
   release_date?: string;
+  scheduled_at?: string;
+  created_at?: string;
+  songs_count?: number;
   type?: string;
   artists?: CatalogArtist[];
 }
+
+const resolveSongsCount = (album: any): number | undefined => {
+  if (typeof album.songs_count === "number") {
+    return album.songs_count;
+  }
+  if (Array.isArray(album.songs)) {
+    return album.songs.length;
+  }
+  return undefined;
+};
 
 export interface CatalogSong {
   id: string;
@@ -94,6 +107,9 @@ export async function getAlbums(limit = 10, offset = 0): Promise<CatalogAlbum[]>
     cover_key: album.cover_key || null,
     cover_url: (await getSignedAlbumCoverUrl(album.id)) || undefined,
     release_date: album.release_date || undefined,
+    scheduled_at: album.scheduled_at || undefined,
+    created_at: album.created_at || undefined,
+    songs_count: resolveSongsCount(album),
     type: album.type || undefined,
     artists: getArtistName(album.artist, album.artist_name)
       ? [{ id: String(album.artist_id || album.id), name: String(getArtistName(album.artist, album.artist_name)), image_url: undefined }]
@@ -112,6 +128,9 @@ export async function getNewReleasesToday(limit = 10): Promise<CatalogAlbum[]> {
       cover_key: album.cover_key || null,
       cover_url: (await getSignedAlbumCoverUrl(album.id)) || album.cover_url || undefined,
       release_date: album.release_date || undefined,
+      scheduled_at: album.scheduled_at || undefined,
+      created_at: album.created_at || undefined,
+      songs_count: resolveSongsCount(album),
       type: album.type || undefined,
       artists: getArtistName(album.artist, album.artist_name)
         ? [{ id: String(album.artist_id || album.id), name: String(getArtistName(album.artist, album.artist_name)), image_url: undefined }]

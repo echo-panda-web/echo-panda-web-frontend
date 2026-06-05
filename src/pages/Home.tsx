@@ -5,7 +5,7 @@ import AppFooter from "../components/AppFooter";
 import ContactUs from "./ContactUs";
 import Song from "../components/Song";
 import { useNavigate, Link } from "react-router-dom";
-import InterestOnboardingModal from "../components/InterestOnboardingModal";
+// Interest onboarding modal removed
 import {
   getAdaptiveRecommendations,
   getColdStartRecommendations,
@@ -23,8 +23,7 @@ import { getMostPlayedAlbums, getMostPlayedSongs, trackSongPlay } from "../backe
 import { useDataCache } from "../contexts/DataCacheContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAudioPlayer } from "../contexts/AudioPlayerContext";
-import { FaHeart, FaPlay, FaClock, FaPlus } from "react-icons/fa";
-import AlbumCard from "../components/AlbumCard";
+import { FaPlus, FaSpinner } from "react-icons/fa";
 
 interface Tag {
   id: string;
@@ -67,9 +66,8 @@ const ScrollReveal: React.FC<{ children: React.ReactNode; delay?: string }> = ({
   return (
     <div
       ref={domRef}
-      className={`transition-all duration-700 ease-out transform ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
+      className={`transition-all duration-700 ease-out transform ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}
       style={{ transitionDelay: delay }}
     >
       {children}
@@ -83,8 +81,7 @@ const Home: React.FC = () => {
   const { getCachedData } = useDataCache();
   const { playSong } = useAudioPlayer();
 
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [genreOptions, setGenreOptions] = useState<string[]>([]);
+  // interest onboarding removed: no local state needed
 
   // Data States
   const [adaptiveRecommendations, setAdaptiveRecommendations] = useState<AdaptiveRecommendation[]>([]);
@@ -106,10 +103,7 @@ const Home: React.FC = () => {
   });
 
   useEffect(() => {
-    const stored = localStorage.getItem('onboarding:interests');
-    if (!stored) setIsOnboardingOpen(true);
-
-    fetchGenres();
+    // onboarding interest check removed
     fetchTrendingSongs();
     fetchAdaptiveSections();
     fetchNewUIContent();
@@ -195,6 +189,11 @@ const Home: React.FC = () => {
     trackSongPlay(String(song.id)).catch(() => undefined);
   };
 
+  const handleTrendingPlay = (songId: string) => {
+    const song = trendingSongs.find((s) => String(s.id) === String(songId));
+    if (song) handlePlaySong(song);
+  };
+
   const handleRecommendationCardClick = async (item: any) => {
     const recommendation = adaptiveRecommendations.find((r) => String(r.song.id) === String(item.id));
 
@@ -210,30 +209,7 @@ const Home: React.FC = () => {
     navigate(`/song/${item.id}`);
   };
 
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return "Unknown Date";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const fetchGenres = async () => {
-    try {
-      const categoryData = await getDerivedCategories();
-      setGenreOptions((categoryData || []).map((cat: any) => cat.name));
-    } catch (error) { console.error(error); }
-  };
-
-  const handleOnboardingSave = (interests: string[]) => {
-    localStorage.setItem('onboarding:interests', JSON.stringify(interests));
-    setIsOnboardingOpen(false);
-    fetchAdaptiveSections();
-  };
+  // fetchGenres and onboarding save handler removed with modal
 
   return (
     <div className={`w-full max-w-full min-h-screen space-y-16 pb-12 transition-colors duration-300 ${isLightMode ? 'bg-gray-50' : 'bg-transparent'}`}>
@@ -267,82 +243,71 @@ const Home: React.FC = () => {
       {/* 1. Recommended Songs */}
       <ScrollReveal>
         <div className="px-4 md:px-8">
-            <SongSection
-              title="Recommended Songs"
-              songs={adaptiveRecommendations.map((r) => ({ ...r.song, type: 'Song' }))}
-              viewAllLink="/songs?type=recommended"
-              onItemClick={handleRecommendationCardClick}
-            />
+          <SongSection
+            title="Recommended Songs"
+            songs={adaptiveRecommendations.map((r) => ({ ...r.song, type: 'Song' }))}
+            viewAllLink="/songs?type=recommended"
+            onItemClick={handleRecommendationCardClick}
+          />
         </div>
       </ScrollReveal>
 
       {/* 2. New Release Songs */}
       <ScrollReveal>
         <div className="px-4 md:px-8">
-            <SongSection
-              title="New Release Songs"
-              songs={newReleaseSongs}
-              viewAllLink="/songs?type=new"
-            />
+          <SongSection
+            title="New Release Songs"
+            songs={newReleaseSongs}
+            viewAllLink="/songs?type=new"
+          />
         </div>
       </ScrollReveal>
 
-      {/* 3. Trending Songs (List View) */}
+      {/* 3. Trending Songs */}
       <ScrollReveal delay="100ms">
         <div className="px-4 md:px-8">
-          <h2 className={`text-2xl md:text-3xl font-black mb-10 ${isLightMode ? 'text-gray-900' : 'text-white'} tracking-tight`}>
+          <h2 className={`text-2xl md:text-3xl font-black mb-6 ${isLightMode ? 'text-gray-900' : 'text-white'} tracking-tight`}>
             Trending <span className="text-blue-500">Songs</span>
           </h2>
 
-          <div className="w-full">
-            <div className={`grid grid-cols-12 gap-4 px-4 pb-6 text-[13px] font-bold ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>
-               <div className="col-span-1">#</div>
-               <div className="col-span-5 md:col-span-4">Title</div>
-               <div className="hidden md:block col-span-2 text-center">Release Date</div>
-               <div className="hidden lg:block col-span-4 text-center">album</div>
-               <div className="col-span-6 md:col-span-1 lg:col-span-1 text-right">Time</div>
+          {loading.trending ? (
+            <div className="flex justify-center py-12">
+              <FaSpinner className="animate-spin text-blue-500 text-3xl" />
             </div>
+          ) : (
+            <div className={`w-full rounded-lg ${isLightMode ? "bg-white border border-gray-100 shadow-sm" : "bg-transparent"}`}>
+              <div className={`grid grid-cols-12 gap-4 text-xs md:text-[10px] font-black uppercase tracking-[0.2em] ${isLightMode ? "text-gray-400" : "text-slate-500"} border-b ${isLightMode ? "border-gray-100" : "border-white/5"} pb-4 px-4 md:px-6`}>
+                <div className="col-span-1 text-center">#</div>
+                <div className="col-span-5 md:col-span-4">Title</div>
+                <div className="hidden md:block md:col-span-3">Album</div>
+                <div className="hidden md:block md:col-span-2">Plays</div>
+                <div className="col-span-2 text-right">Time</div>
+              </div>
 
-            <div className="space-y-1">
-              {trendingSongs.map((song, i) => (
-                <div
-                  key={song.id}
-                  className={`grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-xl transition-all duration-300 group ${
-                    isLightMode ? 'hover:bg-zinc-100' : 'hover:bg-white/5'
-                  }`}
-                >
-                  <div className={`col-span-1 text-base font-black ${isLightMode ? 'text-zinc-900' : 'text-white'}`}>
-                    #{i + 1}
-                  </div>
-                  <div className="col-span-11 md:col-span-4 flex items-center gap-4 min-w-0">
-                    <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 shadow-lg relative group/cover bg-zinc-800">
-                      <img src={song.songCover_url || "/logo.webp"} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => handlePlaySong(song)}>
-                        <FaPlay size={14} className="text-white fill-current" />
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className={`text-base font-bold truncate leading-tight ${isLightMode ? 'text-zinc-900' : 'text-white'} group-hover:text-blue-500 transition-colors`}>{song.title}</h4>
-                      <p className={`text-xs font-medium truncate mt-1 ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>{song.artists[0]?.name}</p>
-                    </div>
-                  </div>
-                  <div className={`hidden md:block col-span-2 text-sm font-medium text-center ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>{formatDate(song.created_at)}</div>
-                  <div className={`hidden lg:block col-span-4 text-sm font-medium text-center truncate px-4 ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>{song.album?.title || "Single"}</div>
-                  <div className="col-span-12 md:col-span-1 lg:col-span-1 flex items-center justify-end gap-6">
-                    <button className="text-zinc-500 hover:text-pink-500 transition-colors"><FaHeart size={16} /></button>
-                    <span className={`text-sm font-medium font-mono ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>{formatDuration(song.duration)}</span>
-                  </div>
-                </div>
-              ))}
+              <div className="space-y-1 mt-2 px-2 md:px-4 pb-4">
+                {trendingSongs.map((song, index) => (
+                  <Song
+                    key={song.id}
+                    id={song.id}
+                    index={index + 1}
+                    title={song.title}
+                    artists={song.artists}
+                    album={song.album}
+                    duration={song.duration}
+                    coverUrl={song.songCover_url}
+                    metadata={song.play_count > 0 ? `${song.play_count} plays` : "-"}
+                    onPlay={handleTrendingPlay}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-12 flex justify-center">
             <Link
               to="/songs?type=trending"
-              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
-                isLightMode ? 'bg-zinc-200 text-zinc-800 hover:bg-zinc-300' : 'bg-zinc-800/80 text-white hover:bg-zinc-700'
-              }`}
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${isLightMode ? 'bg-zinc-200 text-zinc-800 hover:bg-zinc-300' : 'bg-zinc-800/80 text-white hover:bg-zinc-700'
+                }`}
             >
               <FaPlus size={10} /> View All
             </Link>
@@ -353,44 +318,44 @@ const Home: React.FC = () => {
       {/* 4. Popular Artists */}
       <ScrollReveal>
         <div className="px-4 md:px-8">
-            <ArtistSection
-              title="Popular Artists"
-              artists={popularArtists}
-              viewAllLink="/artist"
-            />
+          <ArtistSection
+            title="Popular Artists"
+            artists={popularArtists}
+            viewAllLink="/artist"
+          />
         </div>
       </ScrollReveal>
 
       {/* 5. Song Khmer */}
       <ScrollReveal>
         <div className="px-4 md:px-8">
-            <SongSection
-              title="Song Khmer"
-              songs={khmerSongs}
-              viewAllLink="/category/khmer"
-            />
+          <SongSection
+            title="Song Khmer"
+            songs={khmerSongs}
+            viewAllLink="/category/khmer"
+          />
         </div>
       </ScrollReveal>
 
       {/* 6. Top Albums */}
       <ScrollReveal>
         <div className="px-4 md:px-8">
-            <SongSection
-              title="Top Albums"
-              albums={topAlbums}
-              viewAllLink="/albums"
-            />
+          <SongSection
+            title="Top Albums"
+            albums={topAlbums}
+            viewAllLink="/albums"
+          />
         </div>
       </ScrollReveal>
 
       {/* 7. Featured Charts */}
       <ScrollReveal>
         <div className="px-4 md:px-8">
-            <SongSection
-              title="Featured Charts"
-              songs={featuredCharts}
-              viewAllLink="/discover"
-            />
+          <SongSection
+            title="Featured Charts"
+            songs={featuredCharts}
+            viewAllLink="/discover"
+          />
         </div>
       </ScrollReveal>
 
@@ -405,12 +370,7 @@ const Home: React.FC = () => {
 
       <AppFooter />
 
-      <InterestOnboardingModal
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-        onSave={handleOnboardingSave}
-        genreOptions={genreOptions}
-      />
+      {/* interest onboarding modal removed */}
     </div>
   );
 };

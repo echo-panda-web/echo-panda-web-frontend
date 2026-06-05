@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
 import { getSignedSongAudioUrl, getSignedSongCoverUrl } from '../backend/songMediaApi';
 import { trackInteraction } from '../backend/recommendationService';
-import { AudioPlayerContext, SongData, useAudioPlayer } from './AudioPlayerContextCore';
+import { AudioPlayerContext, PlaySongOptions, SongData, useAudioPlayer } from './AudioPlayerContextCore';
 
 export { useAudioPlayer };
 
@@ -13,6 +13,8 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const [queue, setQueue] = useState<SongData[]>([]);
   const autoplayPoolRef = useRef<SongData[]>([]);
+  const playbackModeRef = useRef<'autoplay' | 'queue'>('autoplay');
+  const [playbackMode, setPlaybackMode] = useState<'autoplay' | 'queue'>('autoplay');
   const [queueIndex, setQueueIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -132,22 +134,32 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
     }
   }, [volume, isMuted]);
 
-  const playSong = (song: SongData) => {
+  const playSong = (song: SongData, options?: PlaySongOptions) => {
     if (currentSong?.id === song.id) {
       togglePlayPause();
       return;
     }
 
-    setQueue((prev) => {
-      const idx = prev.findIndex(s => s.id === song.id);
-      if (idx !== -1) {
-        setQueueIndex(idx);
-        return prev;
-      }
-      const newQueue = [...prev, song];
-      setQueueIndex(newQueue.length - 1);
-      return newQueue;
-    });
+    if (options?.queue && options.queue.length > 0) {
+      playbackModeRef.current = 'queue';
+      setPlaybackMode('queue');
+      const idx = options.queue.findIndex((s) => s.id === song.id);
+      setQueue(options.queue);
+      setQueueIndex(idx >= 0 ? idx : 0);
+    } else {
+      playbackModeRef.current = 'autoplay';
+      setPlaybackMode('autoplay');
+      setQueue((prev) => {
+        const idx = prev.findIndex(s => s.id === song.id);
+        if (idx !== -1) {
+          setQueueIndex(idx);
+          return prev;
+        }
+        const newQueue = [...prev, song];
+        setQueueIndex(newQueue.length - 1);
+        return newQueue;
+      });
+    }
 
     void loadSong(song);
   };
@@ -214,7 +226,31 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
     return weighted[weighted.length - 1]?.song ?? null;
   }, []);
 
+  const advanceQueue = useCallback((songs: SongData[], currentIndex: number) => {
+    if (songs.length === 0) return;
+
+    if (currentSong) trackInteraction(currentSong.id, 'skip');
+
+    let nextIdx = currentIndex + 1;
+    if (isShuffled) {
+      nextIdx = Math.floor(Math.random() * songs.length);
+    }
+
+    if (nextIdx < songs.length) {
+      setQueueIndex(nextIdx);
+      void loadSong(songs[nextIdx]);
+    } else {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    }
+  }, [currentSong, isShuffled]);
+
   const playNext = useCallback(() => {
+    if (playbackModeRef.current === 'queue') {
+      advanceQueue(queue, queueIndex);
+      return;
+    }
+
     const recommendationPool = autoplayPoolRef.current;
 
     if (recommendationPool.length > 0) {
@@ -242,22 +278,8 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
       return;
     }
 
-    if (queue.length === 0) return;
-    if (currentSong) trackInteraction(currentSong.id, 'skip');
-
-    let nextIdx = queueIndex + 1;
-    if (isShuffled) {
-      nextIdx = Math.floor(Math.random() * queue.length);
-    }
-
-    if (nextIdx < queue.length) {
-      setQueueIndex(nextIdx);
-      void loadSong(queue[nextIdx]);
-    } else {
-      setIsPlaying(false);
-      setCurrentTime(0);
-    }
-  }, [queue, queueIndex, isShuffled, currentSong, pickWeightedRandomSong]);
+    advanceQueue(queue, queueIndex);
+  }, [queue, queueIndex, currentSong, pickWeightedRandomSong, advanceQueue]);
 
   const playPrevious = () => {
     if (queueIndex > 0) {
@@ -271,6 +293,10 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
   const closePlayer = () => {
     setIsPlaying(false);
     setCurrentSong(null);
+    playbackModeRef.current = 'autoplay';
+    setPlaybackMode('autoplay');
+    setQueue([]);
+    setQueueIndex(-1);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
@@ -284,7 +310,7 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
   return (
     <AudioPlayerContext.Provider
       value={{
-        currentSong, isPlaying, currentTime, duration, volume, isMuted, isShuffled, isRepeated,
+        currentSong, isPlaying, currentTime, duration, volume, isMuted, isShuffled, isRepeated, playbackMode,
         playSong, togglePlayPause, seekTo, setVolume, toggleMute, toggleShuffle, toggleRepeat,
         playNext, playPrevious, setAutoplayPool, closePlayer,
       }}
