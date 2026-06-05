@@ -3,6 +3,7 @@ import { FaSearch, FaUser, FaSignOutAlt, FaBell, FaCog } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../routes/firebaseConfig";
 import { getSignedArtistImageUrl } from "../backend/songMediaApi";
+import { signOut as clearAuthStorage } from "../routes/authContext";
 
 interface AdminTopbarProps {
   onSearch?: (query: string) => void;
@@ -154,8 +155,7 @@ export default function AdminTopbar({
       } else {
         // Default logout logic
         await auth.signOut();
-        localStorage.removeItem("artistUser");
-        localStorage.removeItem("authToken");
+        clearAuthStorage();
         navigate("/login");
       }
     } catch (error) {

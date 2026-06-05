@@ -7,7 +7,11 @@ const BACKEND_API_BASE_URL =
   viteEnv.VITE_BACKEND_API_URL || "http://localhost:8082/api";
 
 const getBackendToken = (): string | null => {
-  return localStorage.getItem("userToken") || localStorage.getItem("authToken");
+  return (
+    localStorage.getItem("userToken") ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("token")
+  );
 };
 
 const backendRequest = async <T = any>(

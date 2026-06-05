@@ -7,6 +7,7 @@ import { Library } from "lucide-react";
 import { getSidebarLinks } from "../routes/routeConfig";
 import { useTheme } from "../contexts/ThemeContext";
 import { getUserPlaylists, type Playlist } from "../backend/playlistsService";
+import { signOut } from "../routes/authContext";
 
 interface SideBarProps {
   isCollapsed?: boolean;
@@ -38,7 +39,7 @@ const SideBar: React.FC<SideBarProps> = ({ isCollapsed = false, onToggleCollapse
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("userToken");
+    signOut();
     void navigate("/login");
   };
 

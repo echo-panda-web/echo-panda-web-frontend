@@ -13,6 +13,16 @@ import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 import { app } from "./firebaseConfig";
 import { loginFirebaseUserToBackend } from "./backendAuth";
 
+const AUTH_TOKEN_KEYS = ["userToken", "authToken", "token"] as const;
+
+function clearBackendTokenStorage(): void {
+  AUTH_TOKEN_KEYS.forEach((key) => localStorage.removeItem(key));
+}
+
+function saveBackendToken(token: string): void {
+  AUTH_TOKEN_KEYS.forEach((key) => localStorage.setItem(key, token));
+}
+
 const db = getFirestore(app);
 
 interface UserData {
@@ -37,6 +47,7 @@ interface AuthResult {
 }
 
 async function persistGoogleUser(user: User): Promise<UserData> {
+  clearBackendTokenStorage();
   const idToken = await user.getIdToken(true);
   const userDocRef = doc(db, "users", user.uid);
   const userDoc = await getDoc(userDocRef);
@@ -89,7 +100,7 @@ async function persistGoogleUser(user: User): Promise<UserData> {
 
   localStorage.setItem("user", JSON.stringify(userData));
   localStorage.setItem("isAuthenticated", "true");
-  localStorage.setItem("userToken", backendAuth.token);
+  saveBackendToken(backendAuth.token);
   if (["artist", "publicer", "admin"].includes(backendAuth.user.role)) {
     localStorage.setItem("artistUser", JSON.stringify(userData));
   }
@@ -151,6 +162,7 @@ export async function registerWithEmail(
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    clearBackendTokenStorage();
     const idToken = await user.getIdToken(true);
 
     if (username) {
@@ -192,7 +204,7 @@ export async function registerWithEmail(
 
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("userToken", backendAuth.token);
+    saveBackendToken(backendAuth.token);
     if (["artist", "publicer", "admin"].includes(backendAuth.user.role)) {
       localStorage.setItem("artistUser", JSON.stringify(userData));
     }
@@ -221,6 +233,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    clearBackendTokenStorage();
     const idToken = await user.getIdToken(true);
 
     const userDocRef = doc(db, "users", user.uid);
@@ -263,7 +276,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("userToken", backendAuth.token);
+    saveBackendToken(backendAuth.token);
     if (["artist", "publicer", "admin"].includes(backendAuth.user.role)) {
       localStorage.setItem("artistUser", JSON.stringify(userData));
     }
@@ -292,7 +305,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
 export function signOut(): void {
   localStorage.removeItem("isAuthenticated");
   localStorage.removeItem("user");
-  localStorage.removeItem("userToken");
+  clearBackendTokenStorage();
   localStorage.removeItem("artistUser");
 }
 
