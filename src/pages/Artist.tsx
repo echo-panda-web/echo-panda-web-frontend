@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { getDerivedArtists, getAlbums, getSongs } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
@@ -7,7 +7,7 @@ import AppFooter from "../components/AppFooter";
 import ArtistSection from "../components/ArtistsSection";
 import AlbumCard from "../components/AlbumCard";
 import Song from "../components/Song";
-import { FaSpinner, FaCheckCircle, FaFlag } from "react-icons/fa";
+import { FaSpinner, FaCheckCircle, FaFlag, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import ReportModal from "../components/ReportModal";
 import { useTheme } from "../contexts/ThemeContext";
 

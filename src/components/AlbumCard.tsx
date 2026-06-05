@@ -9,8 +9,13 @@ interface Artist {
 
 interface Album {
   id: string | number;
-  title: string;
+  album_id?: string | number | null;
+  title?: string;
+  name?: string;
   cover_url?: string;
+  songCover_url?: string;
+  image_url?: string;
+  cover_key?: string;
   type?: string;
   year?: number | string;
   songs?: number | string;
@@ -24,21 +29,27 @@ interface Props {
 export default function AlbumCard({ album }: Props) {
   const navigate = useNavigate();
 
-  const artistNames = album.artists && album.artists.length > 0
-    ? album.artists.map(a => a.name).join(', ')
-    : 'Various Artists';
+  const artistNames =
+    album.artists && album.artists.length > 0
+      ? album.artists.map((a) => a.name).join(", ")
+      : "Various Artists";
 
   return (
     <div
       onClick={() => navigate(`/album/${album.id}`)}
-      className="cursor-pointer group relative h-full flex flex-col bg-zinc-900  p-3 rounded-lg
-      "
+      className="cursor-pointer group relative h-full flex flex-col bg-zinc-900 p-3 rounded-lg"
     >
       <div className="w-full aspect-square bg-zinc-700 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
         {album.cover_url ? (
           <img
             src={album.cover_url}
             alt={album.title}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -72,12 +83,14 @@ export default function AlbumCard({ album }: Props) {
           <h3 className="font-semibold line-clamp-2 min-h-10 leading-tight">
             {album.title}
           </h3>
+
           <p className="text-sm text-zinc-400 line-clamp-1 mb-1">
             {artistNames}
           </p>
         </div>
+
         <p className="text-xs text-zinc-400 mt-auto">
-          {album.songs} songs • {album.year}
+          {album.songs ?? 0} songs • {album.year ?? "Unknown"}
         </p>
       </div>
     </div>

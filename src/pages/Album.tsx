@@ -39,7 +39,7 @@ export default function Album() {
         const startTime = performance.now();
         console.log("🔄 [Album] Fetching albums...");
 
-        const albumsData = await getAlbums(25, 0);
+        const albumsData = await getAlbums(200, 0);
 
         const fetchTime = performance.now() - startTime;
         console.log(`✅ [Album] Albums fetched in ${fetchTime.toFixed(0)}ms`);

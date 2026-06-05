@@ -1,5 +1,10 @@
 import { buildApiUrl, resolveMediaUrl } from "./backendUrls";
-import { getSignedAlbumCoverUrl, getSignedSongCoverUrl, getSignedArtistImageUrl } from "./songMediaApi";
+import {
+  getSignedAlbumCoverUrl,
+  getSignedSongCoverUrl,
+  getSignedArtistImageUrl,
+  getSignedGenreImageUrl
+} from "./songMediaApi";
 
 export interface CatalogArtist {
   id: string;
@@ -40,6 +45,7 @@ export interface CatalogCategory {
   id: string;
   name: string;
   description: string;
+  image_url?: string;
 }
 
 const request = async <T = any>(path: string): Promise<T> => {
@@ -79,10 +85,10 @@ const getArtistName = (artistField: any, artistNameField?: string): string | nul
 };
 
 export async function getAlbums(limit = 10, offset = 0): Promise<CatalogAlbum[]> {
-  const data = await request<{ data?: any[] }>(`/albums?per_page=200&sort_by=latest`);
+  const data = await request<{ data?: any[] }>(`/albums?per_page=${limit}&sort_by=latest`);
   const rows = Array.isArray(data?.data) ? data.data : [];
 
-  return Promise.all(rows.slice(offset, offset + limit).map(async (album: any) => ({
+  return Promise.all(rows.map(async (album: any) => ({
     id: String(album.id),
     title: album.title,
     cover_key: album.cover_key || null,
@@ -117,8 +123,16 @@ export async function getNewReleasesToday(limit = 10): Promise<CatalogAlbum[]> {
   }
 }
 
-export async function getSongs(limit = 25): Promise<CatalogSong[]> {
-  const data = await request<{ data?: any[] }>(`/songs?per_page=${Math.max(1, limit)}&sort_by=latest`);
+export async function getSongs(limit = 25, params: Record<string, any> = {}): Promise<CatalogSong[]> {
+  const queryParams = new URLSearchParams({
+    per_page: String(Math.max(1, limit)),
+    sort_by: "latest",
+    ...Object.fromEntries(
+      Object.entries(params).map(([k, v]) => [k, String(v)])
+    )
+  });
+
+  const data = await request<{ data?: any[] }>(`/songs?${queryParams.toString()}`);
   const rows = Array.isArray(data?.data) ? data.data : [];
 
   return Promise.all(rows.map(async (song: any) => {
@@ -243,23 +257,27 @@ export async function getPopularArtists(limit = 10): Promise<Array<CatalogArtist
   }
 }
 
-const normalizeCategories = (items: any[]): CatalogCategory[] => {
-  return (Array.isArray(items) ? items : [])
-    .map((item: any) => {
+const normalizeCategories = async (items: any[]): Promise<CatalogCategory[]> => {
+  const normalized = await Promise.all((Array.isArray(items) ? items : [])
+    .map(async (item: any) => {
       const name = String(item?.name || item?.title || item?.genre || "").trim();
       if (!name) {
         return null;
       }
 
+      const id = String(item?.id || encodeURIComponent(name.toLowerCase()));
       const description = String(item?.description || item?.summary || `${name} music`).trim();
+      const image_url = await getSignedGenreImageUrl(id);
 
       return {
-        id: String(item?.id || encodeURIComponent(name.toLowerCase())),
+        id,
         name,
         description,
+        image_url: image_url || undefined,
       };
-    })
-    .filter((item): item is CatalogCategory => Boolean(item));
+    }));
+
+  return normalized.filter((item): item is CatalogCategory => Boolean(item));
 };
 
 const DEFAULT_GENRES: CatalogCategory[] = [
@@ -275,17 +293,17 @@ const DEFAULT_GENRES: CatalogCategory[] = [
 ];
 
 export async function getGenres(): Promise<CatalogCategory[]> {
-  const parseResponse = (data: any): CatalogCategory[] => {
+  const parseResponse = async (data: any): Promise<CatalogCategory[]> => {
     if (Array.isArray(data)) {
-      return normalizeCategories(data);
+      return await normalizeCategories(data);
     }
 
     if (Array.isArray(data?.data)) {
-      return normalizeCategories(data.data);
+      return await normalizeCategories(data.data);
     }
 
     if (Array.isArray(data?.genres)) {
-      return normalizeCategories(data.genres);
+      return await normalizeCategories(data.genres);
     }
 
     return [];
@@ -297,7 +315,7 @@ export async function getGenres(): Promise<CatalogCategory[]> {
     });
     if (genresRes.ok) {
       const data = await genresRes.json();
-      const fromGenres = parseResponse(data);
+      const fromGenres = await parseResponse(data);
       if (fromGenres.length > 0) {
         return fromGenres;
       }
@@ -316,7 +334,7 @@ export async function getDerivedTags(): Promise<CatalogCategory[]> {
     });
     if (res.ok) {
       const data = await res.json();
-      return normalizeCategories(data);
+      return await normalizeCategories(data);
     }
   } catch (error) {
     console.error("Error fetching tags from backend:", error);

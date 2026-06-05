@@ -11,7 +11,7 @@ import {
   type CatalogAlbum
 } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
-import { getMostPlayedAlbums, trackSongPlay } from "../backend/playTrackingService";
+import { getMostPlayedAlbums, getMostPlayedSongs, trackSongPlay } from "../backend/playTrackingService";
 import {
   getAdaptiveRecommendations,
   trackRecommendationEvent,
@@ -80,8 +80,13 @@ const Discover: React.FC = () => {
   const fetchFeaturedCharts = async () => {
     try {
       setLoadingFeatured(true);
-      const categoriesData = await getDerivedCategories();
-      setFeaturedCharts(categoriesData.slice(0, 10));
+      // Fetch top albums instead of genres for "Featured Charts" as requested
+      const albumsData = await getMostPlayedAlbums(10);
+      setFeaturedCharts(albumsData.map(a => ({
+        ...a,
+        name: a.title, // Map title to name for consistency with UI mapping
+        image_url: a.cover_url
+      })));
     } catch (e) {
       console.error(e);
     } finally {

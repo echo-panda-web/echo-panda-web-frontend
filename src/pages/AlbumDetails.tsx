@@ -84,31 +84,37 @@ const AlbumDetails: React.FC = () => {
         }
 
         const albumData = await response.json();
+        const rawAlbum = albumData.data || albumData;
 
         const meta: AlbumMeta = {
-          id: String(albumData.id),
-          title: albumData.title,
-          cover_key: albumData.cover_key || null,
-          cover_url: (await getSignedAlbumCoverUrl(albumData.id)) || undefined,
-          release_date: albumData.release_date || undefined,
-          type: albumData.type || undefined,
-          artists: albumData.artist
-            ? [{ id: String(albumData.id), name: albumData.artist }]
+          id: String(rawAlbum.id),
+          title: rawAlbum.title,
+          cover_key: rawAlbum.cover_key || null,
+          cover_url: (await getSignedAlbumCoverUrl(rawAlbum.id)) || rawAlbum.cover_url || undefined,
+          release_date: rawAlbum.release_date || undefined,
+          type: rawAlbum.type || undefined,
+          artists: rawAlbum.artist
+            ? [{
+                id: String(rawAlbum.artist.id || rawAlbum.id),
+                name: rawAlbum.artist.stage_name || rawAlbum.artist.name || rawAlbum.artist || "Unknown"
+              }]
             : [],
         };
 
-        const songsData = Array.isArray(albumData?.songs) ? albumData.songs : [];
+        const songsData = Array.isArray(rawAlbum?.songs) ? rawAlbum.songs : [];
 
         const transformed: SongData[] = await Promise.all((songsData || []).map(async (s: any) => ({
           id: String(s.id),
           title: s.title,
           duration: s.duration,
-          album_id: s.album_id ? String(s.album_id) : null,
+          album_id: s.album_id ? String(s.album_id) : meta.id,
           original_key: s.original_key || null,
           audio_url: s.audio_url || s.original_key,
           songCover_url: (await getSignedSongCoverUrl(s.id)) || s.songCover_url || meta.cover_url,
           created_at: s.created_at,
-          artists: s.artist ? [{ id: String(s.id), name: s.artist }] : [],
+          artists: s.artist
+            ? [{ id: String(s.id), name: s.artist.stage_name || s.artist.name || s.artist || "Unknown" }]
+            : meta.artists,
         })));
 
         return { album: meta, songs: transformed };

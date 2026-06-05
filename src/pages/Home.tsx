@@ -19,12 +19,13 @@ import {
   getHomeTags,
   getSongs,
   getAlbums,
+  getGenres,
   getNewReleasesToday,
   getPopularArtists,
   type CatalogSong,
   type CatalogAlbum
 } from "../backend/catalogService";
-import { getRecentlyPlayed, trackSongPlay } from "../backend/playTrackingService";
+import { getMostPlayedAlbums, getRecentlyPlayed, trackSongPlay } from "../backend/playTrackingService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAudioPlayer } from "../contexts/AudioPlayerContext";
@@ -133,8 +134,24 @@ const Home: React.FC = () => {
 
     try {
       setLoading(prev => ({ ...prev, khmer: true }));
-      setKhmerSongs(await getSongs(10)); // Simplified for now
-    } catch (e) { console.error(e); } finally { setLoading(prev => ({ ...prev, khmer: false })); }
+
+      // Try to find the "Khmer" genre first
+      const genres = await getGenres();
+      const khmerGenre = genres.find(g =>
+        g.name.toLowerCase() === 'khmer' || g.id.toLowerCase() === 'khmer'
+      );
+
+      if (khmerGenre) {
+        setKhmerSongs(await getSongs(10, { category_id: khmerGenre.id }));
+      } else {
+        // Fallback or search by tag
+        setKhmerSongs(await getSongs(10, { search: 'Khmer' }));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(prev => ({ ...prev, khmer: false }));
+    }
 
     try {
       setLoading(prev => ({ ...prev, topAlbums: true }));
@@ -143,9 +160,19 @@ const Home: React.FC = () => {
 
     try {
       setLoading(prev => ({ ...prev, featured: true }));
-      const categories = await getDerivedCategories();
-      setFeaturedCharts(categories.slice(0, 10));
-    } catch (e) { console.error(e); } finally { setLoading(prev => ({ ...prev, featured: false })); }
+      // Fetch top albums instead of generic categories for charts
+      const albumsData = await getMostPlayedAlbums(10);
+      setFeaturedCharts(albumsData.map(a => ({
+        ...a,
+        name: a.title, // Map title to name for consistency with UI mapping
+        image_url: a.cover_url,
+        type: 'album'
+      })));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(prev => ({ ...prev, featured: false }));
+    }
   };
 
   const fetchAdaptiveSections = async () => {
