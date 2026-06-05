@@ -29,9 +29,10 @@ import SearchPage from "../pages/SearchPage";
 import Playlist from "../pages/Playlist";
 import Settings from "../pages/Settings";
 import CategoryAlbums from "../pages/CategoryAlbums";
+import SongsList from "../pages/SongsList";
 
 // Admin 
-import { FaMagic } from "react-icons/fa";
+import { FaMagic, FaSparkles } from "react-icons/fa";
 import ArtistLayout from "../layouts/ArtistLayout";
 import Dashboard from "../artist/pages/Dashboard";
 import Users from "../artist/pages/Users";
@@ -104,6 +105,14 @@ export const routeConfig: RouteConfig[] = [
     label: "Category Albums",
     icon: null,
     component: CategoryAlbums,
+    group: "menu",
+    showInSidebar: false,
+  },
+  {
+    path: "/songs",
+    label: "All Songs",
+    icon: null,
+    component: SongsList,
     group: "menu",
     showInSidebar: false,
   },

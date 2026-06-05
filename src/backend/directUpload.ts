@@ -1,6 +1,6 @@
 import { BACKEND_API_BASE_URL } from "./backendUrls";
 
-export type MediaUploadPurpose = "album_cover" | "song_cover" | "song_audio" | "artist_image" | "song_lyrics";
+export type MediaUploadPurpose = "album_cover" | "song_cover" | "song_audio" | "artist_image" | "song_lyrics" | "playlist_cover";
 
 export interface PresignedMediaUploadResponse {
   message: string;

@@ -3,6 +3,7 @@ import { getAlbums } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import AlbumCard from "../components/AlbumCard";
 import { FaSpinner } from "react-icons/fa";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface Artist {
   id: string;
@@ -20,11 +21,8 @@ interface Album {
   artists?: Artist[];
 }
 
-interface AlbumPageProps {
-  isLightMode?: boolean;
-}
-
-export default function Album({ isLightMode = false }: AlbumPageProps) {
+export default function Album() {
+  const { isLightMode } = useTheme();
   const { getCachedData } = useDataCache();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +69,7 @@ export default function Album({ isLightMode = false }: AlbumPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-black via-zinc-950 to-black">
+    <div className={`min-h-screen ${isLightMode ? "bg-gray-50 text-gray-900" : "bg-black text-white"}`}>
       {/* Header */}
       <div className="relative h-96 overflow-hidden">
         <div
@@ -84,18 +82,18 @@ export default function Album({ isLightMode = false }: AlbumPageProps) {
               : "blur(2px) brightness(0.4)",
           }}
         />
-        <div className="absolute inset-0 bg-linear-to-b from-black/40 via-black/60 to-black" />
-        <div className="absolute inset-0 bg-linear-to-r from-purple-900/30 via-transparent to-pink-900/30" />
+        <div className={`absolute inset-0 bg-linear-to-b ${isLightMode ? "from-white/40 via-white/60 to-gray-50" : "from-black/40 via-black/60 to-black"}`} />
+        <div className={`absolute inset-0 ${isLightMode ? "bg-linear-to-r from-purple-100/30 via-transparent to-pink-100/30" : "bg-linear-to-r from-purple-900/30 via-transparent to-pink-900/30"}`} />
 
         <div className="relative z-10 h-full flex flex-col justify-end">
           <div className="px-6 md:px-12 max-w-7xl mx-auto w-full pb-8 md:pb-12">
-            <div className="inline-block mb-4 px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-              <span className="text-sm font-medium">Collection</span>
+            <div className={`inline-block mb-4 px-4 py-1.5 ${isLightMode ? "bg-black/10 border-black/20" : "bg-white/10 border-white/20"} backdrop-blur-md rounded-full border`}>
+              <span className={`text-sm font-medium ${isLightMode ? "text-gray-900" : "text-white"}`}>Collection</span>
             </div>
-            <h1 className="text-6xl md:text-7xl font-black mb-4 bg-linear-to-r from-white via-white to-gray-300 bg-clip-text text-transparent tracking-tight">
+            <h1 className={`text-6xl md:text-7xl font-black mb-4 ${isLightMode ? "from-gray-900 via-gray-800 to-gray-700" : "from-white via-white to-gray-300"} bg-linear-to-r bg-clip-text text-transparent tracking-tight`}>
               Albums
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 font-light">
+            <p className={`text-xl md:text-2xl ${isLightMode ? "text-gray-600" : "text-gray-300"} font-light`}>
               {`Explore your music collection · ${albums.length} albums`}
             </p>
           </div>

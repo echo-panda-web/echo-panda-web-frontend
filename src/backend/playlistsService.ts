@@ -3,11 +3,13 @@ import { buildApiUrl } from "./backendUrls";
 export interface Playlist {
   id: string;
   name: string;
+  description?: string;
+  image_url?: string;
   song_count: number;
   created_at: string;
 }
 
-const getAuthToken = () => localStorage.getItem('token');
+const getAuthToken = () => localStorage.getItem("userToken") || localStorage.getItem("authToken") || localStorage.getItem('token');
 
 const request = async <T = any>(path: string, options: RequestInit = {}): Promise<T> => {
   const token = getAuthToken();
@@ -32,68 +34,64 @@ export async function getUserPlaylists(): Promise<Playlist[]> {
   const token = getAuthToken();
   if (!token) return [];
 
-  // We combine standard playlists and AI generated ones for a unified library
-  const [standard, ai] = await Promise.all([
-    request("/playlists").catch(() => []),
-    request("/ai-playlists").catch(() => [])
-  ]);
+  const response = await request("/playlists").catch(() => ({ data: [] }));
+  const standard = Array.isArray(response) ? response : (response?.data || []);
 
-  const standardTransformed = standard.map((p: any) => ({
+  return standard.map((p: any) => ({
     id: String(p.id),
     name: p.name,
+    description: p.description,
+    image_url: p.image_url,
     song_count: p.songs_count || 0,
     created_at: p.created_at
-  }));
-
-  const aiTransformed = ai.map((p: any) => ({
-    id: `ai_${p.id}`, // Prefix to distinguish from standard
-    name: p.title,
-    song_count: p.song_count || 0,
-    created_at: p.created_at,
-    isAi: true
-  }));
-
-  return [...standardTransformed, ...aiTransformed].sort((a, b) =>
+  })).sort((a: any, b: any) =>
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 }
 
-export async function createPlaylist(name: string): Promise<Playlist> {
-  const data = await request("/playlists", {
+export async function createPlaylist(name: string, description?: string, imageUrl?: string): Promise<Playlist> {
+  const response = await request("/playlists", {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, description, image_url: imageUrl }),
   });
+  const data = response?.data || response;
+
   return {
     id: String(data.id),
     name: data.name,
+    description: data.description,
+    image_url: data.image_url,
     song_count: 0,
     created_at: data.created_at
   };
 }
 
+export async function updatePlaylist(id: string, name: string, description?: string, imageUrl?: string): Promise<Playlist> {
+  const response = await request(`/playlists/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({ name, description, image_url: imageUrl }),
+  });
+  const data = response?.data || response;
+
+  return {
+    id: String(data.id),
+    name: data.name,
+    description: data.description,
+    image_url: data.image_url,
+    song_count: data.songs_count || 0,
+    created_at: data.created_at
+  };
+}
+
 export async function deletePlaylist(id: string): Promise<void> {
-  if (id.startsWith('ai_')) {
-    const numericId = id.replace('ai_', '');
-    await request(`/ai-playlists/${numericId}`, { method: "DELETE" });
-  } else {
-    await request(`/playlists/${id}`, { method: "DELETE" });
-  }
+  await request(`/playlists/${id}`, { method: "DELETE" });
 }
 
 export async function getPlaylistSongs(id: string): Promise<any[]> {
-  if (id.startsWith('ai_')) {
-    const numericId = id.replace('ai_', '');
-    const data = await request(`/ai-playlists/${numericId}`);
-    return data.songs.map((s: any) => ({
-        ...s,
-        id: String(s.id),
-        duration: Number(s.duration),
-        songCover_url: s.cover_url
-    }));
-  }
+  const response = await request(`/playlists/${id}/songs`);
+  const data = Array.isArray(response) ? response : (response?.data || []);
 
-  const data = await request(`/playlists/${id}/songs`);
-  return (data || []).map((s: any) => ({
+  return data.map((s: any) => ({
     ...s,
     id: String(s.id),
     duration: Number(s.duration),

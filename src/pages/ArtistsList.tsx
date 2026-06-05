@@ -4,6 +4,7 @@ import { getDerivedArtists } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import AppFooter from "../components/AppFooter";
 import { FaSpinner } from "react-icons/fa";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface Artist {
   id: string;
@@ -18,11 +19,11 @@ interface Artist {
 
 const ArtistsList: React.FC = () => {
   const { getCachedData } = useDataCache();
+  const { isLightMode } = useTheme();
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const isLightMode = false;
 
   useEffect(() => {
     fetchArtists();

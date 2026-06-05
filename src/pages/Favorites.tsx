@@ -4,6 +4,7 @@ import { FaSpinner, FaMusic, FaTrash } from "react-icons/fa";
 import Song from "../components/Song";
 import { removeFromFavorites } from "../backend/favoritesService";
 import { trackSongPlay } from "../backend/playTrackingService";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface Artist {
   id: string;
@@ -42,6 +43,7 @@ const getBackendToken = (): string | null => {
 
 const Favorites: React.FC = () => {
   const navigate = useNavigate();
+  const { isLightMode } = useTheme();
   const [songs, setSongs] = useState<any>([]);
   const [loading, setLoading] = useState(true);
   const [rawResponse, setRawResponse] = useState<any>(null);
@@ -186,21 +188,21 @@ const Favorites: React.FC = () => {
           : [];
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white py-8">
+    <div className={`min-h-screen ${isLightMode ? "bg-gray-50 text-gray-900" : "bg-black text-white"} py-8`}>
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-5xl font-black text-white tracking-tight">
+            <h1 className={`text-5xl font-black ${isLightMode ? "text-gray-900" : "text-white"} tracking-tight`}>
               Liked <span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-pink-400">Songs</span>
             </h1>
           </div>
-          <p className="text-slate-400 text-lg">
+          <p className={`${isLightMode ? "text-gray-500" : "text-slate-400"} text-lg`}>
             {songsList.length} {songsList.length === 1 ? 'song' : 'songs'}
           </p>
           {songsList.length > 0 && (
             <button
               onClick={handleClearAll}
-              className="flex items-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-red-500/30"
+              className={`flex items-center gap-2 px-6 py-3 ${isLightMode ? "bg-red-50 hover:bg-red-100 text-red-600 border-red-200" : "bg-red-500/10 hover:bg-red-500/20 text-red-400 border-red-500/30"} rounded-lg transition-colors border`}
             >
               <FaTrash size={16} />
               Clear All
@@ -214,14 +216,14 @@ const Favorites: React.FC = () => {
           </div>
         ) : songsList.length === 0 ? (
           <div className="text-center py-32">
-            <FaMusic className="text-slate-700 text-6xl mx-auto mb-4" />
-            <p className="text-slate-400 text-xl mb-2">No liked songs yet</p>
+            <FaMusic className={`${isLightMode ? "text-gray-300" : "text-slate-700"} text-6xl mx-auto mb-4`} />
+            <p className={`${isLightMode ? "text-gray-500" : "text-slate-400"} text-xl mb-2`}>No liked songs yet</p>
             <p className="text-slate-500">Songs you like will appear here</p>
           </div>
         ) : (
-          <div className="bg-[#0f0f0f] rounded-lg">
+          <div className={`${isLightMode ? "bg-white border border-gray-100 shadow-sm" : "bg-black"} rounded-lg`}>
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 text-xs md:text-sm uppercase tracking-wide text-gray-400 font-medium border-b border-gray-800 pb-2 px-3">
+            <div className={`grid grid-cols-12 gap-4 text-xs md:text-[10px] font-black uppercase tracking-[0.2em] ${isLightMode ? "text-gray-400" : "text-slate-500"} border-b ${isLightMode ? "border-gray-100" : "border-white/5"} pb-4 px-6`}>
               <div className="col-span-1 text-center">#</div>
               <div className="col-span-5 md:col-span-4">Title</div>
               <div className="hidden md:block md:col-span-3">Album</div>
@@ -230,7 +232,7 @@ const Favorites: React.FC = () => {
             </div>
 
             {/* Song List */}
-            <div className="space-y-2 mt-3">
+            <div className="space-y-1 mt-6">
               {songsList.map((song, index) => (
                 <Song
                   key={song.id}

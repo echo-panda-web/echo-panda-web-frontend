@@ -5,11 +5,12 @@ import  NavBar  from '../pages/NavBar';
 import Player from '../components/Player';
 import { getCurrentUser } from "../routes/authContext";
 import { getAdminBackendUrl } from "../routes/backendAuth";
+import { useTheme } from "../contexts/ThemeContext";
 
 const HomeLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLightMode, setIsLightMode] = useState(false);
+  const { isLightMode, setIsLightMode } = useTheme();
   // Start collapsed by default on first run
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
@@ -52,12 +53,11 @@ const HomeLayout: React.FC = () => {
  return (
     <div className="flex flex-col h-screen">
       {/* NavBar at the top */}
-      <NavBar isLightMode={isLightMode} setIsLightMode={setIsLightMode} />
+      <NavBar />
 
       {/* Content area with sidebar */}
       <div className={`flex flex-1 ${mainBg} ${textColor} overflow-hidden`}>
         <SideBar 
-          isLightMode={isLightMode}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={setIsSidebarCollapsed}
         />

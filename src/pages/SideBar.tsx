@@ -1,20 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-  FaSignOutAlt, FaPlus, FaChevronLeft, FaChevronRight
+  FaSignOutAlt, FaChevronLeft, FaChevronRight, FaPlus, FaMusic
 } from "react-icons/fa";
+import { Library } from "lucide-react";
 import { getSidebarLinks } from "../routes/routeConfig";
+import { useTheme } from "../contexts/ThemeContext";
+import { getUserPlaylists, type Playlist } from "../backend/playlistsService";
 
 interface SideBarProps {
-  isLightMode: boolean;
   isCollapsed?: boolean;
   onToggleCollapse?: (collapsed: boolean) => void;
 }
 
-const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onToggleCollapse }) => {
+const SideBar: React.FC<SideBarProps> = ({ isCollapsed = false, onToggleCollapse }) => {
+  const { isLightMode } = useTheme();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const navigate = useNavigate();
   const sidebarLinks = getSidebarLinks();
+
+  useEffect(() => {
+    loadPlaylists();
+  }, []);
+
+  const loadPlaylists = async () => {
+    try {
+      const data = await getUserPlaylists();
+      setPlaylists(data);
+    } catch (error) {
+      console.error('Error loading sidebar playlists:', error);
+    }
+  };
 
   const handleToggleCollapse = () => {
     if (onToggleCollapse) onToggleCollapse(!isCollapsed);
@@ -25,36 +42,46 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
     void navigate("/login");
   };
 
+  // Upgraded theme colors to exactly match the premium, modern dashboard aesthetics
   const themeClasses = {
-    aside: isLightMode ? "bg-white border-r border-gray-200 text-gray-900" : "bg-black text-white",
-    hover: isLightMode ? "hover:bg-gray-100" : "hover:bg-white/10",
-    textMuted: isLightMode ? "text-gray-500" : "text-gray-400",
-    border: isLightMode ? "border-gray-200" : "border-white/10"
+    aside: isLightMode
+      ? "bg-white/80 backdrop-blur-md border-r border-gray-100 text-gray-900"
+      : "bg-black border-r border-white/5 text-[#e1e7ed]",
+    hover: isLightMode
+      ? "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+      : "hover:bg-zinc-900 text-[#8a99ad] hover:text-white",
+    textMuted: isLightMode
+      ? "text-gray-400"
+      : "text-[#475467]",
+    border: isLightMode
+      ? "border-gray-100"
+      : "border-[#161b26]"
   };
 
   return (
     <>
       <aside
-        className={`h-screen flex flex-col transition-all duration-300 relative z-40 ${themeClasses.aside} ${isCollapsed ? "w-20" : "w-64 md:w-72"
-          }`}
+        className={`h-screen flex flex-col transition-all duration-300 relative z-40 ${themeClasses.aside} ${
+          isCollapsed ? "w-20" : "w-64 md:w-68"
+        }`}
       >
-        {/* Toggle Button */}
+        {/* Sleek Minimal Toggle Button */}
         <button
           onClick={handleToggleCollapse}
-          className={`hidden md:flex absolute top-5 -right-3 p-1.5 rounded-full border bg-inherit shadow-md transition-transform z-50 ${themeClasses.border} hover:scale-110 active:scale-95`}
+          className={`hidden md:flex absolute top-6 -right-3 p-1.5 rounded-full border bg-black text-gray-400 hover:text-white shadow-lg transition-all z-50 ${themeClasses.border} hover:scale-105 active:scale-95`}
         >
           {isCollapsed ? <FaChevronRight size={10} /> : <FaChevronLeft size={10} />}
         </button>
 
         {/* Navigation Section */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 hide-scrollbar">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden pt-8 pb-4 px-4 hide-scrollbar">
           {!isCollapsed && (
-            <div className={`px-5 mb-3 text-[11px] font-bold uppercase tracking-[0.2em] ${themeClasses.textMuted}`}>
+            <div className={`px-4 mb-4 text-[10px] font-bold uppercase tracking-[0.25em] ${themeClasses.textMuted}`}>
               Menu
             </div>
           )}
 
-          <ul className="space-y-2">
+          <ul className="space-y-1.5">
             {sidebarLinks.map((link) => {
               const Icon = link.icon;
               return (
@@ -64,36 +91,108 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
                     title={isCollapsed ? link.label : ""}
                     onClick={() => { if (onToggleCollapse) onToggleCollapse(false); }}
                     className={({ isActive }) => `
-                      flex items-center rounded-2xl transition-all duration-200 group
-                      ${/* BIGGER PADDING HERE */ isCollapsed ? "p-4 justify-center" : "py-4 px-5 justify-start"}
+                      flex items-center rounded-xl transition-all duration-200 group font-medium
+                      ${isCollapsed ? "p-3.5 justify-center" : "py-3 px-4 justify-start"}
                       ${isActive
-                        ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20"
-                        : `text-gray-400 ${themeClasses.hover} hover:text-white`
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/15"
+                        : `${themeClasses.hover}`
                       }
                     `}
                   >
-                    {/* BIGGER ICONS */}
-                    {Icon ? <Icon className={`h-6 w-6 shrink-0 transition-transform group-hover:scale-110 ${isCollapsed ? "" : "mr-4"}`} /> : null}
-                    {!isCollapsed && <span className="font-bold text-[15px] truncate tracking-wide">{link.label}</span>}
+                    {Icon ? (
+                      <Icon
+                        className={`h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+                          isCollapsed ? "" : "mr-3.5"
+                        }`}
+                      />
+                    ) : null}
+
+                    {!isCollapsed && (
+                      <span className="text-[14px] tracking-wide truncate">
+                        {link.label}
+                      </span>
+                    )}
                   </NavLink>
                 </li>
               );
             })}
           </ul>
 
-          {/* Action Section (changed to Sign Out) */}
-          <div className={`mt-8 ${isCollapsed ? "px-0" : "px-2"}`}>
+          {/* Spotify-style Library Section */}
+          <div className="mt-8">
+            <div className={`px-4 mb-4 flex items-center justify-between ${isCollapsed ? "justify-center" : ""}`}>
+              {!isCollapsed ? (
+                <>
+                  <div className={`flex items-center gap-3 text-[12px] font-black uppercase tracking-widest ${isLightMode ? "text-gray-500" : "text-zinc-400"}`}>
+                    <Library size={18} />
+                    <span>Your Library</span>
+                  </div>
+                  <button
+                    onClick={() => navigate('/playlist')}
+                    className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${isLightMode ? "text-gray-400" : "text-zinc-500"}`}
+                  >
+                    <FaPlus size={12} />
+                  </button>
+                </>
+              ) : (
+                <Library size={20} className={isLightMode ? "text-gray-400" : "text-zinc-500"} />
+              )}
+            </div>
+
+            <ul className="space-y-1 mt-2">
+              {playlists.map((p) => (
+                <li key={p.id}>
+                  <NavLink
+                    to={`/playlist?id=${p.id}`} // We might need to update how PlaylistPage handles IDs
+                    className={({ isActive }) => `
+                      flex items-center rounded-xl transition-all duration-200 group
+                      ${isCollapsed ? "p-3.5 justify-center" : "py-2.5 px-4 justify-start"}
+                      ${isActive
+                        ? "bg-zinc-800 text-white"
+                        : `${themeClasses.hover}`
+                      }
+                    `}
+                  >
+                    {p.image_url ? (
+                      <img
+                        src={p.image_url}
+                        alt=""
+                        className={`rounded-md object-cover shrink-0 ${isCollapsed ? "w-8 h-8" : "w-10 h-10 mr-3"}`}
+                      />
+                    ) : (
+                      <div className={`rounded-md flex items-center justify-center shrink-0 ${isLightMode ? 'bg-zinc-100' : 'bg-zinc-800'} ${isCollapsed ? "w-8 h-8" : "w-10 h-10 mr-3"}`}>
+                        <FaMusic className={isLightMode ? 'text-zinc-400' : 'text-zinc-600'} size={isCollapsed ? 12 : 14} />
+                      </div>
+                    )}
+
+                    {!isCollapsed && (
+                      <div className="min-w-0">
+                        <p className="text-[14px] font-bold truncate leading-tight">{p.name}</p>
+                        <p className={`text-[11px] ${isLightMode ? 'text-gray-400' : 'text-zinc-500'} font-medium`}>Playlist • {p.song_count} songs</p>
+                      </div>
+                    )}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Cleaned Action Section (No more jagged dashed borders) */}
+          <div className="mt-8 pt-4 border-t border-transparent">
             <button
               onClick={() => setShowLogoutConfirm(true)}
               aria-label="Sign out"
-              className={`flex items-center w-full rounded-2xl border-2 border-dashed transition-all group
-                ${isCollapsed ? "p-4 justify-center" : "py-4 px-5 justify-start"}
-                ${isLightMode ? "border-gray-200 hover:border-red-500" : "border-white/10 hover:border-red-500"}
+              className={`flex items-center w-full rounded-xl transition-all duration-200 group font-medium
+                ${isCollapsed ? "p-3.5 justify-center" : "py-3 px-4 justify-start"}
+                ${isLightMode
+                  ? "hover:bg-red-50 text-gray-500 hover:text-red-600"
+                  : "hover:bg-red-950/20 text-[#8a99ad] hover:text-red-400"
+                }
               `}
             >
-              <FaSignOutAlt className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+              <FaSignOutAlt className="h-[18px] w-[18px] shrink-0 transition-colors duration-200" />
               {!isCollapsed && (
-                <span className="ml-4 text-[15px] font-bold text-gray-400 group-hover:text-red-500">
+                <span className="ml-3.5 text-[14px] tracking-wide">
                   Sign Out
                 </span>
               )}
@@ -101,31 +200,35 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
           </div>
         </nav>
 
-        {/* Logout Confirmation - Appears at bottom */}
+        {/* Logout Confirmation - In-sidebar Elegant Toast */}
         {showLogoutConfirm && (
-          <div className={`p-4 border-t ${themeClasses.border}`}>
-            <div className={`rounded-lg p-3 ${isLightMode ? "bg-red-50" : "bg-red-500/10"}`}>
+          <div className={`p-4 border-t ${themeClasses.border} animate-fade-in`}>
+            <div className={`rounded-xl p-3.5 border ${
+              isLightMode
+                ? "bg-red-50/50 border-red-100"
+                : "bg-black border-red-900/30"
+            }`}>
               {!isCollapsed && (
-                <p className={`text-sm mb-3 ${isLightMode ? "text-red-900" : "text-red-300"}`}>
-                  Are you sure you want to log out?
+                <p className={`text-xs mb-3 font-medium ${isLightMode ? "text-red-700" : "text-red-400/80"}`}>
+                  Confirm signing out?
                 </p>
               )}
               <div className="flex gap-2">
                 <button
                   onClick={handleLogout}
-                  className={`flex-1 py-2 rounded-lg font-medium text-sm transition
-                    ${isLightMode ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"}
-                  `}
+                  className="flex-1 py-1.5 rounded-lg font-semibold text-xs transition bg-red-600 text-white hover:bg-red-500 active:scale-95"
                 >
-                  {isCollapsed ? "Yes" : "Log Out"}
+                  {isCollapsed ? "Y" : "Log Out"}
                 </button>
                 <button
                   onClick={() => setShowLogoutConfirm(false)}
-                  className={`flex-1 py-2 rounded-lg font-medium text-sm transition
-                    ${isLightMode ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-white/10 text-white hover:bg-white/20"}
-                  `}
+                  className={`flex-1 py-1.5 rounded-lg font-semibold text-xs transition border ${
+                    isLightMode
+                      ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                      : "border-[#242c3d] bg-[#161b26] text-gray-300 hover:bg-[#202736]"
+                  } active:scale-95`}
                 >
-                  {isCollapsed ? "No" : "Cancel"}
+                  {isCollapsed ? "N" : "Cancel"}
                 </button>
               </div>
             </div>
@@ -133,10 +236,15 @@ const SideBar: React.FC<SideBarProps> = ({ isLightMode, isCollapsed = false, onT
         )}
       </aside>
 
-      {/* Styles for scrollbar hiding */}
+      {/* Embedded core styles */}
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
       `}</style>
     </>
   );

@@ -114,7 +114,7 @@ export const getMostPlayedSongs = async (limit: number = 25): Promise<any[]> => 
         id: String(song.id),
         title: song.title,
         duration: song.duration,
-        audio_url: song.original_key || null,
+        audio_url: song.audio_url || song.original_key || null,
         songCover_url: coverUrl || albumCoverUrl || song.album?.cover_url || null,
         album_id: song.album_id ? String(song.album_id) : null,
         album: song.album
@@ -153,7 +153,7 @@ export const getRecentlyPlayed = async (limit: number = 25): Promise<any[]> => {
         id: String(song.id),
         title: song.title,
         duration: song.duration,
-        audio_url: song.original_key || null,
+        audio_url: song.audio_url || song.original_key || null,
         songCover_url: coverUrl || albumCoverUrl || song.album?.cover_url || null,
         album_id: song.album_id ? String(song.album_id) : null,
         album: song.album

@@ -1,3 +1,4 @@
+import { buildApiUrl } from "./backendUrls";
 import { getSongs } from "./catalogService";
 
 export interface AlbumRef {
@@ -9,6 +10,33 @@ export interface AlbumRef {
 }
 
 const normalize = (value: string) => value.trim().toLowerCase();
+
+const getToken = (): string | null => {
+  return localStorage.getItem("userToken") || localStorage.getItem("authToken");
+};
+
+const authenticatedRequest = async (path: string, options: RequestInit = {}) => {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(buildApiUrl(path), {
+    ...options,
+    headers: { ...headers, ...options.headers },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 export async function getRecommendationsForInterests(interests: string[]): Promise<AlbumRef[]> {
   const songs = await getSongs(500);
@@ -48,10 +76,22 @@ export async function getRecommendationsForInterests(interests: string[]): Promi
     return false;
   });
 
-  if (matches.length > 0) {
-    return matches.slice(0, 12);
-  }
+  return matches.length > 0 ? matches.slice(0, 12) : albums.slice(0, 12);
+}
 
-  // Fallback when interest labels do not directly match titles/artists.
-  return albums.slice(0, 12);
+// New Dynamic Recommendation Endpoints
+
+export async function getHomeRecommendations() {
+  return authenticatedRequest('/recommendations/home');
+}
+
+export async function trackInteraction(songId: string, action: string) {
+  try {
+    return await authenticatedRequest('/interactions/track', {
+      method: 'POST',
+      body: JSON.stringify({ song_id: songId, action }),
+    });
+  } catch (error) {
+    console.warn('Failed to track interaction:', error);
+  }
 }

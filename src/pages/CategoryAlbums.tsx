@@ -4,6 +4,7 @@ import { getAlbums, getDerivedCategories } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import { FaSpinner, FaArrowLeft } from "react-icons/fa";
 import AlbumCard from "../components/AlbumCard";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface Artist {
   id: string;
@@ -29,6 +30,7 @@ const CategoryAlbums: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getCachedData } = useDataCache();
+  const { isLightMode } = useTheme();
   const [category, setCategory] = useState<Category | null>(null);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,11 +114,11 @@ const CategoryAlbums: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className={`min-h-screen ${isLightMode ? "bg-gray-50 text-gray-900" : "bg-black text-white"}`}>
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8"
+          className={`flex items-center gap-2 ${isLightMode ? "text-gray-500 hover:text-gray-900" : "text-gray-400 hover:text-white"} transition-colors mb-8`}
         >
           <FaArrowLeft size={18} /> Back
         </button>
@@ -127,16 +129,16 @@ const CategoryAlbums: React.FC = () => {
               🎵
             </div>
             <div className="flex-1">
-              <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-2">
+              <h1 className={`text-5xl md:text-6xl font-black tracking-tight mb-2 ${isLightMode ? "text-gray-900" : "text-white"}`}>
                 {category.name}
               </h1>
               {category.description && (
-                <p className="text-gray-400 text-lg leading-relaxed">{category.description}</p>
+                <p className={`${isLightMode ? "text-gray-600" : "text-gray-400"} text-lg leading-relaxed`}>{category.description}</p>
               )}
             </div>
           </div>
 
-          <p className="text-gray-500 font-medium">
+          <p className={`${isLightMode ? "text-gray-500" : "text-gray-500"} font-medium`}>
             {albums.length} {albums.length === 1 ? 'album' : 'albums'}
           </p>
         </div>
@@ -144,7 +146,7 @@ const CategoryAlbums: React.FC = () => {
         {albums.length === 0 ? (
           <div className="text-center py-32">
             <div className="text-6xl mb-4 opacity-20">📀</div>
-            <p className="text-gray-400 text-xl">No albums in this category yet</p>
+            <p className={`${isLightMode ? "text-gray-400" : "text-gray-400"} text-xl`}>No albums in this category yet</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

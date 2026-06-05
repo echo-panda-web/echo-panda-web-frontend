@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaMusic, FaHeart, FaPlay, FaPlus, FaTrash } from "react-icons/fa";
+import { FaMusic, FaHeart, FaPlay, FaPlus, FaTrash, FaFlag, FaShare } from "react-icons/fa";
 import { isSongFavorite, toggleFavorite } from "../backend/favoritesService";
 import {
   getUserPlaylists,
@@ -10,6 +10,8 @@ import {
   type Playlist,
 } from "../backend/playlistsService";
 import ReportModal from "./ReportModal";
+import ShareModal from "./ShareModal";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface Artist {
   id: string;
@@ -57,6 +59,7 @@ const Song: React.FC<SongProps> = ({
   showAddToPlaylist = true,
 }) => {
   const navigate = useNavigate();
+  const { isLightMode } = useTheme();
   const [hovered, setHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -69,6 +72,7 @@ const Song: React.FC<SongProps> = ({
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   // Check favorite status on mount
   useEffect(() => {
@@ -96,6 +100,11 @@ const Song: React.FC<SongProps> = ({
   };
 
   // ── Context menu ──────────────────────────────────────────────────────────
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault(); // Block default browser menu
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
 
   const handleHeartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -145,14 +154,16 @@ const Song: React.FC<SongProps> = ({
 
   const handleSelectPlaylist = async (playlistId: string) => {
     try {
-      const alreadyIn = await isSongInPlaylist(playlistId, id);
-      if (!alreadyIn) {
-        await addSongToPlaylist(playlistId, id);
-        onAddToPlaylist?.(id);
-      }
+      await addSongToPlaylist(playlistId, id);
+      onAddToPlaylist?.(id);
       closePlaylistSelector();
-    } catch (error) {
-      console.error("Error adding song to playlist:", error);
+    } catch (error: any) {
+      if (error.message === "Song already in playlist") {
+        alert("Song already in playlist");
+        closePlaylistSelector();
+      } else {
+        console.error("Error adding song to playlist:", error);
+      }
     }
   };
 
@@ -207,11 +218,12 @@ const Song: React.FC<SongProps> = ({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={handleRowClick}
-        className="group grid grid-cols-12 items-center gap-4 p-3 rounded-lg bg-gray-800/70 hover:bg-gray-700/70 transition-colors cursor-pointer"
+        onContextMenu={handleContextMenu}
+        className={`group grid grid-cols-12 items-center gap-4 p-3 rounded-xl bg-transparent ${isLightMode ? "hover:bg-gray-100" : "hover:bg-white/5"} transition-all duration-300 cursor-pointer border border-transparent ${isLightMode ? "hover:border-gray-200" : "hover:border-white/5"}`}
       >
         {/* Index / Play */}
-        <div className="col-span-1 flex justify-center items-center text-sm font-semibold text-gray-200">
-          {hovered ? <FaPlay size={16} className="text-gray-100" /> : `#${index}`}
+        <div className={`col-span-1 flex justify-center items-center text-sm font-semibold ${isLightMode ? "text-gray-500" : "text-gray-200"}`}>
+          {hovered ? <FaPlay size={16} className={isLightMode ? "text-gray-900" : "text-gray-100"} /> : `#${index}`}
         </div>
 
         {/* Title & Artist */}
@@ -219,9 +231,9 @@ const Song: React.FC<SongProps> = ({
           className={`flex items-center gap-3 min-w-0 ${hideAlbum ? "col-span-9" : "col-span-5 md:col-span-4"
             }`}
         >
-          {coverUrl || album?.cover_url ? (
+          {(coverUrl || album?.cover_url) ? (
             <img
-              src={coverUrl || album?.cover_url || ""}
+              src={coverUrl || album?.cover_url || undefined}
               alt={title}
               className="w-12 h-12 rounded-md shrink-0 object-cover"
               onError={(e) => {
@@ -233,22 +245,22 @@ const Song: React.FC<SongProps> = ({
           ) : null}
           <div
             className="w-12 h-12 bg-linear-to-br from-purple-600 via-pink-500 to-blue-500 rounded-md shrink-0 flex items-center justify-center"
-            style={{ display: coverUrl || album?.cover_url ? "none" : "flex" }}
+            style={{ display: (coverUrl || album?.cover_url) ? "none" : "flex" }}
           >
             <FaMusic className="text-white text-lg opacity-50" />
           </div>
           <div className="min-w-0">
-            <div className={`truncate font-semibold ${hovered ? "text-gray-100" : "text-gray-200"}`}>
+            <div className={`truncate font-semibold ${hovered ? (isLightMode ? "text-gray-900" : "text-gray-100") : (isLightMode ? "text-gray-800" : "text-gray-200")}`}>
               {title}
             </div>
-            <div className="text-xs text-gray-400 truncate">
+            <div className={`text-xs ${isLightMode ? "text-gray-500" : "text-gray-400"} truncate`}>
               {artists && artists.length > 0
                 ? artists.map((artist, idx) => (
                   <React.Fragment key={artist.id}>
                     {idx > 0 && ", "}
                     <span
                       onClick={(e) => handleArtistClick(e, artist.id)}
-                      className="hover:underline hover:text-white cursor-pointer transition-colors"
+                      className={`hover:underline ${isLightMode ? "hover:text-black" : "hover:text-white"} cursor-pointer transition-colors`}
                     >
                       {artist.name}
                     </span>
@@ -261,14 +273,14 @@ const Song: React.FC<SongProps> = ({
 
         {/* Album */}
         {!hideAlbum && (
-          <div className="hidden md:block md:col-span-3 text-sm text-gray-300 truncate">
+          <div className={`hidden md:block md:col-span-3 text-sm ${isLightMode ? "text-gray-500" : "text-gray-300"} truncate`}>
             {album?.title || "Single"}
           </div>
         )}
 
         {/* Metadata */}
         {!hideAlbum && (
-          <div className="hidden md:block md:col-span-2 text-sm text-gray-300">
+          <div className={`hidden md:block md:col-span-2 text-sm ${isLightMode ? "text-gray-500" : "text-gray-300"}`}>
             {metadata || "-"}
           </div>
         )}
@@ -284,10 +296,10 @@ const Song: React.FC<SongProps> = ({
           >
             <FaHeart
               size={16}
-              className={isFavorite ? "text-red-400" : "text-gray-400"}
+              className={isFavorite ? "text-red-400" : (isLightMode ? "text-gray-300" : "text-gray-400")}
             />
           </button>
-          <div className="text-sm font-medium text-gray-300 w-12 text-right">
+          <div className={`text-sm font-medium ${isLightMode ? "text-gray-500" : "text-gray-300"} w-12 text-right`}>
             {formatDuration(duration)}
           </div>
         </div>
@@ -303,41 +315,41 @@ const Song: React.FC<SongProps> = ({
             left: `${contextMenu.x}px`,
             zIndex: 1000,
           }}
-          className="bg-[#282828] text-white rounded-md shadow-2xl min-w-55 py-1 border border-gray-700/50 animate-in fade-in slide-in-from-top-2 duration-150"
+          className={`${isLightMode ? "bg-white text-gray-900 border-gray-200" : "bg-[#282828] text-white border-gray-700/50"} rounded-md shadow-2xl min-w-55 py-1 border animate-in fade-in slide-in-from-top-2 duration-150`}
         >
           <div className="py-1">
             <button
               onClick={handleAddToFavorite}
-              className="w-full px-3 py-2.5 text-left hover:bg-gray-700/50 transition-colors flex items-center gap-3 text-sm"
+              className={`w-full px-3 py-2.5 text-left ${isLightMode ? "hover:bg-gray-100" : "hover:bg-gray-700/50"} transition-colors flex items-center gap-3 text-sm`}
             >
               <FaHeart
                 size={14}
-                className={isFavorite ? "text-red-400" : "text-gray-300"}
+                className={isFavorite ? "text-red-400" : (isLightMode ? "text-gray-400" : "text-gray-300")}
               />
               <span>{isFavorite ? "Remove from Liked Songs" : "Save to Liked Songs"}</span>
             </button>
           </div>
 
           {showAddToPlaylist && (
-            <div className="border-t border-gray-700/50 py-1">
+            <div className={`border-t ${isLightMode ? "border-gray-100" : "border-gray-700/50"} py-1`}>
               <button
                 onClick={openPlaylistSelector}
-                className="w-full px-3 py-2.5 text-left hover:bg-gray-700/50 transition-colors flex items-center gap-3 text-sm"
+                className={`w-full px-3 py-2.5 text-left ${isLightMode ? "hover:bg-gray-100" : "hover:bg-gray-700/50"} transition-colors flex items-center gap-3 text-sm`}
               >
-                <FaPlus size={14} className="text-gray-300" />
+                <FaPlus size={14} className={isLightMode ? "text-gray-400" : "text-gray-300"} />
                 <span>Add to Playlist</span>
               </button>
             </div>
           )}
 
           {onRemoveFromPlaylist && (
-            <div className="border-t border-gray-700/50 py-1">
+            <div className={`border-t ${isLightMode ? "border-gray-100" : "border-gray-700/50"} py-1`}>
               <button
                 onClick={(e) => {
                   closeContextMenu();
                   handleRemoveFromPlaylist(e);
                 }}
-                className="w-full px-3 py-2.5 text-left hover:bg-gray-700/50 transition-colors flex items-center gap-3 text-sm"
+                className={`w-full px-3 py-2.5 text-left ${isLightMode ? "hover:bg-gray-100" : "hover:bg-gray-700/50"} transition-colors flex items-center gap-3 text-sm`}
               >
                 <FaTrash size={14} className="text-red-400" />
                 <span className="text-red-400">Remove from Playlist</span>
@@ -345,15 +357,28 @@ const Song: React.FC<SongProps> = ({
             </div>
           )}
 
-          <div className="border-t border-gray-700/50 py-1">
+          <div className={`border-t ${isLightMode ? "border-gray-100" : "border-gray-700/50"} py-1`}>
+            <button
+              onClick={() => {
+                closeContextMenu();
+                setIsShareModalOpen(true);
+              }}
+              className={`w-full px-3 py-2.5 text-left ${isLightMode ? "hover:bg-gray-100" : "hover:bg-gray-700/50"} transition-colors flex items-center gap-3 text-sm`}
+            >
+              <FaShare size={14} className={isLightMode ? "text-gray-400" : "text-zinc-400"} />
+              <span>Share Song</span>
+            </button>
+          </div>
+
+          <div className={`border-t ${isLightMode ? "border-gray-100" : "border-gray-700/50"} py-1`}>
             <button
               onClick={() => {
                 closeContextMenu();
                 setIsReportModalOpen(true);
               }}
-              className="w-full px-3 py-2.5 text-left hover:bg-gray-700/50 transition-colors flex items-center gap-3 text-sm"
+              className={`w-full px-3 py-2.5 text-left ${isLightMode ? "hover:bg-gray-100" : "hover:bg-gray-700/50"} transition-colors flex items-center gap-3 text-sm`}
             >
-              <FaFlag size={14} className="text-slate-400" />
+              <FaFlag size={14} className={isLightMode ? "text-gray-400" : "text-slate-400"} />
               <span>Report Song</span>
             </button>
           </div>
@@ -369,6 +394,17 @@ const Song: React.FC<SongProps> = ({
         title={title}
       />
 
+      {/* ── Share Modal ── */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        type="song"
+        id={id}
+        title={title}
+        subtitle={artists.map(a => a.name).join(", ")}
+        imageUrl={coverUrl || album?.cover_url || undefined}
+      />
+
       {/* ── Playlist selector modal ── */}
       {showAddToPlaylist && isPlaylistSelectorOpen && (
         <div
@@ -379,12 +415,12 @@ const Song: React.FC<SongProps> = ({
             className="absolute inset-0 bg-black/90 backdrop-blur-md"
             onClick={closePlaylistSelector}
           />
-          <div className="relative bg-[#181818] w-full max-w-md rounded-3xl p-8 border border-white/10 shadow-2xl">
-            <h2 className="text-2xl font-black text-white mb-6">Add to Playlist</h2>
+          <div className={`relative ${isLightMode ? "bg-white" : "bg-[#181818]"} w-full max-w-md rounded-3xl p-8 border ${isLightMode ? "border-gray-200" : "border-white/10"} shadow-2xl`}>
+            <h2 className={`text-2xl font-black ${isLightMode ? "text-gray-900" : "text-white"} mb-6`}>Add to Playlist</h2>
 
             <button
               onClick={openCreatePlaylist}
-              className="w-full mb-4 py-3 px-4 rounded-xl bg-white/5 border border-dashed border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all flex items-center gap-3 text-white font-semibold"
+              className={`w-full mb-4 py-3 px-4 rounded-xl ${isLightMode ? "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100" : "bg-white/5 border-white/10 text-white hover:bg-white/10"} border border-dashed hover:border-blue-500/50 transition-all flex items-center gap-3 font-semibold`}
             >
               <FaPlus size={16} />
               <span>Create New Playlist</span>
@@ -392,23 +428,23 @@ const Song: React.FC<SongProps> = ({
 
             <div className="max-h-96 overflow-y-auto space-y-2">
               {playlists.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">No playlists yet</p>
+                <p className={`${isLightMode ? "text-gray-400" : "text-gray-400"} text-center py-8`}>No playlists yet</p>
               ) : (
                 playlists.map((playlist) => (
                   <button
                     key={playlist.id}
                     onClick={() => handleSelectPlaylist(playlist.id)}
-                    className="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all flex items-center gap-3 text-left group"
+                    className={`w-full py-3 px-4 rounded-xl ${isLightMode ? "bg-gray-50 hover:bg-gray-100" : "bg-white/5 hover:bg-white/10"} transition-all flex items-center gap-3 text-left group`}
                   >
-                    <div className="w-12 h-12 rounded-lg bg-neutral-900 flex items-center justify-center shrink-0">
+                    <div className={`w-12 h-12 rounded-lg ${isLightMode ? "bg-gray-200" : "bg-neutral-900"} flex items-center justify-center shrink-0`}>
                       <FaMusic
                         size={20}
-                        className="text-neutral-700 group-hover:text-blue-500/50 transition"
+                        className={`${isLightMode ? "text-gray-400" : "text-neutral-700"} group-hover:text-blue-500/50 transition`}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-white font-semibold truncate">{playlist.name}</p>
-                      <p className="text-gray-400 text-sm">{playlist.song_count} songs</p>
+                      <p className={`${isLightMode ? "text-gray-900" : "text-white"} font-semibold truncate`}>{playlist.name}</p>
+                      <p className={`${isLightMode ? "text-gray-500" : "text-gray-400"} text-sm`}>{playlist.song_count} songs</p>
                     </div>
                   </button>
                 ))
@@ -417,7 +453,7 @@ const Song: React.FC<SongProps> = ({
 
             <button
               onClick={closePlaylistSelector}
-              className="mt-6 w-full py-3 text-gray-400 font-bold hover:text-white transition"
+              className={`mt-6 w-full ${isLightMode ? "text-gray-500 hover:text-gray-900" : "text-gray-400 hover:text-white"} font-bold transition`}
             >
               Cancel
             </button>
@@ -435,15 +471,15 @@ const Song: React.FC<SongProps> = ({
             className="absolute inset-0 bg-black/90 backdrop-blur-md"
             onClick={closeCreatePlaylist}
           />
-          <div className="relative bg-[#181818] w-full max-w-sm rounded-3xl p-8 border border-white/10 shadow-2xl">
-            <h2 className="text-2xl font-black text-white mb-6">New Playlist</h2>
+          <div className={`relative ${isLightMode ? "bg-white" : "bg-[#181818]"} w-full max-w-sm rounded-3xl p-8 border ${isLightMode ? "border-gray-200" : "border-white/10"} shadow-2xl`}>
+            <h2 className={`text-2xl font-black ${isLightMode ? "text-gray-900" : "text-white"} mb-6`}>New Playlist</h2>
             <input
               autoFocus
               type="text"
               placeholder="Playlist name"
               value={newPlaylistName}
               onChange={(e) => setNewPlaylistName(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white mb-6 outline-none focus:border-blue-500 transition-all"
+              className={`w-full ${isLightMode ? "bg-gray-50 border-gray-200 text-gray-900" : "bg-white/5 border-white/10 text-white"} border rounded-xl px-4 py-4 mb-6 outline-none focus:border-blue-500 transition-all`}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleCreatePlaylist();
               }}
@@ -451,7 +487,7 @@ const Song: React.FC<SongProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={closeCreatePlaylist}
-                className="flex-1 py-3 text-gray-400 font-bold hover:text-white transition"
+                className={`flex-1 py-3 ${isLightMode ? "text-gray-500 hover:text-gray-900" : "text-gray-400 hover:text-white"} font-bold transition`}
               >
                 Cancel
               </button>

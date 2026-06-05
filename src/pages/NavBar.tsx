@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   FaSun,
   FaMoon,
@@ -10,15 +10,12 @@ import {
   FaBars,
   FaArrowRight,
 } from "react-icons/fa";
-import { useLocation } from "react-router-dom";
 import { getCurrentUser, isAuthenticated } from "../routes/authContext";
 import { searchContent } from "../backend/searchService";
-interface NavBarProps {
-  isLightMode: boolean;
-  setIsLightMode: (value: boolean) => void;
-}
+import { useTheme } from "../contexts/ThemeContext";
 
-const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
+const NavBar: React.FC = () => {
+  const { isLightMode, setIsLightMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,9 +27,7 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
   const [voiceText, setVoiceText] = useState("");
   const [displayText, setDisplayText] = useState("");
   const [hasSpoken, setHasSpoken] = useState(false);
-  const [searchResults, setSearchResults] = useState<any>(null);
 
-  // Initialize Web Speech API
   const SpeechRecognition =
     (window as any).SpeechRecognition ||
     (window as any).webkitSpeechRecognition;
@@ -55,7 +50,6 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
       recognitionRef.current.onresult = (event: any) => {
         let finalTranscript = "";
         let interimTranscript = "";
-
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
@@ -64,37 +58,26 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
             interimTranscript += transcript;
           }
         }
-
         const fullText = finalTranscript + interimTranscript;
         setVoiceText(fullText.trim());
         setHasSpoken(true);
       };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
+      recognitionRef.current.onend = () => setIsListening(false);
     }
-  }, []);
+  }, [SpeechRecognition]);
 
   useEffect(() => {
     const loggedIn = isAuthenticated();
     setIsUserLoggedIn(loggedIn);
-    if (loggedIn) {
-      setUserData(getCurrentUser());
-    }
+    if (loggedIn) setUserData(getCurrentUser());
   }, []);
 
-  // Clear search query 
   useEffect(() => {
     if (!location.pathname.startsWith("/search") && searchQuery) {
       setSearchQuery("");
-      setSearchResults(null);
     }
-  }, [location.pathname]);
+  }, [location.pathname, searchQuery]);
 
   useEffect(() => {
     if (!voiceText) {
@@ -104,7 +87,6 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
     const duration = 1.2;
     let rafId: number | null = null;
     const start = performance.now();
-
     const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t);
 
     const step = (now: number) => {
@@ -117,27 +99,18 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
       if (progress < 1) {
         rafId = requestAnimationFrame(step);
       } else {
-        // finished
         setDisplayText(voiceText);
         if (!isListening && voiceText.trim()) {
-          setTimeout(() => {
-            handleAutoSearch(voiceText.trim());
-          }, 800);
+          setTimeout(() => handleAutoSearch(voiceText.trim()), 800);
         }
       }
     };
-
     rafId = requestAnimationFrame(step);
-
-    return () => {
-      if (rafId != null) cancelAnimationFrame(rafId);
-    };
+    return () => { if (rafId != null) cancelAnimationFrame(rafId); };
   }, [voiceText, isListening]);
 
   useEffect(() => {
-    if (isVoiceSearchOpen && !isListening) {
-      startVoiceSearch();
-    }
+    if (isVoiceSearchOpen && !isListening) startVoiceSearch();
   }, [isVoiceSearchOpen]);
 
   const startVoiceSearch = () => {
@@ -148,11 +121,7 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
     }
   };
 
-  const stopVoiceSearch = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-  };
+  const stopVoiceSearch = () => { if (recognitionRef.current) recognitionRef.current.stop(); };
 
   const handleAutoSearch = (query: string) => {
     if (query.trim()) {
@@ -167,276 +136,144 @@ const NavBar: React.FC<NavBarProps> = ({ isLightMode, setIsLightMode }) => {
     }
   };
 
-  const performSearch = async (query: string) => {
+  const performSearch = (query: string) => {
     if (!query.trim()) return;
-
-    try {
-      // Perform search from Supabase
-      const results = await searchContent(query);
-      setSearchResults(results);
-      console.log("Search Results:", results);
-
-      // Navigate to search result page with query 
-      navigate(`/search?q=${encodeURIComponent(query)}`);
-    } catch (error) {
-      console.error("Search error:", error);
-    }
+    navigate(`/search?q=${encodeURIComponent(query.trim())}`);
   };
 
-  const headerBg = isLightMode
-    ? "bg-white border-gray-200"
-    : "bg-black border-gray-800";
-  const linkTextColor = isLightMode
-    ? "text-gray-600 hover:text-gray-900"
-    : "text-gray-300 hover:text-white";
-  const inputBg = isLightMode
-    ? "bg-gray-200 text-gray-900 placeholder-gray-500"
-    : "bg-gray-900 text-white placeholder-gray-400";
-
-  // Voice search modal
-  const VoiceSearchModal = () => (
-    <div className="fixed inset-0 bg-black/95 flex items-center justify-center backdrop-blur-sm z-50">
-      <button
-        onClick={() => {
-          setIsVoiceSearchOpen(false);
-          stopVoiceSearch();
-        }}
-        className="absolute top-8 right-8 text-white hover:text-gray-300 transition-colors z-50"
-      >
-        <FaTimes className="h-8 w-8" />
-      </button>
-
-      <div className="relative w-full h-screen flex flex-col items-center justify-center px-8">
-        <div className="flex flex-col items-center gap-6">
-          <div
-            className={`w-56 h-56 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${isListening
-              ? "bg-linear-to-r from-blue-500 to-purple-500 animate-pulse scale-110"
-              : hasSpoken
-                ? "bg-linear-to-r from-green-500 to-emerald-500"
-                : "bg-linear-to-r from-gray-700 to-gray-800"
-              }`}
-          >
-            <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center shadow-lg">
-              <FaMicrophone
-                className={`h-12 w-12 transition-colors ${isListening
-                  ? "text-blue-600 animate-bounce"
-                  : hasSpoken
-                    ? "text-green-600"
-                    : "text-gray-400"
-                  }`}
-              />
-            </div>
-          </div>
-
-          <div className="text-center">
-            <p className="text-white text-3xl font-bold">
-              {isListening ? "🎤 Listening..." : hasSpoken ? "✓ Got it!" : "Ready to speak"}
-            </p>
-            <p className="text-gray-400 mt-2 text-lg">Search songs by voice</p>
-          </div>
-        </div>
-
-        {displayText && (
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-linear-to-r from-blue-900/40 to-purple-900/40 p-8 rounded-2xl max-w-xl border border-blue-500/30 backdrop-blur animate-in fade-in duration-500">
-            <p className="text-gray-400 text-sm mb-4">You said:</p>
-            <p className="text-white text-2xl font-semibold leading-relaxed wrap-break-word">
-              {displayText}
-              {isListening && <span className="animate-pulse">|</span>}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  // Styled to cleanly merge with the pure dark layout seen in image_cf9a6c.jpg
+  const styles = {
+    header: isLightMode
+      ? "bg-white border-b border-zinc-200"
+      : "bg-black border-b border-zinc-900/40", // Pure pitch black to blend into layout background
+    input: isLightMode
+      ? "bg-zinc-100 text-zinc-900 placeholder-zinc-500 focus:bg-zinc-50 border-zinc-200"
+      : "bg-zinc-900/50 text-zinc-100 placeholder-zinc-500 focus:bg-zinc-900/80 border-transparent",
+    navLink: isLightMode
+      ? "text-zinc-600 hover:text-zinc-900 font-medium"
+      : "text-zinc-400 hover:text-zinc-200 font-medium",
+    userPill: isLightMode
+      ? "bg-zinc-100 hover:bg-zinc-200"
+      : "bg-zinc-900/50 hover:bg-zinc-800/60 text-white"
+  };
 
   return (
-    <header
-      className={`w-full border-b px-4 md:px-8 py-4 min-h-22.5 flex items-center justify-between ${headerBg}`}
-    >
+    <header className={`w-full px-8 py-4 flex items-center justify-between sticky top-0 z-40 transition-colors duration-200 ${styles.header}`}>
 
-      {isVoiceSearchOpen && <VoiceSearchModal />}
+      {/* ── VOICE INTERFACE OVERLAY ── */}
+      {isVoiceSearchOpen && (
+        <div className="fixed inset-0 bg-black/98 flex items-center justify-center backdrop-blur-md z-50">
+          <button
+            onClick={() => { setIsVoiceSearchOpen(false); stopVoiceSearch(); }}
+            className="absolute top-8 right-8 text-zinc-400 hover:text-white transition-colors p-2 rounded-full hover:bg-zinc-900"
+          >
+            <FaTimes size={20} />
+          </button>
+          <div className="text-center space-y-6 max-w-xl px-4">
+            <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto transition-all duration-300 ${isListening ? "bg-blue-600 shadow-[0_0_40px_rgba(37,99,235,0.4)] scale-105" : "bg-zinc-900"}`}>
+              <FaMicrophone size={28} className="text-white" />
+            </div>
+            <div className="space-y-1">
+                <p className="text-white text-lg font-semibold tracking-wide">{isListening ? "Listening..." : "Ready"}</p>
+                <p className="text-zinc-500 text-xs font-medium">Say what you're looking for</p>
+            </div>
+            {displayText && <p className="text-blue-400 text-xl font-medium tracking-tight">"{displayText}"</p>}
+          </div>
+        </div>
+      )}
 
-      {/* Logo */}
-      <NavLink
-        to="/"
-        className="flex items-center gap-3 text-2xl md:text-3xl font-bold"
-      >
+      {/* ── LEFT: BRAND ARCHITECTURE ── */}
+      <NavLink to="/" className="flex items-center gap-2.5 shrink-0 select-none">
         <img
           src="https://www.echopanda.me/logo.webp"
-          alt="Echo Panda Logo"
-          className="h-10 md:h-12 w-auto"
+          alt="Logo"
+          className="h-7 w-auto object-contain"
         />
-
-        {/* Text */}
-        <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-purple-500 to-pink-500">
+        <span className={`text-base font-bold tracking-tight ${isLightMode ? "text-zinc-900" : "text-white"}`}>
           Echo Panda
         </span>
       </NavLink>
 
-      {/* Search */}
-      <div className="flex-1 mx-4 relative max-w-full md:max-w-xl">
-        <div className="absolute left-3 top-3 text-gray-400">
-          <FaSearch />
+      {/* ── CENTER: FLAT SEARCH ── */}
+      <div className="flex-1 max-w-md mx-8 relative hidden sm:block">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
+          <FaSearch size={13} />
         </div>
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => {
-            const val = e.target.value;
-            setSearchQuery(val);
-            if (!val.trim()) {
-              //  remove search results and go home
-              setSearchResults(null);
-              navigate("/");
-            }
-          }}
-          onKeyPress={(e) => {
-            if (e.key === "Enter" && searchQuery.trim()) {
-              performSearch(searchQuery);
-            }
-          }}
-          placeholder="Search..."
-          className={`w-full rounded-full py-2 pl-10 pr-12 focus:ring-2 focus:ring-blue-500 ${inputBg}`}
+          onChange={(e) => { const val = e.target.value; setSearchQuery(val); if (!val.trim()) navigate("/"); }}
+          onKeyDown={(e) => e.key === "Enter" && searchQuery.trim() && performSearch(searchQuery)}
+          placeholder="Search Audio Sequences..."
+          className={`w-full rounded-xl py-2 pl-10 pr-10 text-sm outline-none border transition-all duration-200 ${styles.input}`}
         />
-        <div className="absolute right-3 top-3 flex items-center gap-2">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
           {searchQuery.trim() ? (
-            <div
-              className="text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
-              onClick={() => {
-                performSearch(searchQuery);
-              }}
-              title="Search"
+            <button
+              onClick={() => performSearch(searchQuery)}
+              className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${isLightMode ? "bg-zinc-900 text-white hover:bg-zinc-800" : "bg-white text-black hover:bg-zinc-200"}`}
             >
-              <FaArrowRight />
-            </div>
+              <FaArrowRight size={8} />
+            </button>
           ) : (
-            <div
-              className="text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
-              onClick={() => {
-                if (isVoiceSearchOpen) {
-                  setIsVoiceSearchOpen(false);
-                  stopVoiceSearch();
-                } else {
-                  setIsVoiceSearchOpen(true);
-                }
-              }}
-              title={isVoiceSearchOpen ? "Close voice search" : "Voice search"}
+            <button
+              onClick={() => setIsVoiceSearchOpen(true)}
+              className="text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 rounded-md hover:bg-zinc-800/40"
             >
-              {isVoiceSearchOpen ? <FaTimes /> : <FaMicrophone />}
-            </div>
+              <FaMicrophone size={12} />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Desktop Menu */}
-      <div className="hidden md:flex items-center space-x-15">
-        <NavLink to="/AboutUs" className={linkTextColor}>
-          About Us
-        </NavLink>
-        <NavLink to="/ContactUs" className={linkTextColor}>
-          Contact
-        </NavLink>
+      {/* ── RIGHT: UTILITIES & AUTH ── */}
+      <div className="flex items-center gap-5">
+        <nav className="hidden lg:flex items-center gap-6">
+          <NavLink to="/AboutUs" className={`text-xs uppercase tracking-wider transition-colors ${styles.navLink}`}>Intelligence</NavLink>
+          <NavLink to="/ContactUs" className={`text-xs uppercase tracking-wider transition-colors ${styles.navLink}`}>Support</NavLink>
+        </nav>
 
+        {/* Theme Controller */}
+        <button
+          onClick={() => setIsLightMode(!isLightMode)}
+          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${isLightMode ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200" : "bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"}`}
+        >
+          {isLightMode ? <FaMoon size={13} /> : <FaSun size={13} />}
+        </button>
+
+        {/* User Workspace Status */}
         {isUserLoggedIn ? (
-          <NavLink
-            to="/profile"
-            className="flex items-center gap-2 px-4 py-2 rounded-full transition-all hover:scale-105"
-          >
+          <NavLink to="/profile" className={`flex items-center gap-2.5 p-1 pr-3 rounded-xl transition-colors ${styles.userPill}`}>
             {userData?.photoURL ? (
-              <img
-                src={userData.photoURL}
-                alt="Profile"
-                className="w-8 h-8 rounded-full border-2 border-blue-500"
-              />
+              <img src={userData.photoURL} alt="Profile" className="w-7 h-7 rounded-lg object-cover" />
             ) : (
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-blue-500">
-                <FaUser className="text-white text-sm" />
-              </div>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-blue-600 text-white text-[10px]"><FaUser size={10} /></div>
             )}
-            <span className={`${linkTextColor} text-base`}>
-              {userData?.displayName || userData?.username || "Profile"}
-            </span>
+            <div className="hidden xl:block min-w-0">
+                <p className="text-xs font-semibold text-white truncate leading-none mb-0.5">
+                    {userData?.displayName || userData?.username || "Authenticated"}
+                </p>
+                <p className="text-[9px] font-medium text-blue-500 uppercase tracking-wider leading-none">Session Active</p>
+            </div>
           </NavLink>
         ) : (
-          <>
-            {/* Login */}
-            <NavLink
-              to="/login"
-              className="px-7 py-2.5 text-base font-semibold rounded-full border border-blue-500 text-blue-500
-                        hover:bg-blue-500 hover:text-white hover:shadow-md
-                        transition-all duration-300"
-            >
-              Login
-            </NavLink>
-
-            {/* Sign Up */}
-            <NavLink
-              to="/register"
-              className="px-6 py-2.5 text-base font-semibold rounded-full
-                        bg-linear-to-r from-blue-500 to-purple-600 text-white
-                        shadow-md hover:shadow-blue-500/40 hover:scale-105
-                        transition-all duration-300"
-            >
-              Sign Up
-            </NavLink>
-          </>
+          <NavLink to="/login" className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${isLightMode ? "bg-zinc-900 text-white hover:bg-zinc-800" : "bg-blue-600 text-white hover:bg-blue-500"}`}>
+            Log In
+          </NavLink>
         )}
-      </div>
 
-      {/* Mobile Menu */}
-      <div className="md:hidden">
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          <FaBars className="h-6 w-6 text-white" />
+        {/* Mobile Navigation Trigger */}
+        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="lg:hidden text-zinc-400 hover:text-white transition-colors">
+            <FaBars size={18} />
         </button>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* ── MOBILE ACCORDION OVERLAY ── */}
       {isMobileMenuOpen && (
-        <div className="absolute top-14 right-4 bg-gray-800 text-white w-48 py-3 rounded-xl shadow-lg md:hidden z-50">
-          <div className="flex flex-col space-y-2 px-3">
-            <NavLink
-              to="/aboutUs"
-              className="dropdown-item"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              About Us
-            </NavLink>
-
-            <NavLink
-              to="/ContactUs"
-              className="dropdown-item"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Contact
-            </NavLink>
-
-            {isUserLoggedIn ? (
-              <NavLink
-                to="/profile"
-                className="dropdown-item"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Profile
-              </NavLink>
-            ) : (
-              <>
-                <NavLink
-                  to="/login"
-                  className="dropdown-item"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Login
-                </NavLink>
-
-                <NavLink
-                  to="/register"
-                  className="dropdown-item bg-blue-600 text-center py-2 rounded-lg hover:bg-blue-700 transition-all"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Register
-                </NavLink>
-              </>
-            )}
+        <div className={`absolute top-16 right-6 w-48 p-2 rounded-2xl shadow-xl border lg:hidden ${isLightMode ? "bg-white border-zinc-200" : "bg-black border-zinc-900"}`}>
+          <div className="flex flex-col">
+            <NavLink to="/AboutUs" className="px-4 py-2.5 text-xs font-medium text-zinc-400 hover:bg-zinc-900 hover:text-white rounded-lg transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Intelligence</NavLink>
+            <NavLink to="/ContactUs" className="px-4 py-2.5 text-xs font-medium text-zinc-400 hover:bg-zinc-900 hover:text-white rounded-lg transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Support</NavLink>
           </div>
         </div>
       )}

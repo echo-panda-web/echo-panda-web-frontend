@@ -32,7 +32,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, type, id, ti
         setError(null);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem("userToken") || localStorage.getItem("authToken") || localStorage.getItem('token');
             const response = await fetch(buildApiUrl("/reports"), {
                 method: "POST",
                 headers: {

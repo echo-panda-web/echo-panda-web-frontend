@@ -53,29 +53,33 @@ export function resolveMediaUrl(value?: string | null): string | null {
     return null;
   }
 
+  // If it's already a full URL with protocol
   if (/^(https?:|blob:|data:)/i.test(raw)) {
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(raw)) {
-      return null;
-    }
-
+    // If it's a localhost URL, ensure it's not being filtered out accidentally
+    // unless you specifically want to block localhost media
     return raw;
   }
 
+  // Protocol relative
   if (raw.startsWith("//")) {
     return `http:${raw}`;
   }
 
+  // Root relative - append base URL
   if (raw.startsWith("/")) {
     return `${BACKEND_BASE_URL}${raw}`;
   }
 
+  // Handle localhost or IP with port but no protocol
   if (/^(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(raw)) {
     return `http://${raw}`;
   }
 
+  // Handle generic domain:port/path without protocol
   if (/^[^/\s]+:\d+(\/.*)?$/.test(raw)) {
     return `http://${raw}`;
   }
 
+  // Fallback: join with backend base URL
   return joinUrl(BACKEND_BASE_URL, raw);
 }

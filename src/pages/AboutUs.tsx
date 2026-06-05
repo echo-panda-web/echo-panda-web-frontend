@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import AppFooter from "../components/AppFooter";
+import { useTheme } from "../contexts/ThemeContext";
 import chyta from "../assets/chyta.webp";
 import mokot from "../assets/mokot.webp";
 import nimorl from "../assets/nimorl.webp";
@@ -71,11 +72,10 @@ const resources = [
   },
 ];
 const AboutUs: React.FC = () => {
-  const [isLightMode] = useState(false);
+  const { isLightMode } = useTheme();
 
   return (
-    <>
-      <div className="flex flex-col min-h-screen w-full">
+    <div className={`flex flex-col min-h-screen w-full ${isLightMode ? "bg-gray-50 text-gray-900" : "bg-black text-white"}`}>
 
         {/* Hero Text */}
         <p className="font-bold text-3xl md:text-5xl mb-6">
@@ -261,7 +261,6 @@ const AboutUs: React.FC = () => {
 
         <AppFooter isLightMode={isLightMode} />
       </div>
-    </>
   );
 };
 

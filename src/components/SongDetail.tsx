@@ -3,12 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   FaEllipsisH, FaChevronLeft, FaPlay, FaPause, FaHeart,
   FaCompactDisc, FaSpinner, FaCheckCircle, FaMusic, FaLink, FaShareSquare,
-  FaTimes
+  FaTimes, FaShare, FaPlus
 } from 'react-icons/fa';
 import { trackSongPlay } from '../backend/playTrackingService';
-import { useAudioPlayer } from '../contexts/AudioPlayerContext';
+import { useAudioPlayer } from '../contexts/AudioPlayerContextCore';
 import { isSongFavorite, toggleFavorite } from '../backend/favoritesService';
 import { getSignedSongCoverUrl, getSignedArtistImageUrl } from '../backend/songMediaApi';
+import { useTheme } from '../contexts/ThemeContext';
+import ShareModal from './ShareModal';
+import { addSongToPlaylist, getUserPlaylists, isSongInPlaylist, type Playlist } from '../backend/playlistsService';
 
 const viteEnv = (import.meta as any).env || {};
 const BACKEND_API_BASE_URL = viteEnv.VITE_BACKEND_API_URL || 'http://localhost:8082/api';
@@ -31,14 +34,18 @@ const SongDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { playSong, currentSong: playingSong, isPlaying, togglePlayPause, closePlayer } = useAudioPlayer();
+  const { isLightMode } = useTheme();
 
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const [albumSongs, setAlbumSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
 
-  // Share Dropdown States
-  const [showShareMenu, setShowShareMenu] = useState(false);
+  // Share & Playlist States
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isPlaylistSelectorOpen, setIsPlaylistSelectorOpen] = useState(false);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [showShareMenu, setShowShareMenu] = useState(false); // Legacy or extra menu
   const [copied, setCopied] = useState(false);
   const shareMenuRef = useRef<HTMLDivElement>(null);
 
@@ -92,19 +99,35 @@ const SongDetails: React.FC = () => {
   };
 
   const handleSocialShare = (platform: string) => {
-    const currentUrl = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent(`Listen to ${currentSong?.title || 'this song'} on Echo Panda!`);
-    let shareUrl = '';
+    // Legacy support, we'll use the Modal now
+    setIsShareModalOpen(true);
+    setShowShareMenu(false);
+  };
 
-    if (platform === 'facebook') {
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${currentUrl}`;
-    } else if (platform === 'telegram') {
-      shareUrl = `https://t.me/share/url?url=${currentUrl}&text=${text}`;
+  const handleAddToPlaylist = async () => {
+    try {
+      const data = await getUserPlaylists();
+      setPlaylists(data);
+      setIsPlaylistSelectorOpen(true);
+    } catch (error) {
+      console.error("Error loading playlists:", error);
     }
+  };
 
-    if (shareUrl) {
-      window.open(shareUrl, '_blank', 'noopener,noreferrer');
-      setShowShareMenu(false);
+  const handleSelectPlaylist = async (playlistId: string) => {
+    if (!id) return;
+    try {
+      await addSongToPlaylist(playlistId, id);
+      alert("Added to playlist!");
+      setIsPlaylistSelectorOpen(false);
+    } catch (error: any) {
+      if (error.message === "Song already in playlist") {
+        alert("Song already in playlist");
+        setIsPlaylistSelectorOpen(false);
+      } else {
+        console.error("Error adding song to playlist:", error);
+        alert("Failed to add song to playlist");
+      }
     }
   };
 
@@ -200,15 +223,15 @@ const SongDetails: React.FC = () => {
   const isCurrentlyPlaying = playingSong?.id === currentSong.id;
 
   return (
-    <div className="relative w-full min-h-screen bg-[#050505] text-white font-sans selection:bg-indigo-500/30 overflow-x-hidden pb-12">
+    <div className={`relative w-full min-h-screen ${isLightMode ? "bg-gray-50 text-gray-900" : "bg-black text-white"} font-sans selection:bg-indigo-500/30 overflow-x-hidden pb-12`}>
 
       {/* 1. DYNAMIC BACKGROUND LAYER */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/10 via-[#050505]/95 to-[#050505] z-10" />
+          <div className={`absolute inset-0 bg-gradient-to-b ${isLightMode ? "from-indigo-100/30 via-gray-50/95 to-gray-50" : "from-indigo-500/10 via-black/95 to-black"} z-10`} />
           {songCoverUrl && (
             <img
               src={songCoverUrl}
-              className="w-full h-[600px] object-cover opacity-20 blur-[120px] scale-125 select-none"
+              className={`w-full h-[600px] object-cover ${isLightMode ? "opacity-10" : "opacity-20"} blur-[120px] scale-125 select-none`}
               alt=""
             />
           )}
@@ -219,22 +242,22 @@ const SongDetails: React.FC = () => {
          {/* Top Navigation */}
          <header className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-               <button onClick={handleClose} className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-all border border-white/5 active:scale-90 group">
+               <button onClick={handleClose} className={`w-10 h-10 rounded-full ${isLightMode ? "bg-white border-gray-200 text-gray-700" : "bg-white/5 border-white/5 text-white"} hover:bg-white/10 flex items-center justify-center transition-all border active:scale-90 group`}>
                   <FaChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
                </button>
                <div className="flex flex-col">
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-400">Echo Panda</span>
                   <div className="flex items-center gap-2">
-                     <span className="text-xs font-semibold text-slate-400">{artistName}</span>
+                     <span className={`text-xs font-semibold ${isLightMode ? "text-gray-600" : "text-slate-400"}`}>{artistName}</span>
                      <div className="w-1 h-1 rounded-full bg-indigo-500" />
-                     <span className="text-xs text-slate-200">Playing</span>
+                     <span className={`text-xs ${isLightMode ? "text-gray-500" : "text-slate-200"}`}>Playing</span>
                   </div>
                </div>
             </div>
 
             <button
                onClick={handleStopAndClose}
-               className="group flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all border border-white/5 active:scale-95 shadow-lg"
+               className={`group flex items-center gap-2.5 px-4 py-2 rounded-full ${isLightMode ? "bg-white border-gray-200 text-gray-500 hover:text-rose-500 hover:bg-rose-50" : "bg-white/5 border-white/5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20"} transition-all border active:scale-95 shadow-lg`}
                title="Close & Stop Song"
             >
                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">Close Player</span>
@@ -243,12 +266,12 @@ const SongDetails: React.FC = () => {
          </header>
 
          {/* 2. HERO CONTENT SECTION */}
-         <div className="flex flex-col lg:flex-row gap-10 items-center lg:items-end bg-white/[0.02] border border-white/[0.05] p-8 rounded-[2.5rem] backdrop-blur-2xl shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
+         <div className={`flex flex-col lg:flex-row gap-10 items-center lg:items-end ${isLightMode ? "bg-white border-gray-200 shadow-sm" : "bg-white/[0.02] border-white/[0.05] shadow-2xl"} p-8 rounded-[2.5rem] backdrop-blur-2xl relative overflow-hidden group border`}>
+            <div className={`absolute top-0 right-0 p-8 ${isLightMode ? "opacity-[0.05]" : "opacity-[0.03]"} group-hover:opacity-[0.08] transition-opacity pointer-events-none`}>
                <FaMusic size={120} />
             </div>
 
-            <div className="w-56 h-56 md:w-64 md:h-64 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] shrink-0 border border-white/10 relative">
+            <div className={`w-56 h-56 md:w-64 md:h-64 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.2)] shrink-0 border ${isLightMode ? "border-gray-200" : "border-white/10"} relative`}>
                <img src={songCoverUrl || ''} className="w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110" alt={currentSong.title} />
                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
@@ -262,17 +285,17 @@ const SongDetails: React.FC = () => {
                      <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-indigo-500/20 shadow-glow">
                         Master Quality
                      </span>
-                     <span className="text-slate-400 text-xs font-medium flex items-center gap-2">
+                     <span className={`${isLightMode ? "text-gray-500" : "text-slate-400"} text-xs font-medium flex items-center gap-2`}>
                         <FaCompactDisc className="text-indigo-400/60" size={14} /> {currentSong.album?.title || 'Single'}
                      </span>
                   </div>
 
-                  <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none uppercase drop-shadow-2xl">
+                  <h1 className={`text-5xl md:text-7xl font-black ${isLightMode ? "text-gray-900" : "text-white"} tracking-tighter leading-none uppercase drop-shadow-2xl`}>
                      {currentSong.title}
                   </h1>
 
                   <div className="flex items-center justify-center lg:justify-start gap-3">
-                     <span className="text-lg font-bold text-slate-300">{artistName}</span>
+                     <span className={`text-lg font-bold ${isLightMode ? "text-gray-700" : "text-slate-300"}`}>{artistName}</span>
                      <FaCheckCircle className="text-indigo-500" size={16} />
                   </div>
                </div>
@@ -280,7 +303,7 @@ const SongDetails: React.FC = () => {
                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-5 pt-2">
                   <button
                     onClick={() => handlePlay(currentSong)}
-                    className="bg-white hover:bg-indigo-500 text-black hover:text-white px-10 py-4 rounded-full font-bold text-xs uppercase tracking-[0.2em] shadow-xl transition-all flex items-center gap-3 active:scale-95 transform hover:-translate-y-1"
+                    className={`${isLightMode ? "bg-black text-white" : "bg-white text-black"} hover:bg-indigo-500 hover:text-white px-10 py-4 rounded-full font-bold text-xs uppercase tracking-[0.2em] shadow-xl transition-all flex items-center gap-3 active:scale-95 transform hover:-translate-y-1`}
                   >
                     {isCurrentlyPlaying && isPlaying ? <FaPause size={12} /> : <FaPlay size={12} className="ml-0.5" />}
                     {isCurrentlyPlaying && isPlaying ? 'Pause Track' : 'Play Track'}
@@ -288,41 +311,24 @@ const SongDetails: React.FC = () => {
 
                   <button
                     onClick={handleToggleLike}
-                    className={`w-14 h-14 rounded-full border-2 flex items-center justify-center transition-all active:scale-90 ${isLiked ? 'bg-rose-500 border-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'border-white/10 text-slate-400 hover:border-white/30 hover:text-white'}`}
+                    className={`w-14 h-14 rounded-full border-2 flex items-center justify-center transition-all active:scale-90 ${isLiked ? 'bg-rose-500 border-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]' : `${isLightMode ? "border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600" : "border-white/10 text-slate-400 hover:border-white/30 hover:text-white"}`}`}
                   >
                     <FaHeart size={20} />
                   </button>
 
-                  <div className="relative" ref={shareMenuRef}>
-                     <button
-                        onClick={() => setShowShareMenu(!showShareMenu)}
-                        className={`w-14 h-14 rounded-full border-2 border-white/10 text-slate-400 hover:border-white/30 hover:text-white transition-all flex items-center justify-center active:scale-90 ${showShareMenu ? 'bg-white/10 text-white' : ''}`}
-                     >
-                        <FaEllipsisH size={20} />
-                     </button>
+                  <button
+                    onClick={handleAddToPlaylist}
+                    className={`w-14 h-14 rounded-full border-2 ${isLightMode ? "border-gray-200 text-gray-400 hover:border-gray-300" : "border-white/10 text-slate-400 hover:border-white/30 hover:text-white"} transition-all flex items-center justify-center active:scale-90`}
+                  >
+                    <FaPlus size={20} />
+                  </button>
 
-                     {showShareMenu && (
-                        <div className="absolute left-0 mt-4 w-60 rounded-2xl bg-[#121216] border border-white/10 p-2 shadow-2xl z-50 animate-fadeIn backdrop-blur-3xl">
-                           <button
-                              onClick={handleCopyLink}
-                              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-left text-xs font-bold text-slate-200 transition-colors uppercase tracking-wider"
-                           >
-                              {copied ? (
-                                 <><FaCheckCircle className="text-emerald-400" size={14} /> <span className="text-emerald-400">Copied!</span></>
-                              ) : (
-                                 <><FaLink className="text-indigo-400" size={14} /> <span>Copy Link</span></>
-                              )}
-                           </button>
-                           <div className="h-[1px] bg-white/5 my-1" />
-                           <button onClick={() => handleSocialShare('telegram')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-left text-xs font-bold text-slate-200 transition-colors uppercase tracking-wider">
-                              <FaShareSquare className="text-sky-400" size={14} /> <span>Telegram</span>
-                           </button>
-                           <button onClick={() => handleSocialShare('facebook')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-left text-xs font-bold text-slate-200 transition-colors uppercase tracking-wider">
-                              <FaShareSquare className="text-blue-500" size={14} /> <span>Facebook</span>
-                           </button>
-                        </div>
-                     )}
-                  </div>
+                  <button
+                    onClick={() => setIsShareModalOpen(true)}
+                    className={`w-14 h-14 rounded-full border-2 ${isLightMode ? "border-gray-200 text-gray-400 hover:border-gray-300" : "border-white/10 text-slate-400 hover:border-white/30 hover:text-white"} transition-all flex items-center justify-center active:scale-90`}
+                  >
+                    <FaShare size={20} />
+                  </button>
                </div>
             </div>
          </div>
@@ -331,10 +337,10 @@ const SongDetails: React.FC = () => {
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
 
             {/* Left Box: Tracklist Component */}
-            <div className="lg:col-span-2 bg-white/[0.01] border border-white/[0.04] rounded-[2rem] p-8 flex flex-col justify-between h-[520px] backdrop-blur-md">
+            <div className={`lg:col-span-2 ${isLightMode ? "bg-white border-gray-200 shadow-sm" : "bg-white/[0.01] border-white/[0.04] shadow-2xl"} border rounded-[2rem] p-8 flex flex-col justify-between h-[520px] backdrop-blur-md`}>
                <div className="w-full">
-                  <div className="flex justify-between items-center pb-5 border-b border-white/5 mb-5">
-                     <h3 className="text-[10px] font-bold text-slate-500 tracking-[0.3em] uppercase">Album Content</h3>
+                  <div className={`flex justify-between items-center pb-5 border-b ${isLightMode ? "border-gray-100" : "border-white/5"} mb-5`}>
+                     <h3 className={`text-[10px] font-bold ${isLightMode ? "text-gray-400" : "text-slate-500"} tracking-[0.3em] uppercase`}>Album Content</h3>
                      <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/10">
                        {albumSongs.length} Tracks
                      </p>
@@ -347,7 +353,7 @@ const SongDetails: React.FC = () => {
                            <div
                              key={song.id}
                              onClick={() => handlePlay(song as any)}
-                             className={`flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group cursor-pointer border ${isThisPlaying ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-transparent border-transparent hover:bg-white/[0.02]'}`}
+                             className={`flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group cursor-pointer border ${isThisPlaying ? 'bg-indigo-500/10 border-indigo-500/20' : `bg-transparent border-transparent ${isLightMode ? "hover:bg-gray-50" : "hover:bg-white/[0.02]"}`}`}
                            >
                               <div className="flex items-center gap-5 min-w-0">
                                  <div className="w-6 flex justify-center shrink-0">
@@ -358,19 +364,19 @@ const SongDetails: React.FC = () => {
                                           <div className="w-[3px] bg-indigo-400 animate-bar-3" />
                                        </div>
                                     ) : (
-                                       <span className={`text-[11px] font-bold group-hover:hidden transition-colors ${isThisPlaying ? 'text-indigo-400' : 'text-slate-600'}`}>
+                                       <span className={`text-[11px] font-bold group-hover:hidden transition-colors ${isThisPlaying ? 'text-indigo-400' : `${isLightMode ? "text-gray-400" : "text-slate-600"}`}`}>
                                           {(i + 1).toString().padStart(2, '0')}
                                        </span>
                                     )}
-                                    <FaPlay className={`hidden group-hover:block transition-colors ${isThisPlaying ? 'text-indigo-400' : 'text-slate-300'}`} size={10} />
+                                    <FaPlay className={`hidden group-hover:block transition-colors ${isThisPlaying ? 'text-indigo-400' : `${isLightMode ? "text-gray-600" : "text-slate-300"}`}`} size={10} />
                                  </div>
                                  <div className="min-w-0">
-                                    <h4 className={`text-[15px] font-bold truncate ${isThisPlaying ? 'text-indigo-400' : 'text-slate-200'}`}>{song.title}</h4>
-                                    <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5 uppercase tracking-wider">{artistName}</p>
+                                    <h4 className={`text-[15px] font-bold truncate ${isThisPlaying ? 'text-indigo-400' : `${isLightMode ? "text-gray-900" : "text-slate-200"}`}`}>{song.title}</h4>
+                                    <p className={`text-[11px] font-medium ${isLightMode ? "text-gray-500" : "text-slate-500"} truncate mt-0.5 uppercase tracking-wider`}>{artistName}</p>
                                  </div>
                               </div>
                               <div className="flex items-center gap-4 shrink-0">
-                                 <span className="text-xs font-mono text-slate-500 group-hover:text-slate-300">{formatDuration(song.duration)}</span>
+                                 <span className={`text-xs font-mono ${isLightMode ? "text-gray-400" : "text-slate-500"} group-hover:${isLightMode ? "text-gray-700" : "text-slate-300"}`}>{formatDuration(song.duration)}</span>
                               </div>
                            </div>
                         );
@@ -381,10 +387,10 @@ const SongDetails: React.FC = () => {
 
             {/* Right Box: Combined Sidebar Cards */}
             <div className="flex flex-col gap-6 h-[520px]">
-               <div className="flex-1 bg-white/[0.01] border border-white/[0.04] rounded-[2rem] p-8 flex flex-col justify-between backdrop-blur-md">
+               <div className={`flex-1 ${isLightMode ? "bg-white border-gray-200 shadow-sm" : "bg-white/[0.01] border-white/[0.04] shadow-2xl"} border rounded-[2rem] p-8 flex flex-col justify-between backdrop-blur-md`}>
                   <div>
                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-14 h-14 rounded-2xl bg-slate-800 shrink-0 border border-white/10 overflow-hidden shadow-2xl">
+                        <div className={`w-14 h-14 rounded-2xl ${isLightMode ? "bg-gray-100 border-gray-200" : "bg-slate-800 border-white/10"} shrink-0 border overflow-hidden shadow-2xl`}>
                             {currentSong.artists?.[0]?.image_url ? (
                               <img src={currentSong.artists[0].image_url} className="w-full h-full object-cover" alt="" />
                             ) : (
@@ -393,32 +399,67 @@ const SongDetails: React.FC = () => {
                         </div>
                         <div className="min-w-0">
                            <div className="flex items-center gap-2">
-                              <h4 className="text-base font-bold text-white truncate">{artistName}</h4>
+                              <h4 className={`text-base font-bold ${isLightMode ? "text-gray-900" : "text-white"} truncate`}>{artistName}</h4>
                               <FaCheckCircle className="text-indigo-500" size={13} />
                            </div>
                            <p className="text-[10px] font-bold text-indigo-400/80 tracking-widest uppercase mt-1">Verified Artist</p>
                         </div>
                      </div>
-                     <p className="text-sm text-slate-400 font-normal leading-relaxed line-clamp-4">
+                     <p className={`text-sm ${isLightMode ? "text-gray-600" : "text-slate-400"} font-normal leading-relaxed line-clamp-4`}>
                         {currentSong.artists?.[0]?.bio || `Explore the high-fidelity soundscapes of ${artistName}. Known for pushing tactical boundaries across modern composition styles.`}
                      </p>
                   </div>
-                  <button onClick={() => navigate(`/artist/${currentSong.artists?.[0]?.id}`)} className="w-full py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-300 hover:text-white transition-all active:scale-95 border border-white/5">
+                  <button onClick={() => navigate(`/artist/${currentSong.artists?.[0]?.id}`)} className={`w-full py-4 rounded-2xl ${isLightMode ? "bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200" : "bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/5"} text-[11px] font-bold uppercase tracking-[0.2em] transition-all active:scale-95 border`}>
                      Artist Profile
                   </button>
                </div>
 
-               <div className="flex-1 p-8 bg-indigo-500/[0.02] border border-indigo-500/[0.05] rounded-[2rem] flex flex-col justify-start backdrop-blur-md">
+               <div className={`flex-1 p-8 ${isLightMode ? "bg-indigo-50 border-indigo-100" : "bg-indigo-500/[0.02] border-indigo-500/[0.05]"} border rounded-[2rem] flex flex-col justify-start backdrop-blur-md`}>
                   <h4 className="text-[10px] font-bold text-indigo-400 tracking-[0.3em] uppercase mb-4">Lyrics Snippet</h4>
-                  <div className="text-base font-medium text-slate-300 italic space-y-2 overflow-y-auto max-h-[160px] custom-scrollbar pr-2">
+                  <div className={`text-base font-medium ${isLightMode ? "text-gray-700" : "text-slate-300"} italic space-y-2 overflow-y-auto max-h-[160px] custom-scrollbar pr-2`}>
                      {currentSong.lyrics ? currentSong.lyrics.split('\n').map((line, i) => (
-                        <p key={i} className="hover:text-white transition-colors cursor-default">{line}</p>
-                     )) : <p className="text-xs text-slate-500 not-italic uppercase tracking-widest opacity-50">Instrumental Asset</p>}
+                        <p key={i} className={`hover:${isLightMode ? "text-black" : "text-white"} transition-colors cursor-default`}>{line}</p>
+                     )) : <p className={`text-xs ${isLightMode ? "text-gray-400" : "text-slate-500"} not-italic uppercase tracking-widest opacity-50`}>Instrumental Asset</p>}
                   </div>
                </div>
             </div>
          </div>
       </div>
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        type="song"
+        id={currentSong.id}
+        title={currentSong.title}
+        subtitle={artistName}
+        imageUrl={songCoverUrl || undefined}
+      />
+
+      {/* Playlist Selector Modal */}
+      {isPlaylistSelectorOpen && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setIsPlaylistSelectorOpen(false)} />
+          <div className={`relative ${isLightMode ? "bg-white" : "bg-[#181818]"} w-full max-w-md rounded-3xl p-8 border ${isLightMode ? "border-gray-200" : "border-white/10"} shadow-2xl`}>
+            <h2 className={`text-2xl font-black ${isLightMode ? "text-gray-900" : "text-white"} mb-6`}>Add to Playlist</h2>
+            <div className="max-h-96 overflow-y-auto space-y-2 custom-scrollbar">
+              {playlists.map((playlist) => (
+                <button
+                  key={playlist.id}
+                  onClick={() => handleSelectPlaylist(playlist.id)}
+                  className={`w-full py-3 px-4 rounded-xl ${isLightMode ? "bg-gray-50 hover:bg-gray-100" : "bg-white/5 hover:bg-white/10"} transition-all flex items-center gap-3 text-left`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className={`${isLightMode ? "text-gray-900" : "text-white"} font-semibold truncate`}>{playlist.name}</p>
+                    <p className={`${isLightMode ? "text-gray-500" : "text-gray-400"} text-sm`}>{playlist.song_count} songs</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setIsPlaylistSelectorOpen(false)} className={`mt-6 w-full ${isLightMode ? "text-gray-500 hover:text-gray-900" : "text-gray-400 hover:text-white"} font-bold transition`}>Cancel</button>
+          </div>
+        </div>
+      )}
 
       <style>{`
          .animate-spin-slow { animation: spin 15s linear infinite; }

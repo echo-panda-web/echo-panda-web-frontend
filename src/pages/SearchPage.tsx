@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { searchContent, Song, Artist } from "../backend/searchService";
-import ArtistSection from "../components/ArtistsSection";
+import { useTheme } from "../contexts/ThemeContext";
 
-interface SearchPageProps {
-  isLightMode: boolean;
-}
-
-const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
+const SearchPage: React.FC = () => {
+  const { isLightMode } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const [songs, setSongs] = useState<Song[]>([]);
@@ -51,9 +48,9 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
   };
 
   return (
-    <div className={`bg-black text-white min-h-screen`}>
-      <div className={`bg-gray-900 p-6 md:p-8`}>
-        <h1 className="text-4xl md:text-5xl font-bold mb-2">Search Results</h1>
+    <div className={`min-h-screen ${isLightMode ? "bg-gray-50 text-gray-900" : "bg-black text-white"}`}>
+      <div className={`p-6 md:p-8`}>
+        <h1 className={`text-4xl md:text-5xl font-bold mb-2 ${isLightMode ? "text-gray-900" : "text-white"}`}>Search Results</h1>
         {query.trim() ? (
           <p className={`text-lg ${isLightMode ? "text-gray-500" : "text-gray-400"}`}>
             Results for: <span className="font-semibold text-blue-500">"{query}"</span>
@@ -86,19 +83,17 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
         </div>
       ) : (
         <div className="p-6 md:p-8 space-y-8">
-          {/* Songs Section */}
           {songs.length > 0 && (
             <div>
-              <h2 className="text-2xl font-bold mb-4">Songs ({songs.length})</h2>
+              <h2 className={`text-2xl font-bold mb-4 ${isLightMode ? "text-gray-900" : "text-white"}`}>Songs ({songs.length})</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {songs.map((song) => (
                   <div
                     key={song.id}
                     onClick={() => handleSongClick(song.id)}
-                    className="cursor-pointer group relative h-full flex flex-col bg-zinc-900 p-3 rounded-lg"
+                    className={`cursor-pointer group relative h-full flex flex-col ${isLightMode ? "bg-white border-gray-100 shadow-sm" : "bg-black border-white/5"} p-3 rounded-lg border`}
                   >
-                    {/* Song Cover Image */}
-                    <div className="w-full aspect-square bg-zinc-700 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
+                    <div className={`w-full aspect-square ${isLightMode ? "bg-gray-100" : "bg-zinc-700"} rounded-lg flex items-center justify-center mb-4 relative overflow-hidden`}>
                       {song.cover_url ? (
                         <img
                           src={song.cover_url}
@@ -107,7 +102,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
                         />
                       ) : (
                         <svg
-                          className="w-10 h-10 text-zinc-600"
+                          className={`w-10 h-10 ${isLightMode ? "text-gray-300" : "text-zinc-600"}`}
                           fill="currentColor"
                           viewBox="0 0 24 24"
                         >
@@ -115,7 +110,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
                         </svg>
                       )}
 
-                      {/* Play Button */}
                       <button
                         className="absolute bottom-3 right-3 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-lg transition-all duration-300 transform bg-green-500 hover:bg-green-600 shadow-green-500/25 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 translate-y-2 hover:scale-105 active:scale-95"
                         aria-label={`Play song ${song.title}`}
@@ -136,17 +130,16 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
                       <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                     </div>
 
-                    {/* Song Info */}
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
-                        <h3 className="font-semibold line-clamp-2 min-h-10 leading-tight text-white">
+                        <h3 className={`font-semibold line-clamp-2 min-h-10 leading-tight ${isLightMode ? "text-gray-900" : "text-white"}`}>
                           {song.title}
                         </h3>
-                        <p className="text-sm text-zinc-400 line-clamp-1 mb-1">
+                        <p className={`text-sm ${isLightMode ? "text-gray-500" : "text-zinc-400"} line-clamp-1 mb-1`}>
                           {song.artist_name || "Unknown Artist"}
                         </p>
                       </div>
-                      <p className="text-xs text-zinc-400 mt-auto">
+                      <p className={`text-xs ${isLightMode ? "text-gray-400" : "text-zinc-400"} mt-auto`}>
                         song
                       </p>
                     </div>
@@ -156,16 +149,15 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
             </div>
           )}
 
-          {/* Artists Section */}
           {artists.length > 0 && (
             <div>
-              <h2 className="text-2xl font-bold mb-4">Artists ({artists.length})</h2>
+              <h2 className={`text-2xl font-bold mb-4 ${isLightMode ? "text-gray-900" : "text-white"}`}>Artists ({artists.length})</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {artists.map((artist) => (
                   <div
                     key={artist.id}
                     onClick={() => handleArtistClick(artist.id)}
-                    className="p-4 rounded-lg bg-gray-900 hover:bg-gray-800 cursor-pointer transition-all hover:shadow-lg text-center"
+                    className={`p-4 rounded-lg ${isLightMode ? "bg-white border-gray-100 shadow-sm" : "bg-black border-white/5 hover:bg-zinc-900"} border cursor-pointer transition-all hover:shadow-lg text-center`}
                   >
                     {artist.image_url && (
                       <img
@@ -174,7 +166,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ isLightMode }) => {
                         className="w-full h-32 rounded-lg object-cover mb-3"
                       />
                     )}
-                    <p className="font-semibold text-white">{artist.name}</p>
+                    <p className={`font-semibold ${isLightMode ? "text-gray-900" : "text-white"}`}>{artist.name}</p>
                   </div>
                 ))}
               </div>

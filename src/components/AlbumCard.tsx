@@ -18,7 +18,7 @@ interface Album {
 }
 
 interface Props {
-  album: Album; 
+  album: Album;
 }
 
 export default function AlbumCard({ album }: Props) {
@@ -36,8 +36,8 @@ export default function AlbumCard({ album }: Props) {
     >
       <div className="w-full aspect-square bg-zinc-700 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
         {album.cover_url ? (
-          <img 
-            src={album.cover_url} 
+          <img
+            src={album.cover_url}
             alt={album.title}
             className="w-full h-full object-cover"
           />

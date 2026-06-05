@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SongSection from "../components/SongsSection";
 import ArtistSection from "../components/ArtistsSection";
 import AppFooter from "../components/AppFooter";
 import ContactUs from "./ContactUs";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import InterestOnboardingModal from "../components/InterestOnboardingModal";
 import { getRecommendationsForInterests, type AlbumRef } from "../backend/recommendationService";
-import { getDerivedCategories, getHomeTags } from "../backend/catalogService";
+import { getDerivedCategories, getHomeTags, getSongs, type CatalogSong } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { FaHeart, FaPlay, FaPlus } from "react-icons/fa";
 
 interface Tag {
   id: string;
@@ -17,24 +19,54 @@ interface Tag {
   albums: any[];
 }
 
+// Reusable Scroll Animation Wrapper Component
+const ScrollReveal: React.FC<{ children: React.ReactNode; delay?: string }> = ({ children, delay = "0ms" }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const domRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      });
+    }, { threshold: 0.05 });
+
+    const current = domRef.current;
+    if (current) observer.observe(current);
+
+    return () => {
+      if (current) observer.unobserve(current);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={domRef}
+      className={`transition-all duration-700 ease-out transform ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}
+      style={{ transitionDelay: delay }}
+    >
+      {children}
+    </div>
+  );
+};
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
-
-  const handleDiscover = () => {
-    navigate("/discover");
-  };
-
-  const handleCreatePlaylist = () => {
-    navigate("/playlist");
-  };
-
-  const isLightMode = false;
+  const { isLightMode } = useTheme();
   const { getCachedData } = useDataCache();
 
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [recommendedAlbums, setRecommendedAlbums] = useState<AlbumRef[] | undefined>(undefined);
   const [tags, setTags] = useState<Tag[]>([]);
   const [genreOptions, setGenreOptions] = useState<string[]>([]);
+  const [trendingSongs, setTrendingSongs] = useState<CatalogSong[]>([]);
+
+  const handleDiscover = () => navigate("/discover");
+  const handleCreatePlaylist = () => navigate("/playlist");
 
   useEffect(() => {
     const stored = localStorage.getItem('onboarding:interests');
@@ -49,17 +81,37 @@ const Home: React.FC = () => {
       }
     }
 
-    // Fetch dynamic genres and tags
     fetchGenres();
     fetchTags();
+    fetchTrendingSongs();
   }, []);
+
+  const fetchTrendingSongs = async () => {
+    try {
+      const data = await getSongs(7);
+      setTrendingSongs(data);
+    } catch (e) {
+      console.error('Error fetching trending songs:', e);
+    }
+  };
+
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return "Unknown Date";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   const fetchGenres = async () => {
     try {
       const categoryData = await getDerivedCategories();
       const genreNames = (categoryData || []).map((cat: any) => cat.name);
       setGenreOptions(genreNames);
-      console.log('✅ [Home] Genres loaded:', genreNames);
     } catch (error) {
       console.error('Error fetching genres:', error);
     }
@@ -68,16 +120,10 @@ const Home: React.FC = () => {
   const fetchTags = async () => {
     try {
       const data = await getCachedData('home_tags', async () => {
-        console.log('🔄 [Home] Fetching active tags...');
-
         const transformedTags = await getHomeTags();
-
-        console.log(`✅ [Home] ${transformedTags.length} active tags loaded`);
         return transformedTags;
       });
-
       setTags(data);
-      console.log('🏷️ [Home] Tags state updated:', data);
     } catch (error) {
       console.error('Error fetching tags:', error);
     }
@@ -90,85 +136,178 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-full">
-      {/* Hero */}
-      {/* Hero */}
-      <section className="relative mt-4 mb-8 overflow-hidden min-h-75 md:min-h-112.5 lg:min-h-137.5">
-        {/* Bg Image */}
-        <div className="absolute inset-0">
+    <div className={`w-full max-w-full min-h-screen space-y-12 pb-12 transition-colors duration-300 ${isLightMode ? 'bg-gray-50' : 'bg-transparent'}`}>
+
+      {/* Premium Hero Banner */}
+      <section className="relative mx-4 md:mx-8 mt-6 overflow-hidden rounded-3xl min-h-[340px] md:min-h-[440px] lg:min-h-[500px] shadow-2xl group">
+        <div className="absolute inset-0 w-full h-full">
           <img
             src="/image.webp"
-            alt=""
-            className="w-full h-full object-cover object-center"
+            alt="Hero background"
+            className="w-full h-full object-cover object-center transform scale-100 group-hover:scale-102 transition-transform duration-700 ease-out"
           />
         </div>
 
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/40 md:bg-black/20" />
+        <div className={`absolute inset-0 bg-gradient-to-r ${isLightMode ? 'from-white/90 via-white/40 to-transparent' : 'from-black/90 via-black/30 to-transparent'}`} />
 
-        {/* Content */}
-        <div className="relative z-10 px-6 py-16 md:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center min-h-75">
-            {/* Left Content */}
-            <div className="space-y-6 text-center md:text-left">
-              <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
-                All the <span className="text-blue-500">Best Songs</span>
-                <br />
-                in One Place
-              </h1>
+        <div className="relative z-10 px-8 py-12 md:px-16 md:py-24 flex items-center min-h-[340px] md:min-h-[440px] lg:min-h-[500px]">
+          <div className="max-w-xl space-y-6 text-left">
+            <h1 className={`text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] ${isLightMode ? 'text-gray-950' : 'text-white'}`}>
+              All the <span className="text-blue-500">Best Songs</span>
+              <br />
+              in One Place
+            </h1>
 
-              <p className="text-gray-200 text-sm md:text-base leading-relaxed max-w-xl mx-auto md:mx-0">
-                On our website, you can access an amazing collection of popular and
-                new songs. Stream high-quality music and enjoy without interruptions —
-                whatever your taste, we have it ready for you.
-              </p>
+            <p className={`text-xs md:text-sm leading-relaxed max-w-md font-medium tracking-wide ${isLightMode ? 'text-gray-700' : 'text-zinc-300'}`}>
+              On our website, you can access an amazing collection of popular and new songs. Stream your favorite tracks in high quality and enjoy without interruptions.
+            </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                <button
-                  onClick={handleDiscover}
-                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-                >
-                  Discover Now
-                </button>
+            <div className="flex flex-wrap gap-4 pt-2">
+              <button
+                onClick={handleDiscover}
+                className="px-6 py-3 bg-blue-500 text-white font-bold text-sm rounded-lg shadow-lg shadow-blue-500/20 hover:bg-blue-600 transition-all duration-200"
+              >
+                Discover Now
+              </button>
 
-                <button
-                  onClick={handleCreatePlaylist}
-                  className="px-6 py-3 border border-blue-400 text-blue-300 rounded-lg hover:bg-blue-400/20 transition cursor-pointer"
-                >
-                  Create Playlist
-                </button>
-              </div>
+              <button
+                onClick={handleCreatePlaylist}
+                className={`px-6 py-3 font-bold text-sm rounded-lg border transition-all duration-200 ${
+                  isLightMode
+                    ? 'border-gray-400 text-gray-800 hover:bg-gray-100/50'
+                    : 'border-blue-500/40 text-blue-400 hover:bg-blue-500/10'
+                }`}
+              >
+                Create Playlist
+              </button>
             </div>
-
-            <div className="hidden md:block" />
           </div>
         </div>
       </section>
 
+      {/* Recommended Section */}
       {recommendedAlbums && recommendedAlbums.length > 0 && (
-        <SongSection title="Recommended for you" isLightMode={isLightMode} songs={recommendedAlbums} />
+        <ScrollReveal>
+          <div className="px-4 md:px-8">
+            <SongSection title="Recommended for you" songs={recommendedAlbums} viewAllLink="/songs?type=recommended" />
+          </div>
+        </ScrollReveal>
       )}
 
-      {/* Trending Songs */}
-      <SongSection title="Trending Songs" isLightMode={isLightMode} limit={6} offset={0} />
+      {/* Trending Songs Section */}
+      <ScrollReveal delay="100ms">
+        <div className="px-4 md:px-8">
+          <h2 className={`text-2xl md:text-3xl font-black mb-10 ${isLightMode ? 'text-gray-900' : 'text-white'} tracking-tight`}>
+            Trending <span className="text-blue-500">Songs</span>
+          </h2>
+
+          <div className="w-full">
+            <div className={`grid grid-cols-12 gap-4 px-4 pb-6 text-[13px] font-bold ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>
+               <div className="col-span-1">#</div>
+               <div className="col-span-5 md:col-span-4">Title</div>
+               <div className="hidden md:block col-span-2 text-center">Release Date</div>
+               <div className="hidden lg:block col-span-4 text-center">album</div>
+               <div className="col-span-6 md:col-span-1 lg:col-span-1 text-right">Time</div>
+            </div>
+
+            <div className="space-y-1">
+              {trendingSongs.map((song, i) => (
+                <div
+                  key={song.id}
+                  className={`grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-xl transition-all duration-300 group ${
+                    isLightMode ? 'hover:bg-zinc-100' : 'hover:bg-white/5'
+                  }`}
+                >
+                  <div className={`col-span-1 text-base font-black ${isLightMode ? 'text-zinc-900' : 'text-white'}`}>
+                    #{i + 1}
+                  </div>
+
+                  <div className="col-span-11 md:col-span-4 flex items-center gap-4 min-w-0">
+                    <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 shadow-lg relative group/cover bg-zinc-800">
+                      <img
+                        src={song.songCover_url || "/logo.webp"}
+                        alt=""
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                        onError={(e) => { (e.target as HTMLImageElement).src = "/logo.webp"; }}
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                        <FaPlay size={14} className="text-white fill-current" />
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className={`text-base font-bold truncate leading-tight ${isLightMode ? 'text-zinc-900' : 'text-white'} group-hover:text-blue-500 transition-colors`}>
+                        {song.title}
+                      </h4>
+                      <p className={`text-xs font-medium truncate mt-1 ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                        {song.artists[0]?.name}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`hidden md:block col-span-2 text-sm font-medium text-center ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                    {formatDate(song.created_at)}
+                  </div>
+
+                  <div className={`hidden lg:block col-span-4 text-sm font-medium text-center truncate px-4 ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                    {song.album?.title || "Single"}
+                  </div>
+
+                  <div className="col-span-12 md:col-span-1 lg:col-span-1 flex items-center justify-end gap-6">
+                    <button className="text-zinc-500 hover:text-pink-500 transition-colors">
+                      <FaHeart size={16} />
+                    </button>
+                    <span className={`text-sm font-medium font-mono ${isLightMode ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                      {formatDuration(song.duration)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-12 flex justify-center">
+            <Link
+              to="/songs?type=trending"
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+                isLightMode
+                  ? 'bg-zinc-200 text-zinc-800 hover:bg-zinc-300'
+                  : 'bg-zinc-800/80 text-white hover:bg-zinc-700'
+              }`}
+            >
+              <FaPlus size={10} /> View All
+            </Link>
+          </div>
+        </div>
+      </ScrollReveal>
 
       {/* Popular Artists */}
-      <ArtistSection title="Popular Artists" isLightMode={isLightMode} layout="grid" />
+      <ScrollReveal>
+        <div className="px-4 md:px-8">
+          <ArtistSection title="Popular Artists" layout="carousel" viewAllLink="/artist" />
+        </div>
+      </ScrollReveal>
 
       {/* Dynamic Tag Sections */}
-      {tags.map((tag) => (
-        <SongSection
-          key={tag.id}
-          title={tag.name}
-          isLightMode={isLightMode}
-          songs={tag.albums}
-        />
+      {tags.map((tag, index) => (
+        <ScrollReveal key={tag.id} delay={`${index * 50}ms`}>
+          <div className="px-4 md:px-8">
+            <SongSection
+              title={tag.name}
+              songs={tag.albums}
+              viewAllLink={`/category/${tag.id}`}
+            />
+          </div>
+        </ScrollReveal>
       ))}
 
       {/* Contact Us */}
-      <div className="mb-12">
-        <ContactUs isLightMode={isLightMode} />
-      </div>
+      <ScrollReveal>
+        <div className="px-4 md:px-8 pt-4">
+          <div className={`rounded-3xl overflow-hidden ${isLightMode ? 'bg-white shadow-sm' : 'bg-zinc-900/20'}`}>
+            <ContactUs isLightMode={isLightMode} />
+          </div>
+        </div>
+      </ScrollReveal>
 
       {/* Onboarding modal */}
       <InterestOnboardingModal
