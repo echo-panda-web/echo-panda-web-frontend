@@ -15,7 +15,7 @@ interface Album {
   cover_url?: string;
   songCover_url?: string;
   image_url?: string;
-  cover_key?: string;
+  cover_key?: string | null;
   type?: string;
   year?: number | string;
   songs?: number | string;
@@ -24,10 +24,27 @@ interface Album {
 
 interface Props {
   album: Album;
+  onClick?: () => void;
 }
 
-export default function AlbumCard({ album }: Props) {
+export default function AlbumCard({ album, onClick }: Props) {
   const navigate = useNavigate();
+
+  const handleDefaultNavigation = () => {
+    const type = String(album.type || '').toLowerCase();
+
+    if (type === 'song') {
+      navigate(`/song/${album.id}`);
+      return;
+    }
+
+    if (type === 'category' || type === 'genre') {
+      navigate(`/category/${album.id}`);
+      return;
+    }
+
+    navigate(`/album/${album.id}`);
+  };
 
   const artistNames =
     album.artists && album.artists.length > 0
@@ -36,7 +53,7 @@ export default function AlbumCard({ album }: Props) {
 
   return (
     <div
-      onClick={() => navigate(`/album/${album.id}`)}
+      onClick={() => (onClick ? onClick() : handleDefaultNavigation())}
       className="cursor-pointer group relative h-full flex flex-col bg-zinc-900 p-3 rounded-lg"
     >
       <div className="w-full aspect-square bg-zinc-700 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">

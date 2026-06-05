@@ -181,7 +181,67 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
   const toggleShuffle = () => setIsShuffled(prev => !prev);
   const toggleRepeat = () => setIsRepeated(prev => !prev);
 
+  const pickWeightedRandomSong = useCallback((pool: SongData[], currentSongId?: string): SongData | null => {
+    const candidates = pool.filter((song) => song.id !== currentSongId);
+    const source = candidates.length > 0 ? candidates : pool;
+
+    if (source.length === 0) {
+      return null;
+    }
+
+    const weighted = source.map((song) => {
+      const recommendationScore = Math.max(0, song.recommendationScore ?? 0);
+      const similarityScore = Math.max(0, song.similarityScore ?? 0);
+      const combinedWeight = (recommendationScore * 0.7) + (similarityScore * 0.3);
+
+      // Keep a floor so low-score songs can still appear occasionally.
+      return {
+        song,
+        weight: Math.max(1, combinedWeight),
+      };
+    });
+
+    const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+    let target = Math.random() * totalWeight;
+
+    for (const item of weighted) {
+      target -= item.weight;
+      if (target <= 0) {
+        return item.song;
+      }
+    }
+
+    return weighted[weighted.length - 1]?.song ?? null;
+  }, []);
+
   const playNext = useCallback(() => {
+    const recommendationPool = autoplayPoolRef.current;
+
+    if (recommendationPool.length > 0) {
+      if (currentSong) trackInteraction(currentSong.id, 'skip');
+
+      const nextSong = pickWeightedRandomSong(recommendationPool, currentSong?.id);
+
+      if (!nextSong) {
+        return;
+      }
+
+      setQueue((prev) => {
+        const existingIndex = prev.findIndex((song) => song.id === nextSong.id);
+        if (existingIndex !== -1) {
+          setQueueIndex(existingIndex);
+          return prev;
+        }
+
+        const updated = [...prev, nextSong];
+        setQueueIndex(updated.length - 1);
+        return updated;
+      });
+
+      void loadSong(nextSong);
+      return;
+    }
+
     if (queue.length === 0) return;
     if (currentSong) trackInteraction(currentSong.id, 'skip');
 
@@ -197,7 +257,7 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
       setIsPlaying(false);
       setCurrentTime(0);
     }
-  }, [queue, queueIndex, isShuffled, currentSong]);
+  }, [queue, queueIndex, isShuffled, currentSong, pickWeightedRandomSong]);
 
   const playPrevious = () => {
     if (queueIndex > 0) {

@@ -1,22 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
-  getAlbums,
   getGenres,
-  getSongs,
   getNewReleasesToday,
   getPopularArtists,
   getDerivedCategories,
-  type CatalogSong,
   type CatalogAlbum
 } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import { getMostPlayedAlbums, getMostPlayedSongs, trackSongPlay } from "../backend/playTrackingService";
-import {
-  getAdaptiveRecommendations,
-  trackRecommendationEvent,
-  type AdaptiveRecommendation
-} from "../backend/recommendationService";
 import AlbumCard from "../components/AlbumCard";
 import Song from "../components/Song";
 import AppFooter from "../components/AppFooter";
@@ -48,9 +40,9 @@ const Discover: React.FC = () => {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const [newReleaseSongs, setNewReleaseSongs] = useState<CatalogSong[]>([]);
+  const [newReleaseSongs, setNewReleaseSongs] = useState<CatalogAlbum[]>([]);
   const [topAlbums, setTopAlbums] = useState<Album[]>([]);
-  const [trendingSongs, setTrendingSongs] = useState<CatalogSong[]>([]);
+  const [trendingSongs, setTrendingSongs] = useState<any[]>([]);
   const [popularArtists, setPopularArtists] = useState<ArtistCard[]>([]);
   const [featuredCharts, setFeaturedCharts] = useState<any[]>([]);
 
@@ -70,7 +62,7 @@ const Discover: React.FC = () => {
 
   const fetchTrendingSongs = async () => {
     try {
-      const data = await getSongs(7);
+      const data = await getMostPlayedSongs(7);
       setTrendingSongs(data);
     } catch (e) {
       console.error(e);
@@ -112,13 +104,13 @@ const Discover: React.FC = () => {
   const fetchNewReleaseSongs = async () => {
     try {
       setLoadingNewReleases(true);
-      const data = await getCachedData('new_release_songs_discover', async () => {
-        const songsData = await getSongs(12);
-        return songsData || [];
+      const data = await getCachedData('new_releases_today', async () => {
+        const albumsData = await getNewReleasesToday(12);
+        return albumsData || [];
       });
       setNewReleaseSongs(data);
     } catch (error) {
-      console.error('Error fetching new release songs:', error);
+      console.error('Error fetching new releases today:', error);
     } finally {
       setLoadingNewReleases(false);
     }
@@ -166,7 +158,7 @@ const Discover: React.FC = () => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const handlePlaySong = (song: CatalogSong) => {
+  const handlePlaySong = (song: any) => {
     if (!song.audio_url) return;
     playSong({
       id: String(song.id),
@@ -367,15 +359,9 @@ const Discover: React.FC = () => {
              <div className="flex justify-center py-10"><FaSpinner className="animate-spin text-blue-500 text-2xl" /></div>
           ) : (
             <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-none snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-               {newReleaseSongs.map((song) => (
-                  <div key={song.id} className="shrink-0 w-[180px] md:w-[220px] snap-start">
-                    <AlbumCard album={{
-                      id: song.id,
-                      title: song.title,
-                      cover_url: song.songCover_url || song.cover_key || song.album?.cover_url || undefined,
-                      artists: song.artists,
-                      type: 'Song'
-                    }} />
+               {newReleaseSongs.map((album) => (
+                  <div key={album.id} className="shrink-0 w-[180px] md:w-[220px] snap-start">
+                    <AlbumCard album={album} />
                   </div>
                ))}
                <ViewAllCircle link="/songs?type=new" />
@@ -401,7 +387,7 @@ const Discover: React.FC = () => {
         </section>
 
       </div>
-      <AppFooter isLightMode={isLightMode} />
+      <AppFooter />
     </div>
   );
 };

@@ -7,25 +7,19 @@ import Song from "../components/Song";
 import { useNavigate, Link } from "react-router-dom";
 import InterestOnboardingModal from "../components/InterestOnboardingModal";
 import {
-  getRecommendationsForInterests,
   getAdaptiveRecommendations,
   getColdStartRecommendations,
   trackRecommendationEvent,
-  type AlbumRef,
   type AdaptiveRecommendation
 } from "../backend/recommendationService";
 import {
   getDerivedCategories,
-  getHomeTags,
   getSongs,
-  getAlbums,
-  getGenres,
   getNewReleasesToday,
   getPopularArtists,
-  type CatalogSong,
   type CatalogAlbum
 } from "../backend/catalogService";
-import { getMostPlayedAlbums, getRecentlyPlayed, trackSongPlay } from "../backend/playTrackingService";
+import { getMostPlayedAlbums, getMostPlayedSongs, trackSongPlay } from "../backend/playTrackingService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAudioPlayer } from "../contexts/AudioPlayerContext";
@@ -94,7 +88,7 @@ const Home: React.FC = () => {
 
   // Data States
   const [adaptiveRecommendations, setAdaptiveRecommendations] = useState<AdaptiveRecommendation[]>([]);
-  const [trendingSongs, setTrendingSongs] = useState<CatalogSong[]>([]);
+  const [trendingSongs, setTrendingSongs] = useState<any[]>([]);
   const [newReleaseSongs, setNewReleaseSongs] = useState<any[]>([]);
   const [popularArtists, setPopularArtists] = useState<HomeArtist[]>([]);
   const [khmerSongs, setKhmerSongs] = useState<any[]>([]);
@@ -124,7 +118,7 @@ const Home: React.FC = () => {
   const fetchNewUIContent = async () => {
     try {
       setLoading(prev => ({ ...prev, newReleases: true }));
-      setNewReleaseSongs(await getSongs(10));
+      setNewReleaseSongs(await getNewReleasesToday(10));
     } catch (e) { console.error(e); } finally { setLoading(prev => ({ ...prev, newReleases: false })); }
 
     try {
@@ -134,19 +128,7 @@ const Home: React.FC = () => {
 
     try {
       setLoading(prev => ({ ...prev, khmer: true }));
-
-      // Try to find the "Khmer" genre first
-      const genres = await getGenres();
-      const khmerGenre = genres.find(g =>
-        g.name.toLowerCase() === 'khmer' || g.id.toLowerCase() === 'khmer'
-      );
-
-      if (khmerGenre) {
-        setKhmerSongs(await getSongs(10, { category_id: khmerGenre.id }));
-      } else {
-        // Fallback or search by tag
-        setKhmerSongs(await getSongs(10, { search: 'Khmer' }));
-      }
+      setKhmerSongs(await getSongs(10));
     } catch (e) {
       console.error(e);
     } finally {
@@ -155,7 +137,7 @@ const Home: React.FC = () => {
 
     try {
       setLoading(prev => ({ ...prev, topAlbums: true }));
-      setTopAlbums(await getAlbums(10));
+      setTopAlbums(await getMostPlayedAlbums(10));
     } catch (e) { console.error(e); } finally { setLoading(prev => ({ ...prev, topAlbums: false })); }
 
     try {
@@ -191,7 +173,7 @@ const Home: React.FC = () => {
   const fetchTrendingSongs = async () => {
     try {
       setLoading(prev => ({ ...prev, trending: true }));
-      const data = await getSongs(7);
+      const data = await getMostPlayedSongs(7);
       setTrendingSongs(data);
     } catch (e) {
       console.error(e);
@@ -211,6 +193,21 @@ const Home: React.FC = () => {
       duration: song.duration || 0,
     });
     trackSongPlay(String(song.id)).catch(() => undefined);
+  };
+
+  const handleRecommendationCardClick = async (item: any) => {
+    const recommendation = adaptiveRecommendations.find((r) => String(r.song.id) === String(item.id));
+
+    if (recommendation) {
+      trackRecommendationEvent({
+        songId: recommendation.song.id,
+        eventType: 'recommendation_clicked',
+        recommendationScore: recommendation.recommendation_score,
+        recommendationReason: recommendation.recommendation_reason,
+      }).catch(() => undefined);
+    }
+
+    navigate(`/song/${item.id}`);
   };
 
   const formatDuration = (seconds: number): string => {
@@ -272,8 +269,9 @@ const Home: React.FC = () => {
         <div className="px-4 md:px-8">
             <SongSection
               title="Recommended Songs"
-              songs={adaptiveRecommendations.map(r => r.song)}
+              songs={adaptiveRecommendations.map((r) => ({ ...r.song, type: 'Song' }))}
               viewAllLink="/songs?type=recommended"
+              onItemClick={handleRecommendationCardClick}
             />
         </div>
       </ScrollReveal>
@@ -405,7 +403,7 @@ const Home: React.FC = () => {
         </div>
       </ScrollReveal>
 
-      <AppFooter isLightMode={isLightMode} />
+      <AppFooter />
 
       <InterestOnboardingModal
         isOpen={isOnboardingOpen}

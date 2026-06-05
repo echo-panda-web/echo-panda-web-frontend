@@ -11,9 +11,10 @@ interface Props {
   viewAllLink?: string;
   limit?: number;
   offset?: number;
+  onItemClick?: (item: any) => void;
 }
 
-export default function SongsSection({ title, songs, albums, viewAllLink }: Props) {
+export default function SongsSection({ title, songs, albums, viewAllLink, onItemClick }: Props) {
   const { isLightMode } = useTheme();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +52,10 @@ export default function SongsSection({ title, songs, albums, viewAllLink }: Prop
               key={item.id || idx}
               className="snap-start shrink-0 w-[160px] sm:w-[185px] md:w-[210px]"
             >
-              <AlbumCard album={normalizedItem} />
+              <AlbumCard
+                album={normalizedItem}
+                onClick={onItemClick ? () => onItemClick(normalizedItem) : undefined}
+              />
             </div>
           );
         })}

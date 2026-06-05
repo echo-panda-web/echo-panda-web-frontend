@@ -7,6 +7,8 @@ export interface SongData {
   coverUrl: string;
   audioUrl?: string | null;
   duration?: number;
+  recommendationScore?: number;
+  similarityScore?: number;
 }
 
 export interface AudioPlayerContextType {

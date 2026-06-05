@@ -6,7 +6,7 @@ import {
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAudioPlayer } from '../contexts/AudioPlayerContextCore';
-import { getSongs } from '../backend/catalogService';
+import { getAdaptiveRecommendations, getColdStartRecommendations } from '../backend/recommendationService';
 import { useTheme } from '../contexts/ThemeContext';
 
 const Player: React.FC = () => {
@@ -88,26 +88,37 @@ const Player: React.FC = () => {
   }, [togglePlayPause, playNextSong, playPreviousSong]);
 
   useEffect(() => {
-    const fetchRandomSongs = async () => {
+    const fetchRecommendationPool = async () => {
       try {
-        const allSongs = await getSongs(100);
-        if (allSongs && allSongs.length > 0) {
-          const randomSongs = allSongs
-            .map((song: any) => ({
-              id: String(song.id),
-              title: song.title || 'Unknown Song',
-              artist: song.artists?.[0]?.name || song.artist || 'Unknown Artist',
-              coverUrl: song.songCover_url || '',
-              audioUrl: song.audio_url || '',
-            }))
-            .filter((song: any) => !!song.id && !!song.audioUrl);
-          setAutoplayPool(randomSongs);
+        const adaptive = await getAdaptiveRecommendations(50);
+        const recommended = adaptive.length > 0 ? adaptive : await getColdStartRecommendations(50);
+
+        const pool = recommended
+          .map((item: any) => ({
+            id: String(item.song?.id || item.id),
+            title: item.song?.title || item.title || 'Unknown Song',
+            artist: item.song?.artist || 'Unknown Artist',
+            coverUrl: item.song?.cover_key || item.song?.album?.cover_url || '',
+            audioUrl: item.song?.audio_url || null,
+            duration: item.song?.duration || 0,
+            recommendationScore: Number(item.recommendation_score || 0),
+            similarityScore: Number(
+              (item.reason?.artist || 0)
+              + (item.reason?.genre || 0)
+              + (item.reason?.mood || 0)
+              + (item.reason?.tag || 0)
+            ),
+          }))
+          .filter((song: any) => !!song.id && !!song.audioUrl);
+
+        if (pool.length > 0) {
+          setAutoplayPool(pool);
         }
       } catch (error) {
-        console.error('Error fetching random songs:', error);
+        console.error('Error fetching recommendation pool:', error);
       }
     };
-    fetchRandomSongs();
+    fetchRecommendationPool();
   }, [setAutoplayPool]);
 
   if (!currentSong) return null;

@@ -5,7 +5,6 @@ import {
 } from "react-icons/fa";
 import { useTheme } from "../contexts/ThemeContext";
 import { buildApiUrl } from "../backend/backendUrls";
-import html2canvas from "html2canvas";
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -31,26 +30,20 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, type, id, titl
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareUrl)}`;
 
   const handleDownloadCard = async () => {
-    if (!cardRef.current) return;
     try {
       setIsDownloading(true);
-      // Wait a tiny bit for images to be ready
-      await new Promise(r => setTimeout(r, 100));
-
-      const canvas = await html2canvas(cardRef.current, {
-        useCORS: true,
-        scale: 3, // Premium high-res
-        backgroundColor: "#000000",
-        logging: false,
-      });
-
-      const link = document.createElement("a");
-      link.download = `EchoPanda-${title.replace(/\s+/g, '-')}-Story.png`;
-      link.href = canvas.toDataURL("image/png", 1.0);
-      link.click();
+      // Open the story card in a new tab so the user can long-press / right-click to save
+      const cardHtml = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Echo Panda – ${title}</title>
+<style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;}</style>
+</head><body>${cardRef.current?.outerHTML ?? ''}</body></html>`;
+      const blob = new Blob([cardHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, '_blank');
+      if (!win) alert('Please allow pop-ups to download the card.');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (e) {
-      console.error("Failed to generate image", e);
-      alert("Note: To download high-quality cards, please ensure you have run 'npm install html2canvas'");
+      console.error('Failed to open card', e);
     } finally {
       setIsDownloading(false);
     }

@@ -258,8 +258,8 @@ export async function getPopularArtists(limit = 10): Promise<Array<CatalogArtist
 }
 
 const normalizeCategories = async (items: any[]): Promise<CatalogCategory[]> => {
-  const normalized = await Promise.all((Array.isArray(items) ? items : [])
-    .map(async (item: any) => {
+  const normalized: Array<CatalogCategory | null> = await Promise.all((Array.isArray(items) ? items : [])
+    .map(async (item: any): Promise<CatalogCategory | null> => {
       const name = String(item?.name || item?.title || item?.genre || "").trim();
       if (!name) {
         return null;
@@ -269,12 +269,17 @@ const normalizeCategories = async (items: any[]): Promise<CatalogCategory[]> => 
       const description = String(item?.description || item?.summary || `${name} music`).trim();
       const image_url = await getSignedGenreImageUrl(id);
 
-      return {
+      const category: CatalogCategory = {
         id,
         name,
         description,
-        image_url: image_url || undefined,
       };
+
+      if (image_url) {
+        category.image_url = image_url;
+      }
+
+      return category;
     }));
 
   return normalized.filter((item): item is CatalogCategory => Boolean(item));
@@ -333,8 +338,19 @@ export async function getDerivedTags(): Promise<CatalogCategory[]> {
       headers: { Accept: "application/json" }
     });
     if (res.ok) {
-      const data = await res.json();
-      return await normalizeCategories(data);
+      const json = await res.json();
+      // API returns { data: [{ id, name, slug, image_url }] }
+      const rows: any[] = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
+      if (rows.length > 0) {
+        return rows
+          .filter((t: any) => t?.name)
+          .map((t: any) => ({
+            // Use tag name as value — Song.mood stores the tag name string
+            id: String(t.name),
+            name: String(t.name),
+            description: t.slug || String(t.name).toLowerCase(),
+          }));
+      }
     }
   } catch (error) {
     console.error("Error fetching tags from backend:", error);
