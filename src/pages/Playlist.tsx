@@ -4,8 +4,6 @@ import { FaPlay, FaRandom, FaMusic, FaTrash, FaList, FaPlus, FaMagic } from 'rea
 import { Music, Clock, User } from 'lucide-react';
 import AppFooter from '../components/AppFooter';
 import Song from '../components/Song';
-import { useDataCache } from '../contexts/DataCacheContext';
-import { buildApiUrl } from '../backend/backendUrls';
 import {
   getUserPlaylists,
   createPlaylist,
@@ -13,6 +11,7 @@ import {
   getPlaylistSongs,
   removeSongFromPlaylist,
   updatePlaylist,
+  uploadPlaylistCover,
   type Playlist,
 } from '../backend/playlistsService';
 import { trackSongPlay } from '../backend/playTrackingService';
@@ -71,22 +70,49 @@ interface PlaylistHeroProps {
   imageUrl?: string;
   songCount: number;
   duration: string;
+  canEditImage?: boolean;
+  isUploadingImage?: boolean;
   onEdit?: () => void;
+  onImageSelect?: (file: File) => void;
 }
 
-const PlaylistHero: React.FC<PlaylistHeroProps> = ({ title, description, imageUrl, songCount, duration, onEdit }) => {
+const PlaylistHero: React.FC<PlaylistHeroProps> = ({
+  title,
+  description,
+  imageUrl,
+  songCount,
+  duration,
+  canEditImage = false,
+  isUploadingImage = false,
+  onEdit,
+  onImageSelect,
+}) => {
   const { isLightMode } = useTheme();
+
   return (
     <header
-      onClick={onEdit}
-      className={`relative px-4 sm:px-8 pt-10 pb-10 overflow-hidden transition-all duration-700 rounded-3xl border cursor-pointer group/hero ${isLightMode ? "border-gray-200 bg-linear-to-b from-blue-50 to-white shadow-sm" : "border-white/5 bg-linear-to-b from-[#222]/40 to-transparent"}`}
+      className={`relative px-4 sm:px-8 pt-10 pb-10 overflow-hidden transition-all duration-700 rounded-3xl border group/hero ${isLightMode ? "border-gray-200 bg-linear-to-b from-blue-50 to-white shadow-sm" : "border-white/5 bg-linear-to-b from-[#222]/40 to-transparent"}`}
     >
       {/* Background elements */}
       <div className={`absolute inset-0 transition-opacity duration-1000 ${isLightMode ? "bg-white/40" : "bg-black/20"}`} />
 
       <div className="flex flex-col md:flex-row items-center md:items-end gap-8 relative z-10">
         {/* Cover Art - Large Spotify Style */}
-        <div className="relative group w-48 h-48 md:w-60 md:h-60 rounded-xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.5)] transition-transform duration-500 group-hover/hero:scale-[1.02] shrink-0">
+        <label
+          className={`relative group/cover w-48 h-48 md:w-60 md:h-60 rounded-xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.5)] transition-transform duration-500 shrink-0 ${canEditImage ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="file"
+            className="hidden"
+            accept="image/*"
+            disabled={!canEditImage || isUploadingImage}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onImageSelect?.(file);
+              e.target.value = '';
+            }}
+          />
           {imageUrl ? (
             <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
           ) : (
@@ -94,13 +120,20 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ title, description, imageUr
               <Music className={`${isLightMode ? "text-zinc-400" : "text-zinc-600"} w-24 h-24`} />
             </div>
           )}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/hero:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-             <span className="text-white text-xs font-black uppercase tracking-widest border border-white/40 px-4 py-2 rounded-full">Edit Details</span>
-          </div>
-        </div>
+          {canEditImage && (
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+              <span className="text-white text-xs font-black uppercase tracking-widest border border-white/40 px-4 py-2 rounded-full">
+                {isUploadingImage ? 'Uploading...' : 'Change Cover'}
+              </span>
+            </div>
+          )}
+        </label>
 
         {/* Info Block */}
-        <div className="flex flex-col gap-4 text-center md:text-left flex-1 min-w-0">
+        <div
+          onClick={onEdit}
+          className={`flex flex-col gap-4 text-center md:text-left flex-1 min-w-0 ${onEdit ? 'cursor-pointer' : ''}`}
+        >
           <div className="hidden md:flex items-center gap-2">
              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-500">
                 Playlist
@@ -146,8 +179,12 @@ const PlaylistPage: React.FC = () => {
   const [editingPlaylistId, setEditingPlaylistId] = useState<string | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [newPlaylistDescription, setNewPlaylistDescription] = useState('');
-  const [newPlaylistImage, setNewPlaylistImage] = useState<string | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
+  const [uploadedCoverUrl, setUploadedCoverUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingHeroCover, setIsUploadingHeroCover] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [playlistsLoading, setPlaylistsLoading] = useState(true);
 
@@ -197,52 +234,163 @@ const PlaylistPage: React.FC = () => {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const syncPlaylistImage = (playlistId: string, imageUrl?: string) => {
+    setPlaylists((prev) =>
+      prev.map((playlist) =>
+        playlist.id === playlistId
+          ? { ...playlist, image_url: imageUrl }
+          : playlist
+      )
+    );
+  };
+
+  const saveCoverForPlaylist = async (
+    playlistId: string,
+    file: File,
+    name: string,
+    description?: string
+  ) => {
+    try {
+      return await uploadPlaylistCover(playlistId, file);
+    } catch {
+      const uploaded = await uploadMediaDirectly(file, 'playlist_cover');
+      return await updatePlaylist(
+        playlistId,
+        name,
+        description,
+        uploaded.key || uploaded.url
+      );
+    }
+  };
+
+  const handleModalImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Show local preview immediately
-    const localPreview = URL.createObjectURL(file);
-    setNewPlaylistImage(localPreview);
+    setPendingCoverFile(file);
+    setUploadedCoverUrl(null);
+    setCoverPreview(URL.createObjectURL(file));
+    setSaveError(null);
+
+    if (!editingPlaylistId) {
+      try {
+        setIsUploading(true);
+        const uploaded = await uploadMediaDirectly(file, 'playlist_cover');
+        setUploadedCoverUrl(uploaded.url);
+      } catch (error) {
+        console.warn('Cover pre-upload failed; will retry after playlist is saved.', error);
+      } finally {
+        setIsUploading(false);
+      }
+      return;
+    }
 
     try {
       setIsUploading(true);
-      const { url } = await uploadMediaDirectly(file, 'playlist_cover');
-      // Update with the final S3 URL (though we keep the local preview for the session)
-      setNewPlaylistImage(url);
+      const updated = await saveCoverForPlaylist(
+        editingPlaylistId,
+        file,
+        newPlaylistName.trim() || 'My Playlist',
+        newPlaylistDescription
+      );
+      if (updated.image_url) {
+        setCoverPreview(updated.image_url);
+      }
+      syncPlaylistImage(editingPlaylistId, updated.image_url);
+      setPendingCoverFile(null);
     } catch (error) {
-      console.error('Failed to upload image:', error);
-      // Revert if failed
-      setNewPlaylistImage(null);
+      console.error('Failed to update playlist cover:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to update cover image');
     } finally {
       setIsUploading(false);
     }
   };
 
+  const resetModalForm = () => {
+    setNewPlaylistName('');
+    setNewPlaylistDescription('');
+    setCoverPreview(null);
+    setPendingCoverFile(null);
+    setUploadedCoverUrl(null);
+    setEditingPlaylistId(null);
+    setSaveError(null);
+  };
+
   const handleSavePlaylist = async () => {
     if (!newPlaylistName.trim()) return;
+
     try {
+      setIsUploading(true);
+      setSaveError(null);
+
       if (editingPlaylistId) {
-        await updatePlaylist(editingPlaylistId, newPlaylistName.trim(), newPlaylistDescription, newPlaylistImage || undefined);
+        await updatePlaylist(editingPlaylistId, newPlaylistName.trim(), newPlaylistDescription);
+
+        if (pendingCoverFile) {
+          const updated = await saveCoverForPlaylist(
+            editingPlaylistId,
+            pendingCoverFile,
+            newPlaylistName.trim(),
+            newPlaylistDescription
+          );
+          syncPlaylistImage(editingPlaylistId, updated.image_url);
+          setPendingCoverFile(null);
+        }
       } else {
-        await createPlaylist(newPlaylistName.trim(), newPlaylistDescription, newPlaylistImage || undefined);
+        const created = await createPlaylist(
+          newPlaylistName.trim(),
+          newPlaylistDescription,
+          uploadedCoverUrl || undefined
+        );
+
+        if (pendingCoverFile && !uploadedCoverUrl) {
+          const updated = await saveCoverForPlaylist(
+            created.id,
+            pendingCoverFile,
+            newPlaylistName.trim(),
+            newPlaylistDescription
+          );
+          syncPlaylistImage(created.id, updated.image_url);
+        }
       }
-      setNewPlaylistName('');
-      setNewPlaylistDescription('');
-      setNewPlaylistImage(null);
-      setEditingPlaylistId(null);
+
+      resetModalForm();
       setIsModalOpen(false);
       await loadPlaylists();
     } catch (error) {
       console.error('Failed to save playlist:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to save playlist');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleHeroCoverSelect = async (file: File) => {
+    if (!selectedPlaylistId) return;
+
+    const playlist = playlists.find((p) => p.id === selectedPlaylistId);
+    if (!playlist) return;
+
+    try {
+      setIsUploadingHeroCover(true);
+      setSaveError(null);
+      const updated = await saveCoverForPlaylist(
+        selectedPlaylistId,
+        file,
+        playlist.name,
+        playlist.description
+      );
+      syncPlaylistImage(selectedPlaylistId, updated.image_url);
+    } catch (error) {
+      console.error('Failed to upload playlist cover:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to upload cover image');
+    } finally {
+      setIsUploadingHeroCover(false);
     }
   };
 
   const openCreateModal = () => {
-    setEditingPlaylistId(null);
-    setNewPlaylistName('');
-    setNewPlaylistDescription('');
-    setNewPlaylistImage(null);
+    resetModalForm();
     setIsModalOpen(true);
   };
 
@@ -250,7 +398,10 @@ const PlaylistPage: React.FC = () => {
     setEditingPlaylistId(playlist.id);
     setNewPlaylistName(playlist.name);
     setNewPlaylistDescription(playlist.description || '');
-    setNewPlaylistImage(playlist.image_url || null);
+    setCoverPreview(playlist.image_url || null);
+    setPendingCoverFile(null);
+    setUploadedCoverUrl(null);
+    setSaveError(null);
     setIsModalOpen(true);
   };
 
@@ -316,11 +467,20 @@ const PlaylistPage: React.FC = () => {
         imageUrl={playlists.find(p => p.id === selectedPlaylistId)?.image_url}
         songCount={songs.length}
         duration={`${Math.floor(totalDuration / 60)} min`}
+        canEditImage={!!selectedPlaylistId}
+        isUploadingImage={isUploadingHeroCover}
+        onImageSelect={handleHeroCoverSelect}
         onEdit={() => {
           const p = playlists.find(p => p.id === selectedPlaylistId);
           if (p) openEditModal(p);
         }}
       />
+
+      {saveError && (
+        <div className="mx-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
+          {saveError}
+        </div>
+      )}
 
       <main className="w-full space-y-10">
 
@@ -472,10 +632,10 @@ const PlaylistPage: React.FC = () => {
                     {/* Image Upload Area */}
                     <div className="col-span-1">
                       <label className="relative group cursor-pointer block aspect-square rounded-2xl overflow-hidden shadow-2xl">
-                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+                        <input type="file" className="hidden" accept="image/*" onChange={handleModalImageSelect} disabled={isUploading} />
 
-                        {newPlaylistImage ? (
-                          <img src={newPlaylistImage} alt="Preview" className="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
+                        {coverPreview ? (
+                          <img src={coverPreview} alt="Preview" className="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
                         ) : (
                           <div className={`w-full h-full flex flex-col items-center justify-center gap-3 transition-colors ${isLightMode ? "bg-gray-100 group-hover:bg-gray-200" : "bg-white/5 group-hover:bg-white/10"}`}>
                             <Music className={`${isLightMode ? "text-gray-300" : "text-white/20"} w-12 h-12`} />
@@ -517,13 +677,17 @@ const PlaylistPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {saveError && (
+                    <p className="text-sm text-red-500 font-medium">{saveError}</p>
+                  )}
+
                   <div className="flex justify-end gap-4 pt-2">
                     <button
                       onClick={handleSavePlaylist}
                       disabled={!newPlaylistName.trim() || isUploading}
                       className="px-10 py-3.5 rounded-full bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-40"
                     >
-                      {editingPlaylistId ? 'Save Changes' : 'Create Collection'}
+                      {isUploading ? 'Saving...' : editingPlaylistId ? 'Save Changes' : 'Create Collection'}
                     </button>
                   </div>
 

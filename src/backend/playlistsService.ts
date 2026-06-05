@@ -66,10 +66,23 @@ export async function createPlaylist(name: string, description?: string, imageUr
   };
 }
 
-export async function updatePlaylist(id: string, name: string, description?: string, imageUrl?: string): Promise<Playlist> {
+export async function updatePlaylist(
+  id: string,
+  name: string,
+  description?: string,
+  cover?: string
+): Promise<Playlist> {
+  const coverPayload = cover
+    ? (cover.startsWith("http") ? { image_url: cover } : { cover_key: cover })
+    : {};
+
   const response = await request(`/playlists/${id}`, {
     method: "PUT",
-    body: JSON.stringify({ name, description, image_url: imageUrl }),
+    body: JSON.stringify({
+      name,
+      description,
+      ...coverPayload,
+    }),
   });
   const data = response?.data || response;
 
@@ -80,6 +93,41 @@ export async function updatePlaylist(id: string, name: string, description?: str
     image_url: data.image_url,
     song_count: data.songs_count || 0,
     created_at: data.created_at
+  };
+}
+
+export async function uploadPlaylistCover(playlistId: string, file: File): Promise<Playlist> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Missing auth token");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(buildApiUrl(`/playlists/${playlistId}/cover`), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(data?.message || "Failed to upload playlist cover");
+  }
+
+  const playlist = data?.data || data;
+
+  return {
+    id: String(playlist.id),
+    name: playlist.name,
+    description: playlist.description,
+    image_url: playlist.image_url,
+    song_count: playlist.songs_count || 0,
+    created_at: playlist.created_at,
   };
 }
 
