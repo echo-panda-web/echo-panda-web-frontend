@@ -2,12 +2,13 @@ import React, { useRef, useEffect, useState } from 'react';
 import {
   FaPlay, FaPause, FaStepBackward, FaStepForward,
   FaRedo, FaRandom, FaVolumeUp, FaVolumeDown, FaVolumeMute,
-  FaTimes
+  FaTimes, FaMicrophone
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAudioPlayer } from '../contexts/AudioPlayerContextCore';
 import { getAdaptiveRecommendations, getColdStartRecommendations } from '../backend/recommendationService';
 import { useTheme } from '../contexts/ThemeContext';
+import FullScreenLyrics from './FullScreenLyrics';
 
 const Player: React.FC = () => {
   const { isLightMode } = useTheme();
@@ -36,6 +37,7 @@ const Player: React.FC = () => {
 
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
   const progressRef = useRef<HTMLDivElement>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
 
@@ -160,7 +162,9 @@ const Player: React.FC = () => {
   };
 
   return (
-    <footer className={`fixed bottom-0 left-0 right-0 w-full ${isLightMode ? "bg-white/95 border-gray-200" : "bg-black/95 border-white/10"} backdrop-blur-md border-t h-20 md:h-24 px-3 md:px-6 z-50 flex items-center pointer-events-none`}>
+    <>
+      {showLyrics && <FullScreenLyrics onClose={() => setShowLyrics(false)} />}
+      <footer className={`fixed bottom-0 left-0 right-0 w-full ${isLightMode ? "bg-white/95 border-gray-200" : "bg-black/95 border-white/10"} backdrop-blur-md border-t h-20 md:h-24 px-3 md:px-6 z-50 flex items-center pointer-events-none`}>
       <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/info pointer-events-auto" onClick={() => currentSong?.id && navigate(`/song/${currentSong.id}`)}>
         <div className="w-10 h-10 md:w-14 md:h-14 rounded overflow-hidden flex-shrink-0 shadow-md group-hover/info:opacity-80 transition-opacity">
           <img src={currentSong.coverUrl} alt={currentSong.title} className="w-full h-full object-cover" />
@@ -194,6 +198,13 @@ const Player: React.FC = () => {
 
       <div className={`flex-1 flex items-center justify-end gap-3 md:gap-5 ${isLightMode ? "text-gray-600" : "text-gray-400"}`}>
         <div className="flex items-center gap-2 group">
+          <button
+            onClick={() => setShowLyrics(true)}
+            className={`p-2 rounded-lg transition-all pointer-events-auto ${showLyrics ? 'text-blue-500 bg-blue-500/10' : isLightMode ? 'hover:bg-gray-100 text-gray-400 hover:text-black' : 'hover:bg-white/10 text-gray-500 hover:text-white'}`}
+            title="Lyrics"
+          >
+            <FaMicrophone size={16} />
+          </button>
           <div className={`cursor-pointer ${isLightMode ? "hover:text-black" : "hover:text-white"} pointer-events-auto`} onClick={toggleMute}>{getVolumeIcon()}</div>
           <div ref={volumeRef} className={`hidden sm:block w-16 md:w-24 h-1 ${isLightMode ? "bg-gray-200" : "bg-white/20"} rounded-full cursor-pointer relative pointer-events-auto`} onMouseDown={handleVolumeMouseDown}>
             <div className={`h-full ${isLightMode ? "bg-black" : "bg-white"} group-hover:bg-blue-500 rounded-full`} style={{ width: `${volume * 100}%` }} />
@@ -205,6 +216,7 @@ const Player: React.FC = () => {
         </button>
       </div>
     </footer>
+    </>
   );
 };
 

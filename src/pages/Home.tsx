@@ -14,6 +14,7 @@ import {
 } from "../backend/recommendationService";
 import {
   getDerivedCategories,
+  getGenres,
   getSongs,
   getNewReleasesToday,
   getPopularArtists,
@@ -122,7 +123,19 @@ const Home: React.FC = () => {
 
     try {
       setLoading(prev => ({ ...prev, khmer: true }));
-      setKhmerSongs(await getSongs(10));
+
+      // Try to find the "Khmer" genre first to get authentic Khmer songs
+      const genres = await getGenres();
+      const khmerGenre = genres.find(g =>
+        g.name.toLowerCase() === 'khmer' || g.id.toLowerCase() === 'khmer'
+      );
+
+      if (khmerGenre) {
+        setKhmerSongs(await getSongs(10, { category_id: khmerGenre.id }));
+      } else {
+        // Fallback to search if genre doesn't exist
+        setKhmerSongs(await getSongs(10, { search: 'Khmer' }));
+      }
     } catch (e) {
       console.error(e);
     } finally {

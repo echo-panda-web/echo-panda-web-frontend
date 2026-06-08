@@ -12,6 +12,7 @@ import { isSongFavorite, toggleFavorite } from '../backend/favoritesService';
 import { getSignedSongCoverUrl, getSignedArtistImageUrl } from '../backend/songMediaApi';
 import { useTheme } from '../contexts/ThemeContext';
 import ShareModal from './ShareModal';
+import LyricsPanel from './LyricsPanel';
 import { addSongToPlaylist, getUserPlaylists, isSongInPlaylist, type Playlist } from '../backend/playlistsService';
 
 const viteEnv = (import.meta as any).env || {};
@@ -462,12 +463,12 @@ const SongDetails: React.FC = () => {
                   </button>
                </div>
 
-               <div className={`flex-1 p-8 ${isLightMode ? "bg-indigo-50 border-indigo-100" : "bg-indigo-500/[0.02] border-indigo-500/[0.05]"} border rounded-[2rem] flex flex-col justify-start backdrop-blur-md`}>
-                  <h4 className="text-[10px] font-bold text-indigo-400 tracking-[0.3em] uppercase mb-4">Lyrics Snippet</h4>
-                  <div className={`text-base font-medium ${isLightMode ? "text-gray-700" : "text-slate-300"} italic space-y-2 overflow-y-auto max-h-[160px] custom-scrollbar pr-2`}>
-                     {currentSong.lyrics ? currentSong.lyrics.split('\n').map((line, i) => (
-                        <p key={i} className={`hover:${isLightMode ? "text-black" : "text-white"} transition-colors cursor-default`}>{line}</p>
-                     )) : <p className={`text-xs ${isLightMode ? "text-gray-400" : "text-slate-500"} not-italic uppercase tracking-widest opacity-50`}>Instrumental Asset</p>}
+               <div className={`flex-1 ${isLightMode ? "bg-indigo-50 border-indigo-100" : "bg-indigo-500/[0.02] border-indigo-500/[0.05]"} border rounded-[2rem] flex flex-col justify-start backdrop-blur-md overflow-hidden`}>
+                  <div className="p-8 pb-0">
+                     <h4 className="text-[10px] font-bold text-indigo-400 tracking-[0.3em] uppercase mb-4">Live Lyrics</h4>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                     <LyricsPanel songId={currentSong.id} />
                   </div>
                </div>
             </div>

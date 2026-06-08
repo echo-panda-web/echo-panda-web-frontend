@@ -97,8 +97,16 @@ const getArtistName = (artistField: any, artistNameField?: string): string | nul
   return null;
 };
 
-export async function getAlbums(limit = 10, offset = 0): Promise<CatalogAlbum[]> {
-  const data = await request<{ data?: any[] }>(`/albums?per_page=${limit}&sort_by=latest`);
+export async function getAlbums(limit = 10, params: Record<string, any> = {}): Promise<CatalogAlbum[]> {
+  const queryParams = new URLSearchParams({
+    per_page: String(Math.max(1, limit)),
+    sort_by: "latest",
+    ...Object.fromEntries(
+      Object.entries(params).map(([k, v]) => [k, String(v)])
+    )
+  });
+
+  const data = await request<{ data?: any[] }>(`/albums?${queryParams.toString()}`);
   const rows = Array.isArray(data?.data) ? data.data : [];
 
   return Promise.all(rows.map(async (album: any) => ({

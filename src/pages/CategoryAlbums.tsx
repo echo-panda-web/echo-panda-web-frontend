@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getAlbums, getDerivedCategories } from "../backend/catalogService";
+import { getAlbums, getSongs, getDerivedCategories, CatalogSong } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
-import { FaSpinner, FaArrowLeft } from "react-icons/fa";
+import { FaSpinner, FaArrowLeft, FaMusic } from "react-icons/fa";
 import AlbumCard from "../components/AlbumCard";
+import Song from "../components/Song";
 import { useTheme } from "../contexts/ThemeContext";
+import { useAudioPlayer } from "../contexts/AudioPlayerContextCore";
+import { trackSongPlay } from "../backend/playTrackingService";
 
 interface Artist {
   id: string;
@@ -31,60 +34,78 @@ const CategoryAlbums: React.FC = () => {
   const navigate = useNavigate();
   const { getCachedData } = useDataCache();
   const { isLightMode } = useTheme();
+  const { playSong } = useAudioPlayer();
   const [category, setCategory] = useState<Category | null>(null);
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [songs, setSongs] = useState<CatalogSong[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
-      fetchCategoryAndAlbums(id);
+      fetchCategoryData(id);
     }
   }, [id]);
 
-  const fetchCategoryAndAlbums = async (categoryId: string) => {
+  const fetchCategoryData = async (categoryId: string) => {
     try {
       setLoading(true);
 
-      const data = await getCachedData(`category_albums_${categoryId}`, async () => {
+      const data = await getCachedData(`category_page_${categoryId}`, async () => {
         const startTime = performance.now();
-        console.log(`🔄 [CategoryAlbums] Fetching category ${categoryId}...`);
+        console.log(`🔄 [CategoryPage] Fetching data for category ${categoryId}...`);
 
-        const [categories, albumsData] = await Promise.all([
+        const [categories, albumsData, songsData] = await Promise.all([
           getDerivedCategories(),
-          getAlbums(200, 0),
+          getAlbums(50, { category_id: categoryId }),
+          getSongs(50, { category_id: categoryId }),
         ]);
 
         const categoryData = categories.find((c) => c.id === categoryId) || null;
 
         const fetchTime = performance.now() - startTime;
-        console.log(`✅ [CategoryAlbums] Data fetched in ${fetchTime.toFixed(0)}ms`);
+        console.log(`✅ [CategoryPage] Data fetched in ${fetchTime.toFixed(0)}ms`);
 
-        const normalized = (categoryData?.name || "").toLowerCase();
-        const transformedAlbums: Album[] = (albumsData || [])
-          .filter((album: any) => {
-            if (!normalized) return true;
-            const title = String(album.title || "").toLowerCase();
-            const artist = String(album.artists?.[0]?.name || "").toLowerCase();
-            const type = String(album.type || "").toLowerCase();
-            return title.includes(normalized) || artist.includes(normalized) || type.includes(normalized);
-          })
-          .map((album: any) => ({
-            id: album.id,
-            title: album.title,
-            cover_url: album.cover_url || "",
-            type: album.type || "album",
-            artists: album.artists || [],
-          }));
+        // If no albums found via API with category_id, fallback to name-based filtering for legacy support
+        let finalAlbums = albumsData;
+        if (finalAlbums.length === 0 && categoryData) {
+          console.log("⚠️ [CategoryPage] No albums found via category_id, trying name fallback...");
+          const allAlbums = await getAlbums(200);
+          const normalizedName = categoryData.name.toLowerCase();
+          finalAlbums = allAlbums.filter(a =>
+            a.title.toLowerCase().includes(normalizedName) ||
+            (a.artists && a.artists.some(art => art.name.toLowerCase().includes(normalizedName)))
+          );
+        }
 
-        return { category: categoryData, albums: transformedAlbums };
+        return {
+          category: categoryData,
+          albums: finalAlbums,
+          songs: songsData
+        };
       });
 
       setCategory(data.category);
       setAlbums(data.albums);
+      setSongs(data.songs);
     } catch (error) {
-      console.error('Error fetching category albums:', error);
+      console.error('Error fetching category data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePlaySong = (songId: string) => {
+    const song = songs.find(s => s.id === songId);
+    if (song) {
+      trackSongPlay(song.id).catch(() => {});
+      playSong({
+        id: song.id,
+        title: song.title,
+        artist: song.artists?.map(a => a.name).join(', ') || 'Unknown Artist',
+        coverUrl: song.songCover_url || song.album?.cover_url || '',
+        audioUrl: song.audio_url || '',
+        duration: song.duration
+      });
     }
   };
 
@@ -138,23 +159,59 @@ const CategoryAlbums: React.FC = () => {
             </div>
           </div>
 
-          <p className={`${isLightMode ? "text-gray-500" : "text-gray-500"} font-medium`}>
-            {albums.length} {albums.length === 1 ? 'album' : 'albums'}
-          </p>
+          <div className="flex gap-4">
+             <p className={`${isLightMode ? "text-gray-500" : "text-gray-500"} font-medium`}>
+              {albums.length} {albums.length === 1 ? 'album' : 'albums'}
+            </p>
+            <p className={`${isLightMode ? "text-gray-500" : "text-gray-500"} font-medium`}>
+              {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+            </p>
+          </div>
         </div>
 
-        {albums.length === 0 ? (
-          <div className="text-center py-32">
-            <div className="text-6xl mb-4 opacity-20">📀</div>
-            <p className={`${isLightMode ? "text-gray-400" : "text-gray-400"} text-xl`}>No albums in this category yet</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {albums.map((album) => (
-              <AlbumCard key={album.id} album={album} />
-            ))}
+        {/* Songs Section */}
+        {songs.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <FaMusic className="text-purple-500" /> Top Songs
+            </h2>
+            <div className={`${isLightMode ? "bg-white" : "bg-white/5"} rounded-3xl overflow-hidden`}>
+              <div className="p-4 space-y-1">
+                {songs.map((song, index) => (
+                  <Song
+                    key={song.id}
+                    id={song.id}
+                    index={index + 1}
+                    title={song.title}
+                    artists={song.artists}
+                    album={song.album}
+                    duration={song.duration}
+                    coverUrl={song.songCover_url}
+                    metadata={new Date(song.created_at).getFullYear().toString()}
+                    onPlay={handlePlaySong}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         )}
+
+        {/* Albums Section */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6">Albums</h2>
+          {albums.length === 0 ? (
+            <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl">
+              <div className="text-6xl mb-4 opacity-20">📀</div>
+              <p className={`${isLightMode ? "text-gray-400" : "text-gray-400"} text-xl`}>No albums in this category yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {albums.map((album) => (
+                <AlbumCard key={album.id} album={album} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
