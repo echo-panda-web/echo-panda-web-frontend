@@ -165,14 +165,24 @@ export async function getNewSongReleasesToday(limit = 10): Promise<CatalogSong[]
       cover_key: song.cover_key ?? null,
       preview_key: song.preview_key ?? null,
       audio_url: song.audio_url ?? null,
-      songCover_url: song.cover_url ?? song.cover_key ?? null,
+      songCover_url:
+        (await getSignedSongCoverUrl(song.id)) || song.cover_url || song.cover_key || null,
       created_at: song.created_at ?? '',
-      artists: Array.isArray(song.artists) ? song.artists.map((artist: any) => ({ id: String(artist.id), name: artist.stage_name || artist.name || '', image_url: artist.image_url })) : [],
-      album: song.album ? {
-        id: String(song.album.id),
-        title: song.album.title,
-        cover_url: song.album.cover_url,
-      } : null,
+      artists: Array.isArray(song.artists)
+        ? song.artists.map((artist: any) => ({
+            id: String(artist.id),
+            name: artist.stage_name || artist.name || '',
+            image_url: artist.image_url,
+          }))
+        : [],
+      album: song.album
+        ? {
+            id: String(song.album.id),
+            title: song.album.title,
+            cover_url:
+              (await getSignedAlbumCoverUrl(song.album.id)) || song.album.cover_url,
+          }
+        : null,
     })));
   } catch (error) {
     console.error('Error fetching today new song releases:', error);
