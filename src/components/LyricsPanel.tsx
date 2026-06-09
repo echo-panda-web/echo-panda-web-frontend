@@ -91,19 +91,22 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({ songId, onClose, showBackgrou
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Tab Header style like YouTube Music */}
-      <div className={`flex items-center justify-around border-b ${isLightMode ? 'border-gray-100' : 'border-white/5'} px-4 py-2`}>
+    <div className="flex flex-col h-full overflow-hidden font-sans">
+      {/* Tab Header style like YouTube Music - Professional Cleanup */}
+      <div className={`flex items-center justify-around border-b ${isLightMode ? 'border-gray-100' : 'border-white/5'} px-6 bg-black/20 backdrop-blur-md`}>
         {['UP NEXT', 'LYRICS', 'RELATED'].map((tab) => (
            <button
              key={tab}
-             className={`text-[10px] font-black tracking-widest px-2 py-3 border-b-2 transition-all ${
+             className={`relative text-[10px] font-black tracking-[0.2em] px-4 py-5 transition-all duration-300 ${
                tab === 'LYRICS'
-                ? 'text-white border-white'
-                : `text-white/40 border-transparent hover:text-white/60`
+                ? 'text-white'
+                : `text-white/30 hover:text-white/60`
              }`}
            >
              {tab}
+             {tab === 'LYRICS' && (
+               <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.6)]" />
+             )}
            </button>
         ))}
       </div>
@@ -112,11 +115,11 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({ songId, onClose, showBackgrou
         ref={containerRef}
         onWheel={handleScrollAction}
         onTouchStart={handleScrollAction}
-        className={`flex-1 overflow-y-auto custom-scrollbar px-8 py-12 scroll-smooth ${
-          showBackground ? (isLightMode ? 'bg-white' : 'bg-black') : 'bg-transparent'
+        className={`flex-1 overflow-y-auto custom-scrollbar-hidden px-8 py-16 scroll-smooth ${
+          showBackground ? (isLightMode ? 'bg-white' : 'bg-[#0a0a0c]') : 'bg-transparent'
         }`}
       >
-        <div className="max-w-2xl mx-auto space-y-5">
+        <div className="max-w-2xl mx-auto space-y-8">
           {lyrics.lines.map((line, index) => {
             const isActive = isSyncing && index === activeIndex;
             const isPast = isSyncing && index < activeIndex;
@@ -125,10 +128,10 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({ songId, onClose, showBackgrou
               <div
                 key={`${index}-${line.time_ms}`}
                 ref={isActive ? activeLineRef : null}
-                className={`transition-all duration-700 cursor-default group select-none text-left ${
+                className={`transition-all duration-1000 cursor-pointer group select-none text-left transform-gpu origin-left ${
                   isActive
-                    ? 'text-lg md:text-xl font-bold text-white scale-100 opacity-100 filter-none drop-shadow-[0_0_12px_rgba(255,255,255,0.3)]'
-                    : `text-base md:text-lg font-bold ${isLightMode ? 'text-gray-900' : 'text-white'} opacity-20 filter blur-[0.5px] hover:opacity-60 hover:blur-none`
+                    ? 'text-xl md:text-2xl font-black text-white scale-105 opacity-100 filter-none drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] leading-tight'
+                    : `text-lg md:text-xl font-bold ${isLightMode ? 'text-gray-900' : 'text-white'} opacity-10 filter blur-[1px] hover:opacity-50 hover:blur-none transition-all`
                 }`}
               >
                 {line.text || '•••'}
@@ -137,6 +140,10 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({ songId, onClose, showBackgrou
           })}
         </div>
       </div>
+      <style>{`
+        .custom-scrollbar-hidden::-webkit-scrollbar { display: none; }
+        .custom-scrollbar-hidden { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   );
 };
