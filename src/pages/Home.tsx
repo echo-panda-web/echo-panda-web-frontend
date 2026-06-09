@@ -150,29 +150,32 @@ const Home: React.FC = () => {
       setLoading((prev) => ({ ...prev, categorySection: true }));
 
       const genres = await getGenres();
-      const selectedCategory =
-        genres.find(
-          (g) =>
-            g.name.toLowerCase() === "khmer" ||
-            g.slug?.toLowerCase() === "khmer" ||
-            String(g.id).toLowerCase() === "khmer",
-        ) ||
-        genres[0] ||
-        null;
+      const khmerCategory = genres.find(
+        (g) =>
+          g.name.toLowerCase() === "khmer" ||
+          g.slug?.toLowerCase() === "khmer" ||
+          String(g.id).toLowerCase() === "khmer",
+      );
 
       let songs: any[] = [];
-      if (selectedCategory) {
-        setCategorySectionTitle(`${selectedCategory.name} Songs`);
+      if (khmerCategory) {
+        setCategorySectionTitle(`${khmerCategory.name} Songs`);
         setCategoryViewAllLink(
-          `/category/${selectedCategory.slug || selectedCategory.id}`,
+          `/category/${khmerCategory.slug || khmerCategory.id}`,
         );
-        songs = await getSongs(10, { category_id: selectedCategory.id });
+        songs = await getSongs(10, { category_id: khmerCategory.id });
       }
 
       if (songs.length === 0) {
-        setCategorySectionTitle("Song Khmer");
-        setCategoryViewAllLink("/category/khmer");
+        setCategorySectionTitle("Khmer Songs");
+        setCategoryViewAllLink("/search?query=Khmer");
         songs = await getSongs(10, { search: "Khmer" });
+      }
+
+      if (songs.length === 0 && !khmerCategory && genres[0]) {
+        setCategorySectionTitle(`${genres[0].name} Songs`);
+        setCategoryViewAllLink(`/category/${genres[0].slug || genres[0].id}`);
+        songs = await getSongs(10, { category_id: genres[0].id });
       }
 
       setCategorySongs(songs);
