@@ -4,6 +4,16 @@ import svgr from 'vite-plugin-svgr';
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  resolve: {
+    extensions: [
+      '.ts',
+      '.tsx',
+      '.js',
+      '.jsx',
+      '.mjs',
+      '.json',
+    ],
+  },
   server: {
     host: "0.0.0.0",
     port: 3000,
@@ -14,18 +24,18 @@ export default defineConfig({
     tailwindcss() as PluginOption,
     svgr() as PluginOption
   ],
-build: {
-  rollupOptions: {
-    output: {
-      manualChunks(id) {
-        if (id.includes('node_modules')) {
-          if (id.includes('react-dom') || id.includes('react-router')) {
-            return 'vendor'
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom') || id.includes('react-router')) {
+              return 'vendor'
+            }
+            return 'chunks'
           }
-          return 'chunks'
         }
       }
     }
   }
-}
 })
