@@ -117,7 +117,7 @@ export async function getAlbums(limit = 10, params: Record<string, any> = {}): P
     release_date: album.release_date || undefined,
     scheduled_at: album.scheduled_at || undefined,
     created_at: album.created_at || undefined,
-    songs_count: resolveSongsCount(album),
+    songs_count: album.songs_count || resolveSongsCount(album) || 0,
     type: album.type || undefined,
     artists: getArtistName(album.artist, album.artist_name)
       ? [{ id: String(album.artist_id || album.id), name: String(getArtistName(album.artist, album.artist_name)), image_url: undefined }]
@@ -313,6 +313,7 @@ const normalizeCategories = async (items: any[]): Promise<CatalogCategory[]> => 
 };
 
 const DEFAULT_GENRES: CatalogCategory[] = [
+  { id: "khmer", name: "Khmer", description: "Authentic Khmer sound" },
   { id: "pop", name: "Pop", description: "Popular music" },
   { id: "hip-hop", name: "Hip Hop", description: "Hip hop and rap" },
   { id: "rnb", name: "R&B", description: "Rhythm and Blues" },

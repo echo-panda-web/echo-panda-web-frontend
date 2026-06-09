@@ -13,7 +13,8 @@ import { getSignedSongCoverUrl, getSignedArtistImageUrl } from '../backend/songM
 import { useTheme } from '../contexts/ThemeContext';
 import ShareModal from './ShareModal';
 import LyricsPanel from './LyricsPanel';
-import { addSongToPlaylist, getUserPlaylists, isSongInPlaylist, type Playlist } from '../backend/playlistsService';
+import { addSongToPlaylist, getUserPlaylists, isSongInPlaylist, createPlaylist, type Playlist } from '../backend/playlistsService';
+import { RiPlayListFill } from "react-icons/ri";
 
 const viteEnv = (import.meta as any).env || {};
 const BACKEND_API_BASE_URL = viteEnv.VITE_BACKEND_API_URL || 'http://localhost:8082/api';
@@ -48,6 +49,8 @@ const SongDetails: React.FC = () => {
   // Share & Playlist States
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isPlaylistSelectorOpen, setIsPlaylistSelectorOpen] = useState(false);
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [showShareMenu, setShowShareMenu] = useState(false); // Legacy or extra menu
   const [copied, setCopied] = useState(false);
@@ -123,12 +126,32 @@ const SongDetails: React.FC = () => {
   };
 
   const handleAddToPlaylist = async () => {
+    const token = localStorage.getItem("userToken") || localStorage.getItem("authToken") || localStorage.getItem("token");
+    if (!token) {
+      alert("Please login to add songs to your playlist");
+      navigate("/login");
+      return;
+    }
     try {
       const data = await getUserPlaylists();
       setPlaylists(data);
       setIsPlaylistSelectorOpen(true);
     } catch (error) {
       console.error("Error loading playlists:", error);
+    }
+  };
+
+  const handleCreateAndAdd = async () => {
+    if (!newPlaylistName.trim()) return;
+    try {
+      const newP = await createPlaylist(newPlaylistName);
+      await addSongToPlaylist(newP.id, id!);
+      alert(`Created "${newP.name}" and added song!`);
+      setIsCreatingPlaylist(false);
+      setIsPlaylistSelectorOpen(false);
+      setNewPlaylistName("");
+    } catch (error) {
+      alert("Failed to create playlist");
     }
   };
 
@@ -518,25 +541,81 @@ const SongDetails: React.FC = () => {
 
       {/* Playlist Selector Modal */}
       {isPlaylistSelectorOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={(e) => e.stopPropagation()}>
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setIsPlaylistSelectorOpen(false)} />
-          <div className={`relative ${isLightMode ? "bg-white" : "bg-[#181818]"} w-full max-w-md rounded-3xl p-8 border ${isLightMode ? "border-gray-200" : "border-white/10"} shadow-2xl`}>
-            <h2 className={`text-2xl font-black ${isLightMode ? "text-gray-900" : "text-white"} mb-6`}>Add to Playlist</h2>
-            <div className="max-h-96 overflow-y-auto space-y-2 custom-scrollbar">
-              {playlists.map((playlist) => (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsPlaylistSelectorOpen(false)} />
+          <div className={`relative ${isLightMode ? "bg-white" : "bg-[#121212]"} w-full max-w-sm rounded-[2.5rem] overflow-hidden border ${isLightMode ? "border-gray-200" : "border-white/10"} shadow-2xl flex flex-col`}>
+
+            <div className="p-8 pb-4">
+               <h2 className={`text-2xl font-black ${isLightMode ? "text-gray-900" : "text-white"} mb-2`}>Add to Playlist</h2>
+               <p className={`text-xs font-bold uppercase tracking-widest ${isLightMode ? "text-gray-400" : "text-white/30"}`}>Select or create new</p>
+            </div>
+
+            <div className="px-4 flex-1 max-h-80 overflow-y-auto custom-scrollbar space-y-1">
+              <button
+                onClick={() => setIsCreatingPlaylist(true)}
+                className={`w-full py-4 px-4 rounded-2xl ${isLightMode ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100" : "bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20"} transition-all flex items-center gap-4 text-left group`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isLightMode ? "bg-white" : "bg-indigo-500/20"} border border-current/20`}>
+                  <FaPlus size={14} />
+                </div>
+                <span className="font-bold text-sm uppercase tracking-wider">Create New Playlist</span>
+              </button>
+
+              <div className="h-px bg-white/5 my-2" />
+
+              {playlists.length === 0 ? (
+                <div className="py-12 text-center">
+                   <p className="text-white/20 text-xs font-black uppercase tracking-widest">No playlists found</p>
+                </div>
+              ) : playlists.map((playlist) => (
                 <button
                   key={playlist.id}
                   onClick={() => handleSelectPlaylist(playlist.id)}
-                  className={`w-full py-3 px-4 rounded-xl ${isLightMode ? "bg-gray-50 hover:bg-gray-100" : "bg-white/5 hover:bg-white/10"} transition-all flex items-center gap-3 text-left`}
+                  className={`w-full py-3 px-4 rounded-2xl ${isLightMode ? "hover:bg-gray-50" : "hover:bg-white/5"} transition-all flex items-center gap-4 text-left group`}
                 >
+                  <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 overflow-hidden flex items-center justify-center">
+                    {playlist.image_url ? (
+                      <img src={playlist.image_url} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <RiPlayListFill className="text-white/20" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`${isLightMode ? "text-gray-900" : "text-white"} font-semibold truncate`}>{playlist.name}</p>
-                    <p className={`${isLightMode ? "text-gray-500" : "text-gray-400"} text-sm`}>{playlist.song_count} songs</p>
+                    <p className={`${isLightMode ? "text-gray-900" : "text-white"} font-bold text-sm truncate`}>{playlist.name}</p>
+                    <p className={`${isLightMode ? "text-gray-500" : "text-white/40"} text-[10px] font-black uppercase tracking-tighter`}>{playlist.song_count} tracks</p>
                   </div>
                 </button>
               ))}
             </div>
-            <button onClick={() => setIsPlaylistSelectorOpen(false)} className={`mt-6 w-full ${isLightMode ? "text-gray-500 hover:text-gray-900" : "text-gray-400 hover:text-white"} font-bold transition`}>Cancel</button>
+
+            <div className="p-4 bg-white/5 border-t border-white/5">
+              <button onClick={() => setIsPlaylistSelectorOpen(false)} className={`w-full py-4 ${isLightMode ? "text-gray-500 hover:text-gray-900" : "text-white/40 hover:text-white"} font-black text-[10px] uppercase tracking-[0.2em] transition`}>Cancel Action</button>
+            </div>
+
+            {/* Inline Create Input */}
+            {isCreatingPlaylist && (
+              <div className="absolute inset-0 z-10 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center animate-in slide-in-from-bottom duration-300">
+                <h3 className="text-xl font-black text-white mb-6">New Playlist Name</h3>
+                <input
+                  autoFocus
+                  type="text"
+                  value={newPlaylistName}
+                  onChange={(e) => setNewPlaylistName(e.target.value)}
+                  placeholder="E.g. My Favorites 2026"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none mb-6 font-bold"
+                />
+                <div className="flex gap-4 w-full">
+                  <button onClick={() => setIsCreatingPlaylist(false)} className="flex-1 py-4 text-xs font-black uppercase tracking-widest text-white/40">Cancel</button>
+                  <button
+                    onClick={handleCreateAndAdd}
+                    disabled={!newPlaylistName.trim()}
+                    className="flex-2 bg-indigo-500 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all disabled:opacity-50"
+                  >
+                    Create & Add
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

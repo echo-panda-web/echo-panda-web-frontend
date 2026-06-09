@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useLyrics } from '../hooks/useLyrics';
 import { useAudioPlayer } from '../contexts/AudioPlayerContextCore';
 import { FaMusic, FaSpinner } from 'react-icons/fa';
@@ -11,7 +11,7 @@ interface LyricsPanelProps {
 }
 
 const LyricsPanel: React.FC<LyricsPanelProps> = ({ songId, onClose, showBackground = false }) => {
-  const { currentTime, currentSong: playingSong } = useAudioPlayer();
+  const { currentTime, duration, currentSong: playingSong } = useAudioPlayer();
   const { isLightMode } = useTheme();
 
   // Only sync if the song being viewed is the one currently playing
@@ -22,14 +22,55 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({ songId, onClose, showBackgrou
   const containerRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
 
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
+  const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isPlainText = lyrics?.format === 'plain';
+
+  // Detect manual interaction
+  const handleScrollAction = () => {
+    if (!isSyncing) return;
+    setIsUserInteracting(true);
+    if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
+    interactionTimerRef.current = setTimeout(() => {
+      setIsUserInteracting(false);
+    }, 4000); // Resume auto-scroll after 4 seconds
+  };
+
   useEffect(() => {
-    if (activeLineRef.current && containerRef.current && isSyncing) {
-      activeLineRef.current.scrollIntoView({
+    const container = containerRef.current;
+    if (!container || !isSyncing || isUserInteracting) return;
+
+    if (!isPlainText && activeIndex >= 0 && activeLineRef.current) {
+      // Smoothly center the active line
+      const containerHeight = container.offsetHeight;
+      const elementOffset = activeLineRef.current.offsetTop;
+      const elementHeight = activeLineRef.current.offsetHeight;
+
+      container.scrollTo({
+        top: elementOffset - (containerHeight / 2) + (elementHeight / 2),
         behavior: 'smooth',
-        block: 'center',
       });
+    } else if (isPlainText && duration > 0) {
+      // Auto-scroll plain text based on progress
+      const progress = currentTime / duration;
+      const scrollHeight = container.scrollHeight - container.offsetHeight;
+      if (scrollHeight > 0) {
+        container.scrollTo({
+          top: scrollHeight * progress,
+          behavior: 'smooth',
+        });
+      }
     }
-  }, [activeIndex, isSyncing]);
+  }, [activeIndex, currentTime, duration, isPlainText, isSyncing, isUserInteracting]);
+
+  // Reset scroll on song change
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: 'instant' });
+      setIsUserInteracting(false);
+    }
+  }, [songId]);
 
   if (loading) {
     return (
@@ -50,33 +91,51 @@ const LyricsPanel: React.FC<LyricsPanelProps> = ({ songId, onClose, showBackgrou
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={`h-full overflow-y-auto custom-scrollbar px-6 py-12 scroll-smooth ${
-        showBackground ? (isLightMode ? 'bg-white' : 'bg-black') : 'bg-transparent'
-      }`}
-    >
-      <div className="max-w-2xl mx-auto space-y-6">
-        {lyrics.lines.map((line, index) => {
-          const isActive = isSyncing && index === activeIndex;
-          const isPast = isSyncing && index < activeIndex;
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Tab Header style like YouTube Music */}
+      <div className={`flex items-center justify-around border-b ${isLightMode ? 'border-gray-100' : 'border-white/5'} px-4 py-2`}>
+        {['UP NEXT', 'LYRICS', 'RELATED'].map((tab) => (
+           <button
+             key={tab}
+             className={`text-[10px] font-black tracking-widest px-2 py-3 border-b-2 transition-all ${
+               tab === 'LYRICS'
+                ? 'text-white border-white'
+                : `text-white/40 border-transparent hover:text-white/60`
+             }`}
+           >
+             {tab}
+           </button>
+        ))}
+      </div>
 
-          return (
-            <div
-              key={`${index}-${line.time_ms}`}
-              ref={isActive ? activeLineRef : null}
-              className={`transition-all duration-500 cursor-default group ${
-                isActive
-                  ? 'text-2xl md:text-3xl font-black text-indigo-500 scale-105 origin-left opacity-100'
-                  : isPast
-                    ? 'text-lg md:text-xl font-bold opacity-30'
-                    : `text-lg md:text-xl font-bold ${isLightMode ? 'text-gray-900' : 'text-white'} opacity-10 hover:opacity-100 transition-opacity`
-              }`}
-            >
-              {line.text || '•••'}
-            </div>
-          );
-        })}
+      <div
+        ref={containerRef}
+        onWheel={handleScrollAction}
+        onTouchStart={handleScrollAction}
+        className={`flex-1 overflow-y-auto custom-scrollbar px-8 py-12 scroll-smooth ${
+          showBackground ? (isLightMode ? 'bg-white' : 'bg-black') : 'bg-transparent'
+        }`}
+      >
+        <div className="max-w-2xl mx-auto space-y-5">
+          {lyrics.lines.map((line, index) => {
+            const isActive = isSyncing && index === activeIndex;
+            const isPast = isSyncing && index < activeIndex;
+
+            return (
+              <div
+                key={`${index}-${line.time_ms}`}
+                ref={isActive ? activeLineRef : null}
+                className={`transition-all duration-700 cursor-default group select-none text-left ${
+                  isActive
+                    ? 'text-lg md:text-xl font-bold text-white scale-100 opacity-100 filter-none drop-shadow-[0_0_12px_rgba(255,255,255,0.3)]'
+                    : `text-base md:text-lg font-bold ${isLightMode ? 'text-gray-900' : 'text-white'} opacity-20 filter blur-[0.5px] hover:opacity-60 hover:blur-none`
+                }`}
+              >
+                {line.text || '•••'}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

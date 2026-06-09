@@ -28,6 +28,7 @@ interface Album {
   title: string;
   cover_url: string;
   type?: string;
+  songs_count?: number;
   release_date?: string;
   artists?: { id: string; name: string; image_url?: string }[];
 }
@@ -275,6 +276,7 @@ function AlbumsSection({ artistId }: { artistId: string }) {
             title: album.title,
             cover_url: album.cover_url,
             type: album.type,
+            songs_count: album.songs_count,
             release_date: album.release_date,
             artists: album.artists || [],
           }))
@@ -379,6 +381,7 @@ function SingleSongs({ artistId }: { artistId: string }) {
             title: album.title,
             cover_url: album.cover_url,
             type: album.type,
+            songs_count: album.songs_count,
             release_date: album.release_date,
             artists: album.artists || [],
           }));

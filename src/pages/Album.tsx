@@ -18,6 +18,7 @@ interface Album {
   type: string;
   release_date: string;
   created_at: string;
+  songs_count?: number;
   artists?: Artist[];
 }
 
@@ -51,6 +52,7 @@ export default function Album() {
             title: album.title,
             cover_url: album.cover_url || "",
             type: album.type,
+            songs_count: album.songs_count || 0,
             release_date: album.release_date || "",
             created_at: album.release_date || new Date().toISOString(),
             artists: album.artists || [],

@@ -130,12 +130,17 @@ const Home: React.FC = () => {
         g.name.toLowerCase() === 'khmer' || g.id.toLowerCase() === 'khmer'
       );
 
+      let songs = [];
       if (khmerGenre) {
-        setKhmerSongs(await getSongs(10, { category_id: khmerGenre.id }));
-      } else {
-        // Fallback to search if genre doesn't exist
-        setKhmerSongs(await getSongs(10, { search: 'Khmer' }));
+        songs = await getSongs(10, { category_id: khmerGenre.id });
       }
+
+      // If no songs found via genre (or genre not found), fallback to searching for "Khmer"
+      if (songs.length === 0) {
+        songs = await getSongs(10, { search: 'Khmer' });
+      }
+
+      setKhmerSongs(songs);
     } catch (e) {
       console.error(e);
     } finally {
