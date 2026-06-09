@@ -56,6 +56,7 @@ export interface CatalogSong {
 
 export interface CatalogCategory {
   id: string;
+  slug?: string;
   name: string;
   description: string;
   image_url?: string;
@@ -150,6 +151,35 @@ export async function getNewReleasesToday(limit = 10): Promise<CatalogAlbum[]> {
   }
 }
 
+export async function getNewSongReleasesToday(limit = 10): Promise<CatalogSong[]> {
+  try {
+    const data = await request<{ data?: any[] }>(`/songs/new-releases-today?limit=${Math.max(1, limit)}`);
+    const rows = Array.isArray(data?.data) ? data.data : [];
+
+    return Promise.all(rows.map(async (song: any) => ({
+      id: String(song.id),
+      title: song.title,
+      duration: Number(song.duration || 0),
+      album_id: song.album_id ?? null,
+      original_key: song.original_key ?? null,
+      cover_key: song.cover_key ?? null,
+      preview_key: song.preview_key ?? null,
+      audio_url: song.audio_url ?? null,
+      songCover_url: song.cover_url ?? song.cover_key ?? null,
+      created_at: song.created_at ?? '',
+      artists: Array.isArray(song.artists) ? song.artists.map((artist: any) => ({ id: String(artist.id), name: artist.stage_name || artist.name || '', image_url: artist.image_url })) : [],
+      album: song.album ? {
+        id: String(song.album.id),
+        title: song.album.title,
+        cover_url: song.album.cover_url,
+      } : null,
+    })));
+  } catch (error) {
+    console.error('Error fetching today new song releases:', error);
+    return [];
+  }
+}
+
 export async function getSongs(limit = 25, params: Record<string, any> = {}): Promise<CatalogSong[]> {
   const queryParams = new URLSearchParams({
     per_page: String(Math.max(1, limit)),
@@ -230,7 +260,7 @@ export async function getDerivedArtists(limit = 10, search = ""): Promise<Catalo
 
   // Fallback: derive from songs and albums if public endpoint fails
   const songs = await getSongs(200);
-  const albums = await getAlbums(200, 0);
+  const albums = await getAlbums(200);
 
   const map = new Map<string, CatalogArtist>();
 
@@ -298,6 +328,7 @@ const normalizeCategories = async (items: any[]): Promise<CatalogCategory[]> => 
 
       const category: CatalogCategory = {
         id,
+        slug: item?.slug ? String(item.slug) : undefined,
         name,
         description,
       };
@@ -408,7 +439,7 @@ export async function getTags(): Promise<Array<{ id: string; name: string; slug:
 }
 
 export async function getHomeTags(): Promise<Array<{ id: string; name: string; description: string; display_order: number; albums: CatalogAlbum[] }>> {
-  const albums = await getAlbums(12, 0);
+  const albums = await getAlbums(12);
   const newReleases = albums.slice(0, 6);
   const trending = albums.slice(6, 12);
 

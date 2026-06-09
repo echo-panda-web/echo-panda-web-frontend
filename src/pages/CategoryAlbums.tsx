@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getAlbums, getSongs, getDerivedCategories, CatalogSong } from "../backend/catalogService";
+import { getAlbums, getSongs, getDerivedCategories, CatalogSong, CatalogAlbum } from "../backend/catalogService";
+import { getMostPlayedAlbums } from "../backend/playTrackingService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import { FaSpinner, FaArrowLeft, FaMusic } from "react-icons/fa";
 import AlbumCard from "../components/AlbumCard";
@@ -15,16 +16,9 @@ interface Artist {
   image_url: string;
 }
 
-interface Album {
-  id: string;
-  title: string;
-  cover_url: string;
-  type: string;
-  artists?: Artist[];
-}
-
 interface Category {
   id: string;
+  slug?: string;
   name: string;
   description: string;
 }
@@ -36,7 +30,8 @@ const CategoryAlbums: React.FC = () => {
   const { isLightMode } = useTheme();
   const { playSong } = useAudioPlayer();
   const [category, setCategory] = useState<Category | null>(null);
-  const [albums, setAlbums] = useState<Album[]>([]);
+  const [albums, setAlbums] = useState<CatalogAlbum[]>([]);
+  const [topAlbums, setTopAlbums] = useState<CatalogAlbum[]>([]);
   const [songs, setSongs] = useState<CatalogSong[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,13 +49,18 @@ const CategoryAlbums: React.FC = () => {
         const startTime = performance.now();
         console.log(`🔄 [CategoryPage] Fetching data for category ${categoryId}...`);
 
-        const [categories, albumsData, songsData] = await Promise.all([
+        const [categories, albumsData, songsData, mostPlayedAlbumsData] = await Promise.all([
           getDerivedCategories(),
           getAlbums(50, { category_id: categoryId }),
           getSongs(50, { category_id: categoryId }),
+          getMostPlayedAlbums(20),
         ]);
 
-        const categoryData = categories.find((c) => c.id === categoryId) || null;
+        const categoryData = categories.find((c) =>
+          String(c.id) === categoryId ||
+          c.slug === categoryId ||
+          c.name.toLowerCase() === categoryId.toLowerCase()
+        ) || null;
 
         const fetchTime = performance.now() - startTime;
         console.log(`✅ [CategoryPage] Data fetched in ${fetchTime.toFixed(0)}ms`);
@@ -77,14 +77,20 @@ const CategoryAlbums: React.FC = () => {
           );
         }
 
+        // Filter top albums to only include those in this category
+        const albumIds = new Set(finalAlbums.map(a => a.id));
+        const categoryTopAlbums = mostPlayedAlbumsData.filter(a => albumIds.has(a.id));
+
         return {
           category: categoryData,
           albums: finalAlbums,
+          topAlbums: categoryTopAlbums,
           songs: songsData
         };
       });
 
       setCategory(data.category);
+      setTopAlbums(data.topAlbums || []);
       setAlbums(data.albums);
       setSongs(data.songs);
     } catch (error) {
@@ -196,7 +202,21 @@ const CategoryAlbums: React.FC = () => {
           </div>
         )}
 
-        {/* Albums Section */}
+        {/* Top Albums Section */}
+        {topAlbums.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <FaMusic className="text-purple-500" /> Top Albums
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {topAlbums.map((album) => (
+                <AlbumCard key={album.id} album={album} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* All Albums Section */}
         <div>
           <h2 className="text-2xl font-bold mb-6">Albums</h2>
           {albums.length === 0 ? (

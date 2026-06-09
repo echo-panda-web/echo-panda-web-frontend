@@ -519,9 +519,6 @@ const SongDetails: React.FC = () => {
                               <p className={`text-xs ${isLightMode ? "text-gray-500" : "text-slate-400"} truncate`}>{item.song.artist || 'Unknown Artist'}</p>
                            </div>
                         </div>
-                        <div className="text-[10px] font-bold text-indigo-400/80 uppercase tracking-widest bg-indigo-500/5 px-2 py-1 rounded border border-indigo-500/10 whitespace-nowrap">
-                           {item.recommendation_reason}
-                        </div>
                      </div>
                   ))}
                </div>

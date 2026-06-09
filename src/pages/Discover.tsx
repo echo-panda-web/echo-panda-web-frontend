@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   getGenres,
-  getNewReleasesToday,
+  getNewSongReleasesToday,
   getPopularArtists,
   getDerivedCategories,
   type CatalogAlbum
@@ -109,8 +109,8 @@ const Discover: React.FC = () => {
     try {
       setLoadingNewReleases(true);
       const data = await getCachedData('new_releases_today', async () => {
-        const albumsData = await getNewReleasesToday(12);
-        return albumsData || [];
+        const songsData = await getNewSongReleasesToday(12);
+        return songsData || [];
       });
       setNewReleaseSongs(data);
     } catch (error) {
