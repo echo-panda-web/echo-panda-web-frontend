@@ -152,9 +152,10 @@ const Home: React.FC = () => {
       const genres = await getGenres();
       const khmerCategory = genres.find(
         (g) =>
-          g.name.toLowerCase() === "khmer" ||
-          g.slug?.toLowerCase() === "khmer" ||
-          String(g.id).toLowerCase() === "khmer",
+          g.name.toLowerCase().includes("khmer") ||
+          g.slug?.toLowerCase().includes("khmer") ||
+          String(g.id).toLowerCase() === "khmer" ||
+          String(g.id) === "12",
       );
 
       let songs: any[] = [];

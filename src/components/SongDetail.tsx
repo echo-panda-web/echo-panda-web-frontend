@@ -40,22 +40,28 @@ const formatDuration = (seconds: number): string => {
 
 const parseLyrics = (rawLyrics: string): LyricLine[] => {
   if (!rawLyrics) return [];
-  const lines = rawLyrics.split('\n');
+  const lines = rawLyrics.split(/\r\n|\r|\n/);
   const parsedLines: LyricLine[] = [];
-  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+  const timeRegex = /\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\]/;
 
   lines.forEach(line => {
     const match = line.match(timeRegex);
-    if (match) {
+    const text = line.replace(timeRegex, '').trim();
+    if (match && text) {
       const minutes = parseInt(match[1]);
       const seconds = parseInt(match[2]);
-      const milliseconds = parseInt(match[3]);
-      const time = minutes * 60 + seconds + milliseconds / (match[3].length === 3 ? 1000 : 100);
-      const text = line.replace(timeRegex, '').trim();
-      if (text) parsedLines.push({ time, text });
-    } else {
-      const text = line.trim();
-      if (text) parsedLines.push({ time: -1, text });
+      const fraction = match[3] ? parseInt(match[3]) : 0;
+      const divisor = match[3]
+        ? match[3].length === 3
+          ? 1000
+          : match[3].length === 2
+            ? 100
+            : 10
+        : 1;
+      const time = minutes * 60 + seconds + (fraction / divisor);
+      parsedLines.push({ time, text });
+    } else if (text) {
+      parsedLines.push({ time: -1, text });
     }
   });
 
@@ -131,7 +137,13 @@ const SongDetails: React.FC = () => {
 
   useEffect(() => {
     if (playingSong?.id === currentSong?.id && parsedLyrics.length > 0) {
-      const index = parsedLyrics.findLastIndex(line => line.time !== -1 && line.time <= (currentTime - 0.5));
+      let index = -1;
+      for (let i = 0; i < parsedLyrics.length; i += 1) {
+        const line: LyricLine = parsedLyrics[i];
+        if (line.time !== -1 && line.time <= currentTime) {
+          index = i;
+        }
+      }
       if (index !== activeLyricIndex) {
         setActiveLyricIndex(index);
       }
