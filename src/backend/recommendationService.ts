@@ -78,6 +78,7 @@ export interface AdaptiveRecommendation {
     cover_key: string | null;
     songCover_url?: string | null;
     cover_url?: string | null;
+    artists?: Array<{ id: number; name: string; image_url?: string }>;
   };
 }
 
@@ -93,12 +94,20 @@ const enrichRecommendations = async (
       const albumCoverUrl = song.album?.id
         ? await getSignedAlbumCoverUrl(song.album.id)
         : null;
-      const resolvedCover = coverUrl || albumCoverUrl || song.album?.cover_url || null;
+      const resolvedCover = coverUrl || albumCoverUrl || song.cover_url || song.songCover_url || song.album?.cover_url || null;
+
+      const normalizedArtists = Array.isArray(song.artists) && song.artists.length > 0
+        ? song.artists
+        : song.artist
+          ? [{ id: Number(song.artist_id ?? 0), name: song.artist }]
+          : [];
 
       return {
         ...rec,
         song: {
           ...song,
+          artists: normalizedArtists,
+          artist: song.artist || normalizedArtists.map((a) => a.name).filter(Boolean).join(', '),
           songCover_url: resolvedCover,
           cover_url: resolvedCover,
           album: song.album

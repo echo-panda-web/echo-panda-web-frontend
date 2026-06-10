@@ -108,7 +108,6 @@ const Home: React.FC = () => {
   const [categoryViewAllLink, setCategoryViewAllLink] =
     useState<string>("/category/khmer");
   const [topAlbums, setTopAlbums] = useState<CatalogAlbum[]>([]);
-  const [featuredCharts, setFeaturedCharts] = useState<any[]>([]);
 
   const [loading, setLoading] = useState({
     adaptive: true,
@@ -117,7 +116,7 @@ const Home: React.FC = () => {
     popularArtists: true,
     categorySection: true,
     topAlbums: true,
-    featured: true,
+
   });
 
   useEffect(() => {
@@ -193,24 +192,6 @@ const Home: React.FC = () => {
       console.error(e);
     } finally {
       setLoading((prev) => ({ ...prev, topAlbums: false }));
-    }
-
-    try {
-      setLoading((prev) => ({ ...prev, featured: true }));
-      // Fetch top albums instead of generic categories for charts
-      const albumsData = await getMostPlayedAlbums(10);
-      setFeaturedCharts(
-        albumsData.map((a) => ({
-          ...a,
-          name: a.title, // Map title to name for consistency with UI mapping
-          image_url: a.cover_url,
-          type: "album",
-        })),
-      );
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading((prev) => ({ ...prev, featured: false }));
     }
   };
 
@@ -336,10 +317,18 @@ const Home: React.FC = () => {
         <div className="px-4 md:px-8">
           <SongSection
             title="Recommended Songs"
-            songs={adaptiveRecommendations.map((r) => ({
-              ...r.song,
-              type: "Song",
-            }))}
+            songs={adaptiveRecommendations.map((r) => {
+              const song = r.song as any;
+              return {
+                ...song,
+                artists: Array.isArray(song.artists) && song.artists.length > 0
+                  ? song.artists
+                  : song.artist
+                    ? [{ id: song.artist_id, name: song.artist }]
+                    : [],
+                type: "song",
+              };
+            })}
             viewAllLink="/songs?type=recommended"
             onItemClick={handleRecommendationCardClick}
           />
@@ -449,17 +438,6 @@ const Home: React.FC = () => {
             title="Top Albums"
             albums={topAlbums}
             viewAllLink="/albums"
-          />
-        </div>
-      </ScrollReveal>
-
-      {/* 7. Featured Charts */}
-      <ScrollReveal>
-        <div className="px-4 md:px-8">
-          <SongSection
-            title="Featured Charts"
-            songs={featuredCharts}
-            viewAllLink="/discover"
           />
         </div>
       </ScrollReveal>

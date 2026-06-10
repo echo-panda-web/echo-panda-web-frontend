@@ -78,6 +78,10 @@ const Player: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTypingInInput = target?.matches?.('input, textarea, select, [contenteditable="true"]');
+      if (isTypingInInput) return;
+
       if (e.key === 'ArrowRight' || e.key === 'n' || e.key === 'N') playNextSong();
       if (e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') playPreviousSong();
       if (e.key === ' ') {

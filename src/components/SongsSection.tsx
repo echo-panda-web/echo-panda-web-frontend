@@ -38,11 +38,23 @@ export default function SongsSection({ title, songs, albums, viewAllLink, onItem
       >
         {displayItems.map((item, idx) => {
           // Robust normalization for different data types (Songs, Albums, Categories)
+          const normalizeArtist = (artist: any): string => {
+            if (artist == null) return '';
+            if (typeof artist === 'string') return artist.trim();
+            if (typeof artist === 'object') {
+              if (typeof artist.stage_name === 'string' && artist.stage_name.trim()) return artist.stage_name.trim();
+              if (typeof artist.name === 'string' && artist.name.trim()) return artist.name.trim();
+              if (typeof artist.name === 'object') return normalizeArtist(artist.name);
+              if (typeof artist.stage_name === 'object') return normalizeArtist(artist.stage_name);
+            }
+            return String(artist);
+          };
+
           const normalizedItem = {
              ...item,
              title: item.title || item.name,
              cover_url: item.cover_url || item.songCover_url || item.image_url || item.cover_key || item.album?.cover_url,
-             artists: item.artists || (item.artist ? [{ name: item.artist }] : undefined),
+             artists: item.artists || (item.artist ? [{ name: normalizeArtist(item.artist) }] : (item.artist_name ? [{ name: normalizeArtist(item.artist_name) }] : undefined)),
              album_id: item.album_id || item.album?.id || (item.type === 'album' ? item.id : undefined),
              type: item.type || (item.name && !item.title ? 'category' : (item.songCover_url || item.audio_url ? 'Song' : 'album'))
           };

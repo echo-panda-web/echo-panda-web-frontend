@@ -168,13 +168,19 @@ export async function getNewSongReleasesToday(limit = 10): Promise<CatalogSong[]
       songCover_url:
         (await getSignedSongCoverUrl(song.id)) || song.cover_url || song.cover_key || null,
       created_at: song.created_at ?? '',
-      artists: Array.isArray(song.artists)
+      artists: Array.isArray(song.artists) && song.artists.length > 0
         ? song.artists.map((artist: any) => ({
             id: String(artist.id),
             name: artist.stage_name || artist.name || '',
             image_url: artist.image_url,
           }))
-        : [],
+        : getArtistName(song.artist, song.artist_name)
+          ? [{
+              id: String(song.artist_id ?? song.artist?.id ?? song.id),
+              name: getArtistName(song.artist, song.artist_name),
+              image_url: undefined,
+            }]
+          : [],
       album: song.album
         ? {
             id: String(song.album.id),

@@ -207,7 +207,7 @@ const NavBar: React.FC = () => {
           value={searchQuery}
           onChange={(e) => { const val = e.target.value; setSearchQuery(val); if (!val.trim()) navigate("/"); }}
           onKeyDown={(e) => e.key === "Enter" && searchQuery.trim() && performSearch(searchQuery)}
-          placeholder="Search Audio Sequences..."
+          placeholder="Search songs, artists..."
           className={`w-full rounded-xl py-2 pl-10 pr-10 text-sm outline-none border transition-all duration-200 ${styles.input}`}
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">

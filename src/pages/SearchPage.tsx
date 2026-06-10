@@ -47,6 +47,14 @@ const SearchPage: React.FC = () => {
     navigate(`/artist/${artistId}`);
   };
 
+  const topArtistName = artists[0]?.name;
+  const topArtistSongCount = topArtistName
+    ? songs.filter((song) =>
+        String(song.artist_name || "").toLowerCase() === topArtistName.toLowerCase()
+      ).length
+    : 0;
+  const showArtistFallback = topArtistName && topArtistSongCount > 0;
+
   return (
     <div className={`min-h-screen ${isLightMode ? "bg-gray-50 text-gray-900" : "bg-black text-white"}`}>
       <div className={`p-6 md:p-8`}>
@@ -85,13 +93,20 @@ const SearchPage: React.FC = () => {
         <div className="p-6 md:p-8 space-y-8">
           {songs.length > 0 && (
             <div>
-              <h2 className={`text-2xl font-bold mb-4 ${isLightMode ? "text-gray-900" : "text-white"}`}>Songs ({songs.length})</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <h2 className={`text-2xl font-bold mb-2 ${isLightMode ? "text-gray-900" : "text-white"}`}>
+                {showArtistFallback ? `Songs from ${topArtistName} (${songs.length})` : `Songs (${songs.length})`}
+              </h2>
+              {showArtistFallback ? (
+                <p className={`text-sm mb-4 ${isLightMode ? "text-gray-500" : "text-gray-400"}`}>
+                  Showing results for the top matching artist.
+                </p>
+              ) : null}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                 {songs.map((song) => (
                   <div
                     key={song.id}
                     onClick={() => handleSongClick(song.id)}
-                    className={`cursor-pointer group relative h-full flex flex-col ${isLightMode ? "bg-white border-gray-100 shadow-sm" : "bg-black border-white/5"} p-3 rounded-lg border`}
+                    className={`cursor-pointer group relative h-full flex flex-col ${isLightMode ? "bg-white border-gray-100 shadow-sm" : "bg-black border-white/5"} p-4 rounded-lg border transition-all hover:shadow-lg`}
                   >
                     <div className={`w-full aspect-square ${isLightMode ? "bg-gray-100" : "bg-zinc-700"} rounded-lg flex items-center justify-center mb-4 relative overflow-hidden`}>
                       {song.cover_url ? (
@@ -130,17 +145,17 @@ const SearchPage: React.FC = () => {
                       <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                     </div>
 
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className={`font-semibold line-clamp-2 min-h-10 leading-tight ${isLightMode ? "text-gray-900" : "text-white"}`}>
+                    <div className="flex-1 flex flex-col justify-between space-y-2">
+                      <div className="space-y-1">
+                        <h3 className={`font-semibold line-clamp-2 leading-tight ${isLightMode ? "text-gray-900" : "text-white"}`}>
                           {song.title}
                         </h3>
-                        <p className={`text-sm ${isLightMode ? "text-gray-500" : "text-zinc-400"} line-clamp-1 mb-1`}>
-                          {song.artist_name || "Unknown Artist"}
+                        <p className={`text-sm ${isLightMode ? "text-gray-500" : "text-zinc-400"} line-clamp-1`}>
+                          {song.artist_name || (song as any).artists?.map((a: any) => a.name).join(", ") || (song as any).artist || "Unknown Artist"}
                         </p>
                       </div>
-                      <p className={`text-xs ${isLightMode ? "text-gray-400" : "text-zinc-400"} mt-auto`}>
-                        song
+                      <p className={`text-xs ${isLightMode ? "text-gray-400" : "text-zinc-400"}`}>
+                        Song
                       </p>
                     </div>
                   </div>
@@ -151,22 +166,25 @@ const SearchPage: React.FC = () => {
 
           {artists.length > 0 && (
             <div>
-              <h2 className={`text-2xl font-bold mb-4 ${isLightMode ? "text-gray-900" : "text-white"}`}>Artists ({artists.length})</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <h2 className={`text-2xl font-bold mb-6 ${isLightMode ? "text-gray-900" : "text-white"}`}>Artists ({artists.length})</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                 {artists.map((artist) => (
                   <div
                     key={artist.id}
                     onClick={() => handleArtistClick(artist.id)}
-                    className={`p-4 rounded-lg ${isLightMode ? "bg-white border-gray-100 shadow-sm" : "bg-black border-white/5 hover:bg-zinc-900"} border cursor-pointer transition-all hover:shadow-lg text-center`}
+                    className={`p-5 rounded-lg ${isLightMode ? "bg-white border-gray-100 shadow-sm" : "bg-black border-white/5 hover:bg-zinc-900"} border cursor-pointer transition-all hover:shadow-lg text-center space-y-3`}
                   >
                     {artist.image_url && (
                       <img
                         src={artist.image_url}
                         alt={artist.name}
-                        className="w-full h-32 rounded-lg object-cover mb-3"
+                        className="w-full h-40 rounded-lg object-cover"
                       />
                     )}
-                    <p className={`font-semibold ${isLightMode ? "text-gray-900" : "text-white"}`}>{artist.name}</p>
+                    <div className="space-y-1">
+                      <p className={`font-semibold line-clamp-2 ${isLightMode ? "text-gray-900" : "text-white"}`}>{artist.name}</p>
+                      <p className={`text-xs ${isLightMode ? "text-gray-500" : "text-gray-400"}`}>Artist</p>
+                    </div>
                   </div>
                 ))}
               </div>

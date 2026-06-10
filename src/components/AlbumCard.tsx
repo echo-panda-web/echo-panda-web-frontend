@@ -35,10 +35,13 @@ const resolveSongCount = (album: Album): number => {
 };
 
 const resolveReleaseYear = (album: Album): number | string => {
-  if (album.year != null && album.year !== "") return album.year;
+  // Validate album.year is actually a number or string, not an object
+  if (album.year != null && album.year !== "" && typeof album.year !== "object") {
+    return album.year;
+  }
 
   const dateSource = album.release_date || album.scheduled_at || album.created_at;
-  if (dateSource) {
+  if (dateSource && typeof dateSource === "string") {
     const year = new Date(dateSource).getFullYear();
     if (!Number.isNaN(year)) return year;
   }
@@ -70,13 +73,33 @@ export default function AlbumCard({ album, onClick }: Props) {
     navigate(`/album/${album.id}`);
   };
 
+  const type = String(album.type || '').toLowerCase();
+  const formatArtistName = (name: any): string => {
+    if (name == null) return '';
+    if (typeof name === 'string') return name.trim();
+    if (typeof name === 'object') {
+      if (typeof name.stage_name === 'string' && name.stage_name.trim()) return name.stage_name.trim();
+      if (typeof name.name === 'string' && name.name.trim()) return name.name.trim();
+      if (typeof name.name === 'object') return formatArtistName(name.name);
+      if (typeof name.stage_name === 'object') return formatArtistName(name.stage_name);
+      return '';
+    }
+    return String(name);
+  };
+
   const artistNames =
     album.artists && album.artists.length > 0
-      ? album.artists.map((a) => a.name).join(", ")
-      : "Various Artists";
+      ? album.artists
+          .map((a) => formatArtistName(a?.name))
+          .filter(Boolean)
+          .join(', ')
+      : type === 'song'
+        ? 'Unknown Artist'
+        : 'Various Artists';
 
   const songCount = resolveSongCount(album);
   const releaseYear = resolveReleaseYear(album);
+  const songFooter = type === 'song' ? 'Song' : `${String(songCount).trim() || 0} songs • ${String(releaseYear).trim() || 'Unknown'}`;
 
   return (
     <div
@@ -134,7 +157,7 @@ export default function AlbumCard({ album, onClick }: Props) {
         </div>
 
         <p className="text-xs text-zinc-400 mt-auto">
-          {songCount} songs • {releaseYear}
+          {songFooter}
         </p>
       </div>
     </div>
