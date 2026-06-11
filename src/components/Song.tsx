@@ -110,7 +110,7 @@ const Song: React.FC<SongProps> = ({
   const handleHeartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setContextMenu({ x: rect.left, y: rect.bottom + 5 });
+    setContextMenu({ x: rect.left - 8, y: rect.top + rect.height / 2 });
   };
 
   const closeContextMenu = () => setContextMenu(null);
@@ -314,9 +314,10 @@ const Song: React.FC<SongProps> = ({
             position: "fixed",
             top: `${contextMenu.y}px`,
             left: `${contextMenu.x}px`,
+            transform: "translate(-100%, -50%)",
             zIndex: 1000,
           }}
-          className={`${isLightMode ? "bg-white text-gray-900 border-gray-200" : "bg-[#282828] text-white border-gray-700/50"} rounded-md shadow-2xl min-w-55 py-1 border animate-in fade-in slide-in-from-top-2 duration-150`}
+          className={`${isLightMode ? "bg-white text-gray-900 border-gray-200" : "bg-[#282828] text-white border-gray-700/50"} rounded-md shadow-2xl min-w-55 py-1 border animate-in fade-in slide-in-from-right-2 duration-150`}
         >
           <div className="py-1">
             <button

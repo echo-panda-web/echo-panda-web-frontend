@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   getGenres,
-  getNewSongReleasesToday,
   getPopularArtists,
   getDerivedCategories,
   type CatalogAlbum
@@ -40,13 +39,11 @@ const Discover: React.FC = () => {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const [newReleaseSongs, setNewReleaseSongs] = useState<CatalogAlbum[]>([]);
   const [topAlbums, setTopAlbums] = useState<Album[]>([]);
   const [trendingSongs, setTrendingSongs] = useState<any[]>([]);
   const [popularArtists, setPopularArtists] = useState<ArtistCard[]>([]);
   const [featuredCharts, setFeaturedCharts] = useState<any[]>([]);
 
-  const [loadingNewReleases, setLoadingNewReleases] = useState(true);
   const [loadingTopAlbums, setLoadingTopAlbums] = useState(true);
   const [loadingPopularArtists, setLoadingPopularArtists] = useState(true);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
@@ -54,7 +51,6 @@ const Discover: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
-    fetchNewReleaseSongs();
     fetchTopAlbums();
     fetchTrendingSongs();
     fetchPopularArtists();
@@ -102,21 +98,6 @@ const Discover: React.FC = () => {
       console.error('Error fetching categories:', error);
     } finally {
       setLoadingCategories(false);
-    }
-  };
-
-  const fetchNewReleaseSongs = async () => {
-    try {
-      setLoadingNewReleases(true);
-      const data = await getCachedData('new_releases_today', async () => {
-        const songsData = await getNewSongReleasesToday(12);
-        return songsData || [];
-      });
-      setNewReleaseSongs(data);
-    } catch (error) {
-      console.error('Error fetching new releases today:', error);
-    } finally {
-      setLoadingNewReleases(false);
     }
   };
 
@@ -334,24 +315,7 @@ const Discover: React.FC = () => {
           )}
         </section>
 
-        {/* 5. New Release Songs Section */}
-        <section>
-          <SectionTitle main="New Release" accent="Songs" />
-          {loadingNewReleases ? (
-             <div className="flex justify-center py-10"><FaSpinner className="animate-spin text-blue-500 text-2xl" /></div>
-          ) : (
-            <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-none snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-               {newReleaseSongs.map((album) => (
-                  <div key={album.id} className="shrink-0 w-[180px] md:w-[220px] snap-start">
-                    <AlbumCard album={album} />
-                  </div>
-               ))}
-               <ViewAllCircle link="/songs?type=new" />
-            </div>
-          )}
-        </section>
-
-        {/* 6. Top Albums Section */}
+        {/* 5. Top Albums Section */}
         <section>
           <SectionTitle main="Top" accent="Albums" />
           {loadingTopAlbums ? (

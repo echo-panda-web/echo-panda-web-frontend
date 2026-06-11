@@ -5,7 +5,7 @@ import {
   FaCompactDisc, FaSpinner, FaCheckCircle, FaMusic,
   FaTimes, FaShare, FaPlus, FaRegHeart
 } from 'react-icons/fa';
-import { trackSongPlay } from '../backend/playTrackingService';
+import { getGlobalPlayCountMap, trackSongPlay } from '../backend/playTrackingService';
 import { getSimilarRecommendations, trackRecommendationEvent, type AdaptiveRecommendation } from '../backend/recommendationService';
 import { useAudioPlayer } from '../contexts/AudioPlayerContext';
 import { isSongFavorite, toggleFavorite, getUserFavorites } from '../backend/favoritesService';
@@ -99,7 +99,6 @@ const SongDetails: React.FC = () => {
   const [parsedLyrics, setParsedLyrics] = useState<LyricLine[]>([]);
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
   const lyricsScrollRef = useRef<HTMLDivElement>(null);
-  const activeLyricRef = useRef<HTMLDivElement>(null);
 
   const getArtistName = (artist: any) => {
     if (!artist) return 'Unknown Artist';
@@ -151,27 +150,60 @@ const SongDetails: React.FC = () => {
   }, [currentTime, parsedLyrics, playingSong, currentSong, activeLyricIndex]);
 
   useEffect(() => {
-    if (activeLyricRef.current && lyricsScrollRef.current) {
-      const container = lyricsScrollRef.current;
-      const activeElement = activeLyricRef.current;
-      const scrollPos = activeElement.offsetTop - (container.clientHeight * 0.5);
-      container.scrollTo({ top: scrollPos, behavior: 'smooth' });
+    const container = lyricsScrollRef.current;
+    if (!container || activeLyricIndex < 0 || parsedLyrics.length === 0) return;
+    if (playingSong?.id !== currentSong?.id) return;
+
+    const lineElements = container.children;
+    const currentEl = lineElements[activeLyricIndex] as HTMLElement | undefined;
+    if (!currentEl) return;
+
+    const containerHeight = container.clientHeight;
+    const getScrollTarget = (el: HTMLElement) => {
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      return container.scrollTop + (elRect.top - containerRect.top) - containerHeight / 2 + elRect.height / 2;
+    };
+
+    const currentLine = parsedLyrics[activeLyricIndex];
+    let targetScroll = getScrollTarget(currentEl);
+
+    const nextIdx = activeLyricIndex + 1;
+    const nextLine = parsedLyrics[nextIdx];
+    if (nextLine && nextLine.time !== -1 && nextLine.time > currentLine.time) {
+      const nextEl = lineElements[nextIdx] as HTMLElement | undefined;
+      if (nextEl) {
+        const lineDuration = nextLine.time - currentLine.time;
+        const progress = lineDuration > 0
+          ? Math.min(1, Math.max(0, (currentTime - currentLine.time) / lineDuration))
+          : 0;
+        const currentScroll = getScrollTarget(currentEl);
+        const nextScroll = getScrollTarget(nextEl);
+        targetScroll = currentScroll + (nextScroll - currentScroll) * progress;
+      }
     }
-  }, [activeLyricIndex]);
+
+    container.scrollTop = Math.max(0, targetScroll);
+  }, [activeLyricIndex, currentTime, parsedLyrics, playingSong?.id, currentSong?.id]);
 
   const fetchSimilarSongs = async (songId: string) => {
     try {
       setLoadingSimilar(true);
-      const rows = await getSimilarRecommendations(songId, 10);
+      const [rows, playCountMap] = await Promise.all([
+        getSimilarRecommendations(songId, 10),
+        getGlobalPlayCountMap(500),
+      ]);
       if (rows && rows.length > 0) {
         const signedRows = await Promise.all(
           rows.map(async (item) => {
             try {
                const signedCover = await getSignedSongCoverUrl(item.song.id);
+               const songIdKey = String(item.song.id);
                return {
                  ...item,
                  song: {
                    ...item.song,
+                   play_count: playCountMap.get(songIdKey) ?? item.song.play_count ?? 0,
                    cover_key: signedCover || item.song.cover_key || item.song.album?.cover_url
                  }
                };
@@ -249,9 +281,14 @@ const SongDetails: React.FC = () => {
   const fetchSongAndAlbum = async () => {
     try {
       setLoading(true);
-      const songRes = await fetch(`${BACKEND_API_BASE_URL}/songs/${id}`, { headers: { Accept: 'application/json' } });
+      const [songRes, playCountMap] = await Promise.all([
+        fetch(`${BACKEND_API_BASE_URL}/songs/${id}`, { headers: { Accept: 'application/json' } }),
+        getGlobalPlayCountMap(500),
+      ]);
       if (!songRes.ok) throw new Error(`Failed to fetch song ${id}`);
       const songData = await songRes.json();
+      const resolvePlayCount = (songId: string, apiCount?: number) =>
+        playCountMap.get(songId) ?? apiCount ?? 0;
 
       const artistId = songData.artist_id || songData.artist?.id || null;
       const [signedSongCover, signedArtistImage] = await Promise.all([
@@ -284,7 +321,7 @@ const SongDetails: React.FC = () => {
 
         setCurrentSong({
           ...transformedSong,
-          play_count: songData.play_count || 0
+          play_count: resolvePlayCount(String(songData.id), songData.play_count),
         });
 
         if (songData.album_id) {
@@ -298,7 +335,7 @@ const SongDetails: React.FC = () => {
               duration: s.duration,
               album_id: s.album_id,
               audio_url: s.audio_url,
-              play_count: s.play_count,
+              play_count: resolvePlayCount(String(s.id), s.play_count),
               songCover_url: s.album?.cover_url || s.album?.cover_image,
               album: s.album ? { title: s.album.title } : undefined,
               artists: s.artist ? [{ id: String(s.artist_id), name: getArtistName(s.artist) }] : []
@@ -311,8 +348,24 @@ const SongDetails: React.FC = () => {
   const handleClose = () => { navigate(-1); };
   const handleStopAndClose = () => { closePlayer(); navigate(-1); };
 
-  const handlePlay = (songToPlay: any) => {
-    trackSongPlay(songToPlay.id);
+  const bumpPlayCount = (songId: string) => {
+    const bump = (count?: number) => (count || 0) + 1;
+
+    setCurrentSong((prev) =>
+      prev?.id === songId ? { ...prev, play_count: bump(prev.play_count) } : prev
+    );
+    setAlbumSongs((prev) =>
+      prev.map((song) =>
+        song.id === songId ? { ...song, play_count: bump(song.play_count) } : song
+      )
+    );
+  };
+
+  const handlePlay = async (songToPlay: any) => {
+    const tracked = await trackSongPlay(String(songToPlay.id));
+    if (tracked) {
+      bumpPlayCount(String(songToPlay.id));
+    }
     playSong({
       id: songToPlay.id,
       title: songToPlay.title,
@@ -323,10 +376,19 @@ const SongDetails: React.FC = () => {
     });
   };
 
-  const handlePlaySimilar = (item: AdaptiveRecommendation) => {
+  const handlePlaySimilar = async (item: AdaptiveRecommendation) => {
     const song = item.song;
     if (!song?.audio_url) return;
-    trackSongPlay(String(song.id));
+    const tracked = await trackSongPlay(String(song.id));
+    if (tracked) {
+      setSimilarSongs((prev) =>
+        prev.map((row) =>
+          String(row.song.id) === String(song.id)
+            ? { ...row, song: { ...row.song, play_count: (row.song.play_count || 0) + 1 } }
+            : row
+        )
+      );
+    }
     playSong({
        id: String(song.id),
        title: song.title,
@@ -540,8 +602,7 @@ const SongDetails: React.FC = () => {
                           parsedLyrics.map((line, index) => (
                             <div
                               key={index}
-                              ref={index === activeLyricIndex ? activeLyricRef : null}
-                              className={`py-2 transition-all duration-500 cursor-default ${
+                              className={`py-2 transition-colors duration-300 cursor-default ${
                                 index === activeLyricIndex
                                   ? 'text-indigo-500 opacity-100'
                                   : 'opacity-30 hover:opacity-50'
@@ -608,6 +669,12 @@ const SongDetails: React.FC = () => {
                      <div className="flex items-center justify-between">
                         <span className={`text-[10px] font-bold uppercase ${isLightMode ? "text-gray-400" : "text-slate-500"}`}>License</span>
                         <span className={`text-[10px] font-black ${isLightMode ? "text-gray-900" : "text-white"}`}>Original</span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-bold uppercase ${isLightMode ? "text-gray-400" : "text-slate-500"}`}>Plays</span>
+                        <span className={`text-[10px] font-black ${isLightMode ? "text-gray-900" : "text-white"}`}>
+                           {(currentSong.play_count || 0).toLocaleString()}
+                        </span>
                      </div>
                   </div>
                </div>

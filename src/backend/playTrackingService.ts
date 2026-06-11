@@ -80,22 +80,37 @@ export const trackSongPlay = async (songId: string): Promise<boolean> => {
   }
 };
 
-// Get play count for a song (all users)
-export const getSongPlayCount = async (songId: string): Promise<number> => {
+type PlayCountRow = { song_id: number; play_count: number };
+
+/** Global play totals from listen history (same source as Discover/Home trending). */
+export const getGlobalPlayCountMap = async (limit = 500): Promise<Map<string, number>> => {
+  const map = new Map<string, number>();
+
   try {
-    const data = await backendRequest<{ data: Array<{ song_id: number; play_count: number }> }>(
-      "/stats/most-played-songs?limit=200"
+    const data = await backendRequest<{ data: PlayCountRow[] }>(
+      `/stats/most-played-songs?limit=${limit}`
     );
 
-    const parsed = Number.parseInt(songId, 10);
-    if (Number.isNaN(parsed)) return 0;
-
-    const row = (data?.data || []).find((item) => item.song_id === parsed);
-    return row?.play_count || 0;
+    for (const row of data?.data || []) {
+      map.set(String(row.song_id), row.play_count);
+    }
   } catch (error) {
-    console.error("Error getting play count:", error);
-    return 0;
+    console.error("Error fetching global play counts:", error);
   }
+
+  return map;
+};
+
+const resolvePlayCount = (
+  songId: string,
+  playCountMap: Map<string, number>,
+  fallback?: number
+): number => playCountMap.get(songId) ?? fallback ?? 0;
+
+// Get play count for a song (all users)
+export const getSongPlayCount = async (songId: string): Promise<number> => {
+  const map = await getGlobalPlayCountMap(500);
+  return resolvePlayCount(songId, map);
 };
 
 // Get most played songs (global)
