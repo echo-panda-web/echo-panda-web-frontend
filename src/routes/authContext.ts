@@ -1,7 +1,9 @@
 import { auth, googleProvider } from "./firebaseConfig";
 import {
   createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
   getRedirectResult,
+  sendPasswordResetEmail,
   signInWithRedirect,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -300,6 +302,63 @@ export async function signInWithEmail(email: string, password: string): Promise<
   }
 }
 //================================================================================
+
+function getPasswordResetContinueUrl(): string {
+  return `${window.location.origin}/login`;
+}
+
+export async function requestPasswordReset(email: string): Promise<AuthResult> {
+  const normalizedEmail = email.trim();
+
+  if (!normalizedEmail) {
+    return { success: false, error: "Email is required." };
+  }
+
+  try {
+    const signInMethods = await fetchSignInMethodsForEmail(auth, normalizedEmail);
+
+    if (signInMethods.length === 0) {
+      return { success: false, error: "No account found for this email." };
+    }
+
+    if (!signInMethods.includes("password")) {
+      return {
+        success: false,
+        error: "This account uses Google sign-in. Password reset is not available.",
+      };
+    }
+
+    await sendPasswordResetEmail(auth, normalizedEmail, {
+      url: getPasswordResetContinueUrl(),
+      handleCodeInApp: false,
+    });
+
+    return { success: true };
+  } catch (error: unknown) {
+    const firebaseError = error as { code?: string };
+
+    if (firebaseError?.code === "auth/invalid-email") {
+      return { success: false, error: "Invalid email address." };
+    }
+
+    if (firebaseError?.code === "auth/missing-email") {
+      return { success: false, error: "Email is required." };
+    }
+
+    if (firebaseError?.code === "auth/too-many-requests") {
+      return {
+        success: false,
+        error: "Too many reset attempts. Please try again later.",
+      };
+    }
+
+    console.error("Password reset error:", error);
+    return {
+      success: false,
+      error: "Failed to send reset email. Please try again.",
+    };
+  }
+}
 
 const AUTH_STORAGE_KEYS = ["isAuthenticated", "user", "artistUser"] as const;
 

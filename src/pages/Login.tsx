@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import BgImage from "../assets/loginBG.webp";
 import { getAdminBackendUrl } from "../routes/backendAuth";
 import {
@@ -206,12 +206,20 @@ const Login: React.FC = () => {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-semibold text-white/90 mb-2"
-            >
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-semibold text-white/90"
+              >
+                Password
+              </label>
+              <Link
+                to="/forgot-password"
+                className="text-sm text-white/70 hover:text-white transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <input
               type="password"
               id="password"

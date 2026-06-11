@@ -12,6 +12,7 @@ import { MdOutlineExplore } from "react-icons/md";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+import ForgotPassword from "../pages/ForgotPassword";
 import Album from "../pages/Album";
 import Discover from "../pages/Discover";
 import Profile from "../pages/Profile";
@@ -201,6 +202,14 @@ export const routeConfig: RouteConfig[] = [
     label: "Register",
     icon: FaHome,
     component: Register,
+    group: "auth",
+    showInSidebar: false,
+  },
+  {
+    path: "/forgot-password",
+    label: "Forgot Password",
+    icon: FaHome,
+    component: ForgotPassword,
     group: "auth",
     showInSidebar: false,
   },
