@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes, FaImage, FaSpinner, FaDotCircle } from "react-icons/fa";
-import { createArtistAlbum, getArtistIdentity } from "../artistStudioApi";
+import { createArtistAlbum, updateArtistAlbum, getArtistIdentity, type ArtistAlbum } from "../artistStudioApi";
 
 interface Props {
   show: boolean;
+  editingAlbum?: ArtistAlbum | null;
   onClose: () => void;
   onCreated: () => void;
 }
 
-export default function AlbumModal({ show, onClose, onCreated }: Props) {
+export default function AlbumModal({ show, editingAlbum, onClose, onCreated }: Props) {
   const [title, setTitle] = useState("");
   const [type, setType] = useState("album");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState("");
-  const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [releaseDate, setReleaseDate] = useState("");
   const [selectedArtist, setSelectedArtist] = useState("");
 
@@ -23,14 +24,21 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!show) {
-      setTitle("");
-      setType("album");
-      setCoverFile(null);
-      setCoverPreview("");
-      setReleaseDate("");
+    if (show) {
+      if (editingAlbum) {
+        setTitle(editingAlbum.title);
+        setType(editingAlbum.type);
+        setReleaseDate(editingAlbum.releaseDate);
+        setCoverPreview(editingAlbum.coverUrl);
+      } else {
+        setTitle("");
+        setType("album");
+        setCoverFile(null);
+        setCoverPreview("");
+        setReleaseDate("");
+      }
     }
-  }, [show]);
+  }, [show, editingAlbum]);
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,25 +49,33 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
     setCoverPreview(URL.createObjectURL(file));
   };
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     if (!title.trim()) return alert("Release title is required");
     try {
-      setCreating(true);
-      await createArtistAlbum({
+      setSaving(true);
+      const payload = {
         title: title.trim(),
         artist: selectedArtist || "",
         description: type,
-        release_status: "draft",
+        release_status: editingAlbum ? editingAlbum.releaseStatus : "draft" as any,
+        release_date: releaseDate || undefined,
         scheduled_at: releaseDate || undefined,
         coverFile,
-      });
+      };
+
+      if (editingAlbum) {
+        await updateArtistAlbum(editingAlbum.id, payload);
+      } else {
+        await createArtistAlbum(payload);
+      }
+
       onCreated();
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Failed to create release");
+      alert(editingAlbum ? "Failed to update release" : "Failed to create release");
     } finally {
-      setCreating(false);
+      setSaving(false);
     }
   };
 
@@ -81,7 +97,7 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
                  <FaDotCircle className="animate-pulse" />
                  <span>Production Module</span>
               </div>
-              <h3 className="text-2xl font-black text-white">Initialize New Release.</h3>
+              <h3 className="text-2xl font-black text-white">{editingAlbum ? 'Update Release Meta.' : 'Initialize New Release.'}</h3>
            </div>
            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-slate-500 hover:text-white transition-all">
               <FaTimes size={16} />
@@ -165,22 +181,22 @@ export default function AlbumModal({ show, onClose, onCreated }: Props) {
           {/* Footer Actions */}
           <div className="flex items-center justify-between pt-6 border-t border-white/5">
             <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest max-w-xs">
-              This release will be saved as a draft. You can add tracks and publish it later from your catalog.
+              {editingAlbum ? "Updates will be applied immediately to the catalog metadata." : "This release will be saved as a draft. You can add tracks and publish it later from your catalog."}
             </p>
             <div className="flex gap-4">
                <button
                   onClick={onClose}
-                  disabled={creating}
+                  disabled={saving}
                   className="px-8 py-3 rounded-xl bg-white/5 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-white transition-all"
                >
                   Cancel
                </button>
                <button
-                  onClick={handleCreate}
-                  disabled={creating || !title}
-                  className="px-8 py-3 rounded-xl bg-white text-black font-black uppercase text-[10px] tracking-widest hover:bg-indigo-50 active:scale-95 transition-all shadow-2xl disabled:opacity-50 disabled:pointer-events-none"
+                  onClick={handleSave}
+                  disabled={saving || !title}
+                  className="px-8 py-3 rounded-xl bg-indigo-500 text-white font-black uppercase text-[10px] tracking-widest hover:bg-indigo-600 active:scale-95 transition-all shadow-2xl disabled:opacity-50 disabled:pointer-events-none"
                >
-                  {creating ? <><FaSpinner className="animate-spin mr-2 inline-block"/> Processing</> : 'Create Release'}
+                  {saving ? <><FaSpinner className="animate-spin mr-2 inline-block"/> Processing</> : editingAlbum ? 'Update Release' : 'Create Release'}
                </button>
             </div>
           </div>

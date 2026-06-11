@@ -217,21 +217,35 @@ const CategoryAlbums: React.FC = () => {
         )}
 
         {/* All Albums Section */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6">Albums</h2>
-          {albums.length === 0 ? (
-            <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl">
-              <div className="text-6xl mb-4 opacity-20">📀</div>
-              <p className={`${isLightMode ? "text-gray-400" : "text-gray-400"} text-xl`}>No albums in this category yet</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {albums.map((album) => (
-                <AlbumCard key={album.id} album={album} />
-              ))}
-            </div>
-          )}
-        </div>
+        {(() => {
+          const remainingAlbums = albums.filter(a => !topAlbums.some(ta => ta.id === a.id));
+
+          if (remainingAlbums.length > 0) {
+            return (
+              <div>
+                <h2 className="text-2xl font-bold mb-6">
+                  {topAlbums.length > 0 ? "More Albums" : "Albums"}
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {remainingAlbums.map((album) => (
+                    <AlbumCard key={album.id} album={album} />
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          if (topAlbums.length === 0) {
+            return (
+              <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl">
+                <div className="text-6xl mb-4 opacity-20">📀</div>
+                <p className={`${isLightMode ? "text-gray-400" : "text-gray-400"} text-xl`}>No albums in this category yet</p>
+              </div>
+            );
+          }
+
+          return null;
+        })()}
       </div>
     </div>
   );

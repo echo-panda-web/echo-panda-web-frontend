@@ -12,7 +12,9 @@ import {
   FaStar,
   FaVolumeUp,
   FaQuoteRight,
-  FaSpinner
+  FaSpinner,
+  FaExpand,
+  FaCompress
 } from 'react-icons/fa';
 import { isSongFavorite, toggleFavorite as toggleFavoriteApi } from '../backend/favoritesService';
 
@@ -46,6 +48,35 @@ const FullScreenLyrics: React.FC<FullScreenLyricsProps> = ({ onClose }) => {
 
   const [isUserInteracting, setIsUserInteracting] = useState(false);
   const [isFav, setIsFav] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Sync fullscreen state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  const handleClose = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    onClose();
+  };
 
   const isPlainText = lyrics?.format === 'plain';
 
@@ -145,7 +176,10 @@ const FullScreenLyrics: React.FC<FullScreenLyricsProps> = ({ onClose }) => {
   if (!currentSong) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black text-neutral-200 flex flex-col overflow-hidden font-sans antialiased select-none animate-fade-in">
+    <div
+      onDoubleClick={toggleFullScreen}
+      className="fixed inset-0 z-[100] bg-black text-neutral-200 flex flex-col overflow-hidden font-sans antialiased select-none animate-fade-in"
+    >
 
       {/* Deep Black & Rich Sapphire Blue Fluid Background */}
       <div className="absolute inset-0 z-0 pointer-events-none scale-110">
@@ -318,12 +352,22 @@ const FullScreenLyrics: React.FC<FullScreenLyricsProps> = ({ onClose }) => {
       </div>
 
       {/* Global Action Triggers */}
-      <button
-        onClick={onClose}
-        className="absolute top-6 left-6 z-50 w-10 h-10 flex items-center justify-center text-neutral-500 hover:text-neutral-200 bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.05] rounded-full transition-all duration-300"
-      >
-        <FaTimes size={13} />
-      </button>
+      <div className="absolute top-6 left-6 z-50 flex gap-3">
+        <button
+          onClick={handleClose}
+          className="w-10 h-10 flex items-center justify-center text-neutral-500 hover:text-neutral-200 bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.05] rounded-full transition-all duration-300"
+          title="Close"
+        >
+          <FaTimes size={13} />
+        </button>
+        <button
+          onClick={toggleFullScreen}
+          className="w-10 h-10 flex items-center justify-center text-neutral-500 hover:text-neutral-200 bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.05] rounded-full transition-all duration-300"
+          title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+        >
+          {isFullscreen ? <FaCompress size={13} /> : <FaExpand size={13} />}
+        </button>
+      </div>
 
       <div className="absolute bottom-8 right-10 z-50 flex items-center gap-4 text-neutral-700 hover:text-neutral-400 transition-all cursor-pointer">
         <button className="transition-colors"><FaQuoteRight size={14} /></button>

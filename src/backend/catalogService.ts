@@ -110,11 +110,11 @@ export async function getAlbums(limit = 10, params: Record<string, any> = {}): P
   const data = await request<{ data?: any[] }>(`/albums?${queryParams.toString()}`);
   const rows = Array.isArray(data?.data) ? data.data : [];
 
-  return Promise.all(rows.map(async (album: any) => ({
+  return rows.map((album: any) => ({
     id: String(album.id),
     title: album.title,
     cover_key: album.cover_key || null,
-    cover_url: (await getSignedAlbumCoverUrl(album.id)) || undefined,
+    cover_url: album.cover_url || undefined,
     release_date: album.release_date || undefined,
     scheduled_at: album.scheduled_at || undefined,
     created_at: album.created_at || undefined,
@@ -123,7 +123,7 @@ export async function getAlbums(limit = 10, params: Record<string, any> = {}): P
     artists: getArtistName(album.artist, album.artist_name)
       ? [{ id: String(album.artist_id || album.id), name: String(getArtistName(album.artist, album.artist_name)), image_url: undefined }]
       : [],
-  })));
+  }));
 }
 
 export async function getNewReleasesToday(limit = 10): Promise<CatalogAlbum[]> {
@@ -131,11 +131,11 @@ export async function getNewReleasesToday(limit = 10): Promise<CatalogAlbum[]> {
     const data = await request<{ data?: any[] }>(`/albums/new-releases-today?limit=${Math.max(1, limit)}`);
     const rows = Array.isArray(data?.data) ? data.data : [];
 
-    return Promise.all(rows.map(async (album: any) => ({
+    return rows.map((album: any) => ({
       id: String(album.id),
       title: album.title,
       cover_key: album.cover_key || null,
-      cover_url: (await getSignedAlbumCoverUrl(album.id)) || album.cover_url || undefined,
+      cover_url: album.cover_url || undefined,
       release_date: album.release_date || undefined,
       scheduled_at: album.scheduled_at || undefined,
       created_at: album.created_at || undefined,
@@ -144,7 +144,7 @@ export async function getNewReleasesToday(limit = 10): Promise<CatalogAlbum[]> {
       artists: getArtistName(album.artist, album.artist_name)
         ? [{ id: String(album.artist_id || album.id), name: String(getArtistName(album.artist, album.artist_name)), image_url: undefined }]
         : [],
-    })));
+    }));
   } catch (error) {
     console.error('Error fetching today new releases:', error);
     return [];
@@ -156,7 +156,7 @@ export async function getNewSongReleasesToday(limit = 10): Promise<CatalogSong[]
     const data = await request<{ data?: any[] }>(`/songs/new-releases-today?limit=${Math.max(1, limit)}`);
     const rows = Array.isArray(data?.data) ? data.data : [];
 
-    return Promise.all(rows.map(async (song: any) => ({
+    return rows.map((song: any) => ({
       id: String(song.id),
       title: song.title,
       duration: Number(song.duration || 0),
@@ -165,8 +165,7 @@ export async function getNewSongReleasesToday(limit = 10): Promise<CatalogSong[]
       cover_key: song.cover_key ?? null,
       preview_key: song.preview_key ?? null,
       audio_url: song.audio_url ?? null,
-      songCover_url:
-        (await getSignedSongCoverUrl(song.id)) || song.cover_url || song.cover_key || null,
+      songCover_url: song.cover_url || song.songCover_url || song.cover_key || null,
       created_at: song.created_at ?? '',
       artists: Array.isArray(song.artists) && song.artists.length > 0
         ? song.artists.map((artist: any) => ({
@@ -185,11 +184,10 @@ export async function getNewSongReleasesToday(limit = 10): Promise<CatalogSong[]
         ? {
             id: String(song.album.id),
             title: song.album.title,
-            cover_url:
-              (await getSignedAlbumCoverUrl(song.album.id)) || song.album.cover_url,
+            cover_url: song.album.cover_url,
           }
         : null,
-    })));
+    }));
   } catch (error) {
     console.error('Error fetching today new song releases:', error);
     return [];
@@ -208,9 +206,7 @@ export async function getSongs(limit = 25, params: Record<string, any> = {}): Pr
   const data = await request<{ data?: any[] }>(`/songs?${queryParams.toString()}`);
   const rows = Array.isArray(data?.data) ? data.data : [];
 
-  return Promise.all(rows.map(async (song: any) => {
-    const coverUrl = await getSignedSongCoverUrl(song.id);
-
+  return rows.map((song: any) => {
     return {
       id: String(song.id),
       title: song.title,
@@ -219,8 +215,8 @@ export async function getSongs(limit = 25, params: Record<string, any> = {}): Pr
       original_key: song.original_key || null,
       cover_key: song.cover_key || null,
       preview_key: song.preview_key || null,
-      audio_url: resolveMediaUrl(song.original_key || song.preview_key),
-      songCover_url: coverUrl || resolveMediaUrl(song.songCover_url || song.album?.cover_url || song.album?.cover_image),
+      audio_url: song.audio_url || resolveMediaUrl(song.original_key || song.preview_key),
+      songCover_url: song.cover_url || resolveMediaUrl(song.songCover_url || song.album?.cover_url || song.album?.cover_image),
       created_at: song.created_at,
       artists: getArtistName(song.artist, song.artist_name)
         ? [{ id: String(song.artist_id || song.id), name: String(getArtistName(song.artist, song.artist_name)), image_url: undefined }]
@@ -229,11 +225,11 @@ export async function getSongs(limit = 25, params: Record<string, any> = {}): Pr
         ? {
             id: String(song.album.id),
             title: song.album.title,
-            cover_url: (await getSignedAlbumCoverUrl(song.album.id)) || undefined,
+            cover_url: song.album.cover_url || undefined,
           }
         : null,
     };
-  }));
+  });
 }
 
 export async function getDerivedArtists(limit = 10, search = ""): Promise<CatalogArtist[]> {
@@ -330,9 +326,9 @@ export async function getPopularArtists(limit = 10): Promise<Array<CatalogArtist
   }
 }
 
-const normalizeCategories = async (items: any[]): Promise<CatalogCategory[]> => {
-  const normalized: Array<CatalogCategory | null> = await Promise.all((Array.isArray(items) ? items : [])
-    .map(async (item: any): Promise<CatalogCategory | null> => {
+const normalizeCategories = (items: any[]): CatalogCategory[] => {
+  const normalized: Array<CatalogCategory | null> = (Array.isArray(items) ? items : [])
+    .map((item: any): CatalogCategory | null => {
       const name = String(item?.name || item?.title || item?.genre || "").trim();
       if (!name) {
         return null;
@@ -340,7 +336,7 @@ const normalizeCategories = async (items: any[]): Promise<CatalogCategory[]> => 
 
       const id = String(item?.id || encodeURIComponent(name.toLowerCase()));
       const description = String(item?.description || item?.summary || `${name} music`).trim();
-      const image_url = await getSignedGenreImageUrl(id);
+      const image_url = item?.image_url || undefined;
 
       const category: CatalogCategory = {
         id,
@@ -354,7 +350,7 @@ const normalizeCategories = async (items: any[]): Promise<CatalogCategory[]> => 
       }
 
       return category;
-    }));
+    });
 
   return normalized.filter((item): item is CatalogCategory => Boolean(item));
 };
@@ -370,41 +366,53 @@ const DEFAULT_GENRES: CatalogCategory[] = [
   { id: "classical", name: "Classical", description: "Classical music" },
   { id: "k-pop", name: "K-Pop", description: "Korean pop music" },
   { id: "lo-fi", name: "Lo-Fi", description: "Low fidelity beats" },
+  { id: "relax", name: "Relax", description: "Relaxing vibes" },
+  { id: "party", name: "Party", description: "Upbeat celebration music" },
+  { id: "sleep", name: "Sleep", description: "Peaceful sleep music" },
+  { id: "study", name: "Study", description: "Focus and concentration" },
+  { id: "driving", name: "Driving", description: "Perfect road trip tunes" },
+  { id: "gaming", name: "Gaming", description: "Epic gaming soundtracks" },
 ];
 
 export async function getGenres(): Promise<CatalogCategory[]> {
-  const parseResponse = async (data: any): Promise<CatalogCategory[]> => {
+  const parseResponse = (data: any): CatalogCategory[] => {
     if (Array.isArray(data)) {
-      return await normalizeCategories(data);
+      return normalizeCategories(data);
     }
 
     if (Array.isArray(data?.data)) {
-      return await normalizeCategories(data.data);
+      return normalizeCategories(data.data);
     }
 
     if (Array.isArray(data?.genres)) {
-      return await normalizeCategories(data.genres);
+      return normalizeCategories(data.genres);
     }
 
     return [];
   };
 
+  let fromBackend: CatalogCategory[] = [];
   try {
     const genresRes = await fetch(buildApiUrl("/genres"), {
       headers: { Accept: "application/json" }
     });
     if (genresRes.ok) {
       const data = await genresRes.json();
-      const fromGenres = await parseResponse(data);
-      if (fromGenres.length > 0) {
-        return fromGenres;
-      }
+      fromBackend = parseResponse(data);
     }
   } catch (error) {
     console.error("Error fetching genres from backend:", error);
   }
 
-  return DEFAULT_GENRES;
+  // Merge backend genres with defaults, avoiding duplicates by name
+  const merged = [...fromBackend];
+  DEFAULT_GENRES.forEach(def => {
+    if (!merged.some(b => b.name.toLowerCase() === def.name.toLowerCase() || b.id === def.id)) {
+      merged.push(def);
+    }
+  });
+
+  return merged;
 }
 
 export async function getDerivedTags(): Promise<CatalogCategory[]> {
