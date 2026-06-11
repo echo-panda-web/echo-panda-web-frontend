@@ -200,7 +200,7 @@ export default function AdminTopbar({
 
 
   return (
-    <header className="sticky top-0 z-40 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 shadow-lg border-b border-purple-500/20">
+    <header className="sticky top-0 z-40 bg-[#0a0a0c] shadow-lg border-b border-white/5">
       <div className="flex items-center justify-between px-6 py-4 max-w-full">
         {/* Left Section*/}
         <div className="flex items-center gap-3">
@@ -217,9 +217,9 @@ export default function AdminTopbar({
               value={searchQuery}
               onChange={handleSearch}
               onKeyPress={handleSearchKeyPress}
-              className="w-full px-4 py-2 pl-10 pr-10 rounded-full bg-slate-800/50 border border-purple-500/30 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+              className="w-full px-4 py-2 pl-10 pr-10 rounded-full bg-white/5 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all"
             />
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 text-sm" />
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm" />
             {searchQuery && (
               <button
                 onClick={handleClearSearch}

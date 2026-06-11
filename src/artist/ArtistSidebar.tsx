@@ -64,7 +64,7 @@ export default function ArtistSidebar() {
     }
   };
 
-  const baseLayout = "w-64 bg-[#0a0c16] text-slate-100 border-r border-white/[0.06] h-full flex flex-col select-none font-sans";
+  const baseLayout = "w-64 bg-[#0a0a0c] text-slate-100 border-r border-white/[0.06] h-full flex flex-col select-none font-sans";
   const headerLayout = "flex items-center px-6 border-b border-white/[0.06] h-20 bg-gradient-to-b from-white/[0.01] to-transparent";
   const footerLayout = "p-4 border-t border-white/[0.04] bg-white/[0.01]";
 

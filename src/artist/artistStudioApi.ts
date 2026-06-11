@@ -138,11 +138,10 @@ export function getArtistIdentity(): ArtistIdentity | null {
 }
 
 export async function getOwnedAlbums(identity: ArtistIdentity): Promise<ArtistAlbum[]> {
-  const payload = await request<PaginatedResponse<any>>("/albums?per_page=300&sort_by=latest", {}, true);
+  const payload = await request<PaginatedResponse<any>>(`/albums?per_page=300&sort_by=latest&artist_id=${identity.artistId}`, {}, true);
   const rows = Array.isArray(payload.data) ? payload.data : [];
 
   return rows
-    .filter((row) => Number(row.artist_id) === identity.artistId)
     .map((row) => {
       const rawType = String(row.description || row.type || "album").toLowerCase();
       const type: "album" | "single" | "ep" = rawType === "single" || rawType === "ep" ? rawType : "album";
@@ -167,11 +166,10 @@ export async function getOwnedAlbums(identity: ArtistIdentity): Promise<ArtistAl
 }
 
 export async function getOwnedSongs(identity: ArtistIdentity): Promise<ArtistSong[]> {
-  const payload = await request<PaginatedResponse<any>>("/songs?per_page=500&sort_by=latest", {}, true);
+  const payload = await request<PaginatedResponse<any>>(`/songs?per_page=500&sort_by=latest&artist_id=${identity.artistId}`, {}, true);
   const rows = Array.isArray(payload.data) ? payload.data : [];
 
   return rows
-    .filter((row) => Number(row.artist_id) === identity.artistId)
     .map((row) => {
       const artistName = row.artist?.stage_name || row.artist_name || identity.displayName;
       const safeArtistName = typeof artistName === "object" && artistName !== null
@@ -190,7 +188,7 @@ export async function getOwnedSongs(identity: ArtistIdentity): Promise<ArtistSon
       lyricsUrl: row.lyrics_url || "",
       lyrics: row.lyrics || "",
       createdAt: row.created_at || new Date().toISOString(),
-      coverUrl: row.songCover_url || "",
+      coverUrl: row.cover_url || "",
       coverKey: row.cover_key || null,
       originalKey: row.original_key || null,
       playCount: Number(row.play_count || 0),

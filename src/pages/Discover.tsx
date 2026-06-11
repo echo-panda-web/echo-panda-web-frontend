@@ -43,11 +43,13 @@ const Discover: React.FC = () => {
   const [trendingSongs, setTrendingSongs] = useState<any[]>([]);
   const [popularArtists, setPopularArtists] = useState<ArtistCard[]>([]);
   const [featuredCharts, setFeaturedCharts] = useState<any[]>([]);
+  const [moods, setMoods] = useState<any[]>([]);
 
   const [loadingTopAlbums, setLoadingTopAlbums] = useState(true);
   const [loadingPopularArtists, setLoadingPopularArtists] = useState(true);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
   const [loadingTrending, setLoadingTrending] = useState(true);
+  const [loadingMoods, setLoadingMoods] = useState(true);
 
   useEffect(() => {
     fetchCategories();
@@ -55,7 +57,28 @@ const Discover: React.FC = () => {
     fetchTrendingSongs();
     fetchPopularArtists();
     fetchFeaturedCharts();
+    fetchMoods();
   }, []);
+
+  const fetchMoods = async () => {
+    try {
+      setLoadingMoods(true);
+      // These are static categories for Mood & Activity
+      const moodCategories = [
+        { id: 'relax', name: 'Relax', icon: '🧘', image: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?w=400&q=80' },
+        { id: 'party', name: 'Party', icon: '🎉', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&q=80' },
+        { id: 'sleep', name: 'Sleep', icon: '😴', image: 'https://images.unsplash.com/photo-1511295742364-917e70351cab?w=400&q=80' },
+        { id: 'study', name: 'Study', icon: '📖', image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80' },
+        { id: 'driving', name: 'Driving', icon: '🚗', image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400&q=80' },
+        { id: 'gaming', name: 'Gaming', icon: '🎮', image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80' },
+      ];
+      setMoods(moodCategories);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingMoods(false);
+    }
+  };
 
   const fetchTrendingSongs = async () => {
     try {
@@ -225,14 +248,14 @@ const Discover: React.FC = () => {
           ) : (
             <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-none snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                {featuredCharts.map((chart) => (
-                  <div key={chart.id} className="shrink-0 w-[180px] md:w-[220px] snap-start group cursor-pointer" onClick={() => navigate(`/category/${chart.id}`)}>
+                  <div key={chart.id} className="shrink-0 w-[180px] md:w-[220px] snap-start group cursor-pointer" onClick={() => navigate(`/album/${chart.id}`)}>
                     <div className="aspect-square rounded-2xl overflow-hidden mb-4 shadow-lg bg-zinc-800">
                        <img src={chart.image_url || 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=400&q=80'} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                     </div>
-                    <h3 className={`font-bold text-sm truncate ${isLightMode ? 'text-zinc-900' : 'text-zinc-200'}`}>Top Songs {chart.name}</h3>
+                    <h3 className={`font-bold text-sm truncate ${isLightMode ? 'text-zinc-900' : 'text-zinc-200'}`}>{chart.name}</h3>
                   </div>
                ))}
-               <ViewAllCircle link="/discover" />
+               <ViewAllCircle link="/albums" />
             </div>
           )}
         </section>
@@ -328,6 +351,44 @@ const Discover: React.FC = () => {
                   </div>
                ))}
                <ViewAllCircle link="/albums" />
+            </div>
+          )}
+        </section>
+
+        {/* Mood & Activity Section */}
+        <section>
+          <div className="flex items-center gap-3 mb-8">
+            <span className="text-2xl md:text-3xl"></span>
+            <h2 className={`text-2xl md:text-3xl font-black tracking-tight ${isLightMode ? 'text-zinc-900' : 'text-white'}`}>
+              8. Mood & <span className="text-blue-500">Activity</span>
+            </h2>
+          </div>
+          {loadingMoods ? (
+            <div className="flex justify-center py-10"><FaSpinner className="animate-spin text-blue-500 text-2xl" /></div>
+          ) : (
+            <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-none snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {moods.map((mood) => (
+                <button
+                  key={mood.id}
+                  onClick={() => navigate(`/category/${mood.id}`)}
+                  className="group relative shrink-0 w-44 h-44 md:w-56 md:h-56 rounded-[2.5rem] overflow-hidden snap-start transition-all duration-500 hover:scale-[1.02] shadow-xl"
+                >
+                  <img
+                    src={mood.image}
+                    alt={mood.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 brightness-[0.7]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                    <span className="text-4xl mb-3 transform transition-transform group-hover:scale-125 duration-500">{mood.icon}</span>
+                    <h3 className="text-white font-black text-xl md:text-2xl uppercase tracking-tighter">
+                      {mood.name}
+                    </h3>
+                    <p className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Explore Hits</p>
+                  </div>
+                </button>
+              ))}
+              <ViewAllCircle link="/categories" />
             </div>
           )}
         </section>

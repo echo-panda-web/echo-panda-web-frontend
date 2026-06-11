@@ -128,27 +128,21 @@ const Home: React.FC = () => {
 
   const fetchNewUIContent = async () => {
     try {
-      setLoading((prev) => ({ ...prev, newReleases: true }));
-      setNewReleaseSongs(await getNewSongReleasesToday(10));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading((prev) => ({ ...prev, newReleases: false }));
-    }
+      setLoading((prev) => ({ ...prev, newReleases: true, popularArtists: true, categorySection: true, topAlbums: true }));
 
-    try {
-      setLoading((prev) => ({ ...prev, popularArtists: true }));
-      setPopularArtists(await getPopularArtists(10));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading((prev) => ({ ...prev, popularArtists: false }));
-    }
+      // Run independent requests in parallel
+      const [newReleases, artists, genres, topAlbumsData] = await Promise.all([
+        getNewSongReleasesToday(10),
+        getPopularArtists(10),
+        getGenres(),
+        getMostPlayedAlbums(10),
+      ]);
 
-    try {
-      setLoading((prev) => ({ ...prev, categorySection: true }));
+      setNewReleaseSongs(newReleases);
+      setPopularArtists(artists);
+      setTopAlbums(topAlbumsData);
 
-      const genres = await getGenres();
+      // Handle category section which depends on genres
       const khmerCategory = genres.find(
         (g) =>
           g.name.toLowerCase().includes("khmer") ||
@@ -172,26 +166,17 @@ const Home: React.FC = () => {
         songs = await getSongs(10, { search: "Khmer" });
       }
 
-      if (songs.length === 0 && !khmerCategory && genres[0]) {
-        setCategorySectionTitle(`${genres[0].name} Songs`);
-        setCategoryViewAllLink(`/category/${genres[0].slug || genres[0].id}`);
-        songs = await getSongs(10, { category_id: genres[0].id });
-      }
-
       setCategorySongs(songs);
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading((prev) => ({ ...prev, categorySection: false }));
-    }
-
-    try {
-      setLoading((prev) => ({ ...prev, topAlbums: true }));
-      setTopAlbums(await getMostPlayedAlbums(10));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading((prev) => ({ ...prev, topAlbums: false }));
+      setLoading((prev) => ({
+        ...prev,
+        newReleases: false,
+        popularArtists: false,
+        categorySection: false,
+        topAlbums: false,
+      }));
     }
   };
 

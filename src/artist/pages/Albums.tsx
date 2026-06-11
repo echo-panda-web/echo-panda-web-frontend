@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FaCheckCircle, FaCompactDisc, FaImage, FaMusic, FaPlus, FaTrash,
-  FaSpinner, FaDotCircle, FaSearch, FaFilter, FaCalendarAlt, FaChevronRight
+  FaSpinner, FaDotCircle, FaSearch, FaFilter, FaCalendarAlt, FaChevronRight, FaEdit
 } from "react-icons/fa";
 import {
   deleteArtistAlbum,
@@ -19,6 +19,7 @@ export default function Albums() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingAlbum, setEditingAlbum] = useState<ArtistAlbum | null>(null);
 
   const identity = useMemo<ArtistIdentity | null>(() => {
     try {
@@ -49,25 +50,9 @@ export default function Albums() {
     loadAlbums();
   }, []);
 
-  const publishRelease = async (album: ArtistAlbum) => {
-    if (!identity) {
-      setError("Missing artist_id in session. Please sign in again.");
-      return;
-    }
-
-    try {
-      await updateArtistAlbum(album.id, {
-        title: album.title,
-        artist: identity.displayName,
-        description: album.type,
-        release_status: "published",
-        release_date: new Date().toISOString().slice(0, 10),
-      });
-      await loadAlbums();
-    } catch (publishError) {
-      console.error(publishError);
-      setError(publishError instanceof Error ? publishError.message : "Failed to publish release");
-    }
+  const openEditAlbum = (album: ArtistAlbum) => {
+    setEditingAlbum(album);
+    setShowAddModal(true);
   };
 
   const deleteRelease = async (album: ArtistAlbum) => {
@@ -114,17 +99,17 @@ export default function Albums() {
                 <FaDotCircle className="animate-pulse" />
                 <span>Production Environment</span>
              </div>
-             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">Release Management.</h1>
+             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">Album Management.</h1>
              <p className="text-slate-500 text-sm font-medium max-w-lg leading-relaxed">
                 Manage your studio catalog. Create albums and singles, monitor publishing status, and control release distribution.
              </p>
           </div>
           <button
-              onClick={() => setShowAddModal(true)}
-              className="h-12 px-8 rounded-xl bg-white text-black font-black transition-all hover:bg-indigo-50 active:scale-95 flex items-center gap-3 shadow-2xl text-[10px] uppercase tracking-widest"
+              onClick={() => { setEditingAlbum(null); setShowAddModal(true); }}
+              className="h-12 px-8 rounded-xl bg-indigo-500 text-white font-black transition-all hover:bg-indigo-600 active:scale-95 flex items-center gap-3 shadow-2xl text-[10px] uppercase tracking-widest"
           >
               <FaPlus size={10} />
-              New Release
+              New Album
           </button>
         </div>
 
@@ -174,12 +159,17 @@ export default function Albums() {
                             </div>
                             <div className="col-span-4 flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-[#0e0e11] border border-white/5 shadow-lg">
-                                    {album.cover_url || album.cover_image ? (
-                                        <img src={album.cover_url || album.cover_image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    {album.coverUrl ? (
+                                        <img src={album.coverUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                     ) : <FaImage className="w-full h-full p-4 text-slate-800" />}
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-base font-bold text-white truncate group-hover:text-indigo-400 transition-colors tracking-tight">{album.title}</h3>
+                                    <button
+                                      onClick={() => navigate(`/album/${album.id}`)}
+                                      className="text-base font-bold text-white truncate hover:text-indigo-400 transition-colors tracking-tight text-left block w-full"
+                                    >
+                                      {album.title}
+                                    </button>
                                     <div className="flex items-center gap-2 mt-0.5">
                                         <FaCalendarAlt className="text-slate-600" size={8} />
                                         <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest truncate">{album.releaseDate || "No Date"}</p>
@@ -196,14 +186,13 @@ export default function Albums() {
                                 </span>
                             </div>
                             <div className="col-span-3 flex items-center justify-end gap-2">
-                                {album.releaseStatus !== "published" && (
-                                    <button
-                                        onClick={() => publishRelease(album)}
-                                        className="h-10 px-6 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-                                    >
-                                        Go Live
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => openEditAlbum(album)}
+                                    className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-slate-500 hover:text-white transition-all border border-white/5"
+                                    title="Edit Album"
+                                >
+                                    <FaEdit size={12} />
+                                </button>
                                 <button onClick={() => deleteRelease(album)} className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 text-slate-500 hover:text-red-400 transition-all border border-white/5">
                                     <FaTrash size={12} />
                                 </button>
@@ -223,31 +212,16 @@ export default function Albums() {
                 <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 shrink-0">
                     <FaMusic size={14} />
                 </div>
-                <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white mb-2">Single Distribution</h4>
-                    <p className="text-slate-500 text-xs leading-relaxed font-medium">
-                        Select "Single" type for standalone tracks. This ensures proper placement on discovery feeds.
-                    </p>
-                </div>
-            </div>
-            <div className="p-6 rounded-3xl bg-[#121214]/50 border border-white/5 flex gap-5 items-start">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 shrink-0">
-                    <FaImage size={14} />
-                </div>
-                <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white mb-2">Artwork Standards</h4>
-                    <p className="text-slate-500 text-xs leading-relaxed font-medium">
-                        Use 1000x1000px high-resolution images for professional catalog display.
-                    </p>
-                </div>
+
             </div>
         </div>
       </div>
 
       <AlbumModal
         show={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onCreated={async () => { setShowAddModal(false); await loadAlbums(); }}
+        editingAlbum={editingAlbum}
+        onClose={() => { setShowAddModal(false); setEditingAlbum(null); }}
+        onCreated={async () => { setShowAddModal(false); setEditingAlbum(null); await loadAlbums(); }}
       />
 
       <style>{`

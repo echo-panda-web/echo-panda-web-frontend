@@ -4,11 +4,11 @@ import AdminTopbar from "../artist/ArtistTopbar";
 
 export default function AdminLayout() {
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-[#0a0a0c]">
       <AdminSidebar />
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 overflow-hidden">
         <AdminTopbar />
-        <main className="p-6 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-[#0a0a0c]">
           <Outlet />
         </main>
       </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   FaPlus, FaMusic, FaPlay, FaEdit, FaTrash, FaSpinner, FaDotCircle, FaClock, FaChartBar, FaSearch, FaFilter
 } from "react-icons/fa";
@@ -16,6 +16,7 @@ import {
 import SongModal from "./SongModal";
 
 export default function SongsManager() {
+  const navigate = useNavigate();
   const { playSong } = useAudioPlayer();
   const [searchParams, setSearchParams] = useSearchParams();
   const [songs, setSongs] = useState<ArtistSong[]>([]);
@@ -140,7 +141,7 @@ export default function SongsManager() {
           </div>
           <button
               onClick={() => setShowSongModal(true)}
-              className="h-12 px-8 rounded-xl bg-white text-black font-black transition-all hover:bg-indigo-50 active:scale-95 flex items-center gap-3 shadow-2xl text-[10px] uppercase tracking-widest"
+              className="h-12 px-8 rounded-xl bg-indigo-500 text-white font-black transition-all hover:bg-indigo-600 active:scale-95 flex items-center gap-3 shadow-2xl text-[10px] uppercase tracking-widest"
           >
               <FaPlus size={10} />
               New Master
@@ -185,7 +186,12 @@ export default function SongsManager() {
                                     ) : <FaMusic className="w-full h-full p-4 text-slate-800" />}
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-base font-bold text-white truncate group-hover:text-indigo-400 transition-colors tracking-tight">{song.title}</h3>
+                                    <button
+                                      onClick={() => navigate(`/song/${song.id}`)}
+                                      className="text-base font-bold text-white truncate hover:text-indigo-400 transition-colors tracking-tight text-left block w-full"
+                                    >
+                                      {song.title}
+                                    </button>
                                     <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-0.5 truncate">{song.artist}</p>
                                 </div>
                             </div>

@@ -220,7 +220,7 @@ export default function Dashboard() {
                  Master tracks with synced lyrics and high-quality artwork maintain 40% higher retention rates on discovery playlists.
               </p>
            </div>
-           <button className="h-12 px-10 rounded-xl bg-white text-black font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-indigo-50 transition-all active:scale-95 whitespace-nowrap">
+           <button className="h-12 px-10 rounded-xl bg-indigo-500 text-white font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-indigo-600 transition-all active:scale-95 whitespace-nowrap">
               Review Master Data
            </button>
         </div>

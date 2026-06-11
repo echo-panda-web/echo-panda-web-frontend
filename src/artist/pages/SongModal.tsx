@@ -52,6 +52,7 @@ interface SongModalProps {
 }
 
 const SONG_TYPES = ["Original", "Remix", "Cover", "Instrumental", "Live"];
+const MOOD_ACTIVITIES = ["Relax", "Party", "Sleep", "Study", "Driving", "Gaming"];
 
 export default function SongModal({
   show,
@@ -301,7 +302,14 @@ export default function SongModal({
                       className={`${inputBase} appearance-none`}
                     >
                       <option value="">Select Mood</option>
-                      {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      <optgroup label="Mood & Activity" className="bg-[#121214] text-indigo-400">
+                         {MOOD_ACTIVITIES.map(m => <option key={m} value={m}>{m}</option>)}
+                      </optgroup>
+                      <optgroup label="General Tags" className="bg-[#121214] text-slate-500">
+                         {tags.filter(t => !MOOD_ACTIVITIES.includes(t.name)).map(t => (
+                           <option key={t.id} value={t.id}>{t.name}</option>
+                         ))}
+                      </optgroup>
                     </select>
                     <FaHeart size={10} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
                   </div>
@@ -433,7 +441,7 @@ export default function SongModal({
            </div>
            <div className="flex gap-4">
               <button onClick={onClose} className="px-8 py-3 rounded-xl bg-white/5 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-white transition-all">Discard</button>
-              <button onClick={handleSave} disabled={uploading} className="px-8 py-3 rounded-xl bg-white text-black font-black uppercase text-[10px] tracking-widest hover:bg-indigo-50 active:scale-95 transition-all shadow-2xl disabled:opacity-50 flex items-center gap-3">
+              <button onClick={handleSave} disabled={uploading} className="px-8 py-3 rounded-xl bg-indigo-500 text-white font-black uppercase text-[10px] tracking-widest hover:bg-indigo-600 active:scale-95 transition-all shadow-2xl disabled:opacity-50 flex items-center gap-3">
                 {uploading ? <FaSpinner className="animate-spin" /> : <FaUpload size={10} />}
                 {uploading ? 'Processing' : editingSong ? 'Update Song' : 'Upload Song'}
               </button>
