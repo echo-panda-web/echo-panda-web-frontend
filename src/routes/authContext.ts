@@ -79,12 +79,19 @@ async function persistGoogleUser(user: User): Promise<UserData> {
     });
   }
 
-  const backendAuth = await loginFirebaseUserToBackend({
-    id_token: idToken,
-    email: user.email || "",
-    name: user.displayName || undefined,
-    provider: "google",
-  });
+  let backendAuth;
+  try {
+    backendAuth = await loginFirebaseUserToBackend({
+      id_token: idToken,
+      email: user.email || "",
+      name: user.displayName || undefined,
+      provider: "google",
+    });
+  } catch (error) {
+    await firebaseSignOut(auth).catch(() => undefined);
+    clearAuthStorage();
+    throw error;
+  }
 
   const userData: UserData = {
     user_id: backendAuth.user.user_id,
@@ -285,6 +292,9 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
     return { success: true, user: userData };
   } catch (error: any) {
+    await firebaseSignOut(auth).catch(() => undefined);
+    clearAuthStorage();
+
     if (
       error?.code === "auth/invalid-credential" ||
       error?.code === "auth/wrong-password" ||
@@ -295,6 +305,14 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
     if (error?.code === "auth/invalid-email") {
       return { success: false, error: "Invalid email address" };
+    }
+
+    if (error?.code === "auth/user-disabled") {
+      return { success: false, error: "Your artist account has been suspended. Please contact support." };
+    }
+
+    if (error instanceof Error && error.message) {
+      return { success: false, error: error.message };
     }
 
     console.error("Email login error:", error);

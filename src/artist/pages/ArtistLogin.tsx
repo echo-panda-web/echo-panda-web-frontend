@@ -24,6 +24,7 @@ export default function ArtistLogin() {
       // Authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      const idToken = await user.getIdToken(true);
 
       // Try to read admin metadata from Firestore (optional)
       const adminDocRef = doc(db, "admins", user.uid);
@@ -32,9 +33,9 @@ export default function ArtistLogin() {
 
       // Synchronize with backend to get authoritative role
       const backendAuth = await loginFirebaseUserToBackend({
+        id_token: idToken,
         email: user.email || email,
         name: adminData?.name || user.displayName || undefined,
-        firebase_uid: user.uid,
         provider: "email",
       });
 
@@ -77,8 +78,19 @@ export default function ArtistLogin() {
       navigate("/artist/dashboard");
     } catch (err: any) {
       console.error("Login error:", err);
-      
+      await auth.signOut().catch(() => undefined);
+
+      if (err instanceof Error && err.message && !err.code) {
+        setError(err.message);
+        setLoading(false);
+        return;
+      }
+
       switch (err.code) {
+        case "auth/user-disabled":
+          setError("Your artist account has been suspended. Please contact support.");
+          setLoading(false);
+          return;
         case "auth/invalid-credential":
         case "auth/wrong-password":
         case "auth/user-not-found":

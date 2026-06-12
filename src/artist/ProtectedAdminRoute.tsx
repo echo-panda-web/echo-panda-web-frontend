@@ -37,13 +37,22 @@ export default function ProtectedAdminRoute({ children }: ProtectedAdminRoutePro
           // Use the current Firebase ID token to synchronize with backend
           const idToken = await user.getIdToken(true);
 
-          const backendAuth = await loginFirebaseUserToBackend({
-            id_token: idToken,
-            email: user.email || "",
-            name: artistData?.name || user.displayName || undefined,
-            firebase_uid: user.uid,
-            provider: "email",
-          });
+          let backendAuth;
+          try {
+            backendAuth = await loginFirebaseUserToBackend({
+              id_token: idToken,
+              email: user.email || "",
+              name: artistData?.name || user.displayName || undefined,
+              provider: "email",
+            });
+          } catch (syncError) {
+            console.error("Backend artist auth sync failed:", syncError);
+            await auth.signOut();
+            clearAuthStorage();
+            navigate("/login", { replace: true });
+            setIsChecking(false);
+            return;
+          }
 
           const role = backendAuth.user.role;
 

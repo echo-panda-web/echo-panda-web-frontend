@@ -54,7 +54,10 @@ export async function loginFirebaseUserToBackend(
 
   if (!response.ok) {
     const errorPayload = await response.json().catch(() => null);
-    const message = errorPayload?.message || "Failed to synchronize Firebase login with backend API.";
+    const message =
+      errorPayload?.errors?.email?.[0] ||
+      errorPayload?.message ||
+      "Failed to synchronize Firebase login with backend API.";
     throw new Error(message);
   }
 
