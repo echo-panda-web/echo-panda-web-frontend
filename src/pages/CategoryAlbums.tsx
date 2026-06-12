@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getAlbums, getSongs, getDerivedCategories, CatalogSong, CatalogAlbum } from "../backend/catalogService";
+import { getAlbums, getSongs, getDerivedCategories, getDerivedTags, CatalogSong, CatalogAlbum } from "../backend/catalogService";
 import { getMostPlayedAlbums } from "../backend/playTrackingService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import { FaSpinner, FaArrowLeft, FaMusic } from "react-icons/fa";
@@ -47,28 +47,52 @@ const CategoryAlbums: React.FC = () => {
 
       const data = await getCachedData(`category_page_${categoryId}`, async () => {
         const startTime = performance.now();
-        console.log(`🔄 [CategoryPage] Fetching data for category ${categoryId}...`);
+        console.log(`🔄 [CategoryPage] Fetching data for category/tag ${categoryId}...`);
 
-        const [categories, albumsData, songsData, mostPlayedAlbumsData] = await Promise.all([
+        // Fetch both categories and tags to determine which one we're looking at
+        const [categories, tags, albumsData, songsData, mostPlayedAlbumsData] = await Promise.all([
           getDerivedCategories(),
+          getDerivedTags(),
           getAlbums(50, { category_id: categoryId }),
           getSongs(50, { category_id: categoryId }),
           getMostPlayedAlbums(20),
         ]);
 
-        const categoryData = categories.find((c) =>
+        // Check if this is a tag or a genre/category
+        const tagMatch = tags.find((t) =>
+          String(t.id) === categoryId ||
+          t.slug === categoryId ||
+          t.name.toLowerCase() === categoryId.toLowerCase()
+        );
+
+        const categoryMatch = categories.find((c) =>
           String(c.id) === categoryId ||
           c.slug === categoryId ||
           c.name.toLowerCase() === categoryId.toLowerCase()
-        ) || null;
+        );
+
+        const categoryData = tagMatch || categoryMatch || null;
+
+        // If it's a tag, refetch with tag_id filter instead
+        let finalAlbums = albumsData;
+        let finalSongs = songsData;
+        
+        if (tagMatch && (!albumsData || albumsData.length === 0)) {
+          console.log(`🏷️ [CategoryPage] Identified as TAG, fetching with tag_id filter...`);
+          const [albumsByTag, songsByTag] = await Promise.all([
+            getAlbums(50, { tag_id: categoryId }),
+            getSongs(50, { tag_id: categoryId })
+          ]);
+          finalAlbums = albumsByTag;
+          finalSongs = songsByTag;
+        }
 
         const fetchTime = performance.now() - startTime;
         console.log(`✅ [CategoryPage] Data fetched in ${fetchTime.toFixed(0)}ms`);
 
         // If no albums found via API with category_id, fallback to name-based filtering for legacy support
-        let finalAlbums = albumsData;
         if (finalAlbums.length === 0 && categoryData) {
-          console.log("⚠️ [CategoryPage] No albums found via category_id, trying name fallback...");
+          console.log("⚠️ [CategoryPage] No albums found via filters, trying name fallback...");
           const allAlbums = await getAlbums(200);
           const normalizedName = categoryData.name.toLowerCase();
           finalAlbums = allAlbums.filter(a =>
@@ -85,7 +109,7 @@ const CategoryAlbums: React.FC = () => {
           category: categoryData,
           albums: finalAlbums,
           topAlbums: categoryTopAlbums,
-          songs: songsData
+          songs: finalSongs
         };
       });
 

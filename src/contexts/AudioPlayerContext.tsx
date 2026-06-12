@@ -85,7 +85,15 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
       ]);
 
       const finalAudioUrl = signed || song.audioUrl;
-      if (!finalAudioUrl) throw new Error('No audio source available');
+      if (!finalAudioUrl) {
+        console.error(`❌ No audio URL for song ${song.id} (${song.title}). Missing signed URL and audioUrl.`);
+        throw new Error(`No audio source available for "${song.title}"`);
+      }
+
+      if (!finalAudioUrl.trim()) {
+        console.error(`❌ Empty audio URL for song ${song.id} (${song.title})`);
+        throw new Error(`Invalid audio URL for "${song.title}"`);
+      }
 
       const nextSong = {
         ...song,
@@ -105,13 +113,13 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
             trackInteraction(song.id, 'play');
           })
           .catch(e => {
-            console.error('Playback failed:', e);
+            console.error(`❌ Playback failed for ${song.title}:`, e);
             setIsPlaying(false);
           });
       }
 
     } catch (err) {
-      console.error('❌ AudioContext: Failed to load song:', err);
+      console.error(`❌ AudioContext: Failed to load song ${song.id}:`, err);
       setCurrentSong(null);
       setIsPlaying(false);
     }

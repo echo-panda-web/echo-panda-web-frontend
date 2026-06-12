@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaImage, FaSpinner, FaDotCircle, FaTags, FaHeart, FaChevronDown } from "react-icons/fa";
+import { FaTimes, FaImage, FaSpinner, FaDotCircle, FaChevronDown } from "react-icons/fa";
 import { createArtistAlbum, updateArtistAlbum, getArtistIdentity, type ArtistAlbum } from "../artistStudioApi";
-import { getDerivedCategories, getDerivedTags } from "../../backend/catalogService";
-import { getSignedGenreImageUrl, getSignedTagImageUrl } from "../../backend/songMediaApi";
 
 interface Props {
   show: boolean;
@@ -20,29 +18,9 @@ export default function AlbumModal({ show, editingAlbum, onClose, onCreated }: P
   const [releaseDate, setReleaseDate] = useState("");
   const [selectedArtist, setSelectedArtist] = useState("");
 
-  const [categoryId, setCategoryId] = useState("");
-  const [mood, setMood] = useState("");
-  const [genres, setGenres] = useState<Array<{ id: string; name: string; image_url?: string }>>([]);
-  const [tags, setTags] = useState<Array<{ id: string; name: string; image_url?: string }>>([]);
-  const [genreImage, setGenreImage] = useState("");
-  const [moodImage, setMoodImage] = useState("");
-
   useEffect(() => {
     const identity = getArtistIdentity();
     if (identity) setSelectedArtist(identity.displayName || "");
-
-    (async () => {
-      try {
-        const [cats, tgs] = await Promise.all([
-          getDerivedCategories(),
-          getDerivedTags()
-        ]);
-        setGenres(cats.map((c: any) => ({ id: c.id, name: c.name, image_url: c.image_url })));
-        setTags(tgs.map((t: any) => ({ id: t.id, name: t.name, image_url: t.image_url })));
-      } catch (err) {
-        console.warn('Failed to load genres and tags', err);
-      }
-    })();
   }, []);
 
   useEffect(() => {
@@ -52,51 +30,15 @@ export default function AlbumModal({ show, editingAlbum, onClose, onCreated }: P
         setType(editingAlbum.type);
         setReleaseDate(editingAlbum.releaseDate);
         setCoverPreview(editingAlbum.coverUrl);
-        setCategoryId(editingAlbum.categoryId || "");
-        setMood(editingAlbum.mood || "");
       } else {
         setTitle("");
         setType("album");
         setCoverFile(null);
         setCoverPreview("");
         setReleaseDate("");
-        setCategoryId("");
-        setMood("");
       }
     }
   }, [show, editingAlbum]);
-
-  useEffect(() => {
-    if (categoryId) {
-      const g = genres.find(x => x.id === categoryId);
-      if (g) {
-        if (g.image_url) {
-           setGenreImage(g.image_url);
-        } else {
-           getSignedGenreImageUrl(categoryId).then(url => url && setGenreImage(url));
-        }
-      }
-    } else {
-      setGenreImage("");
-    }
-  }, [categoryId, genres]);
-
-  useEffect(() => {
-    if (mood) {
-      const t = tags.find(x => x.name === mood || x.id === mood);
-      if (t) {
-        if (t.image_url) {
-           setMoodImage(t.image_url);
-        } else {
-           // If we have an ID, we can try to get a signed URL
-           // Tags in catalogService often use the name as ID
-           getSignedTagImageUrl(t.id).then(url => url && setMoodImage(url));
-        }
-      }
-    } else {
-      setMoodImage("");
-    }
-  }, [mood, tags]);
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -119,8 +61,6 @@ export default function AlbumModal({ show, editingAlbum, onClose, onCreated }: P
         release_date: releaseDate || undefined,
         scheduled_at: releaseDate || undefined,
         coverFile,
-        category_id: categoryId || undefined,
-        mood: mood || undefined,
       };
 
       if (editingAlbum) {
@@ -205,62 +145,9 @@ export default function AlbumModal({ show, editingAlbum, onClose, onCreated }: P
                   </div>
                </div>
 
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className={labelBase}>Music Genres</label>
-                    <div className="relative">
-                      <select
-                        value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
-                        className={`${inputBase} appearance-none`}
-                      >
-                        <option value="">Select Genre</option>
-                        {genres.map(g => (
-                          <option key={g.id} value={g.id}>{g.name}</option>
-                        ))}
-                      </select>
-                      <FaTags size={10} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-                    </div>
-                    {genreImage && (
-                       <div className="h-20 w-full rounded-xl overflow-hidden relative group">
-                          <img src={genreImage} alt="genre" className="w-full h-full object-cover opacity-60" />
-                          <div className="absolute inset-0 bg-indigo-500/20 mix-blend-overlay" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                             <span className="text-[8px] font-black text-white uppercase tracking-widest bg-black/40 px-2 py-1 rounded">Genre Vibe</span>
-                          </div>
-                       </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className={labelBase}>Mood & Activity</label>
-                    <div className="relative">
-                      <select
-                        value={mood}
-                        onChange={(e) => setMood(e.target.value)}
-                        className={`${inputBase} appearance-none`}
-                      >
-                        <option value="">Select Mood</option>
-                        {tags.map(t => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                      <FaHeart size={10} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
-                    </div>
-                    {moodImage && (
-                       <div className="h-20 w-full rounded-xl overflow-hidden relative group">
-                          <img src={moodImage} alt="mood" className="w-full h-full object-cover opacity-60" />
-                          <div className="absolute inset-0 bg-pink-500/20 mix-blend-overlay" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                             <span className="text-[8px] font-black text-white uppercase tracking-widest bg-black/40 px-2 py-1 rounded">Mood Profile</span>
-                          </div>
-                       </div>
-                    )}
-                  </div>
-               </div>
-
                <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
                   <p className="text-[10px] text-slate-400 leading-relaxed">
-                     <span className="text-indigo-400 font-bold">Pro Tip:</span> Metadata defined here will serve as defaults for all tracks in this release, ensuring thematic consistency.
+                     <span className="text-indigo-400 font-bold">Pro Tip:</span> Add genre and mood tags when uploading individual songs to this release.
                   </p>
                </div>
             </div>

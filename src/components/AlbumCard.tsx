@@ -109,6 +109,7 @@ export default function AlbumCard({ album, onClick }: Props) {
       <div className="w-full aspect-square bg-zinc-700 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
         {album.cover_url ? (
           <img
+            crossOrigin="anonymous"
             src={album.cover_url}
             alt={album.title}
             loading="lazy"

@@ -434,7 +434,6 @@ const SongDetails: React.FC = () => {
               <th className="pb-4">Title</th>
               <th className="pb-4 hidden md:table-cell">Album</th>
               <th className="pb-4 hidden sm:table-cell text-right pr-10">Plays</th>
-              <th className="pb-4 w-10"></th>
               <th className="pb-4 w-16 text-right pr-2">Time</th>
             </tr>
           </thead>
@@ -465,7 +464,7 @@ const SongDetails: React.FC = () => {
                   <td className="py-3">
                     <div className="flex items-center gap-3">
                        <div className="w-10 h-10 rounded-md overflow-hidden bg-white/5 shrink-0 border border-white/5">
-                          <img src={sCover || ''} className="w-full h-full object-cover" alt="" />
+                          <img crossOrigin="anonymous" src={sCover || ''} className="w-full h-full object-cover" alt="" />
                        </div>
                        <div className="min-w-0">
                           <p className={`text-sm font-bold truncate ${isThisPlaying ? "text-indigo-500" : (isLightMode ? "text-gray-900" : "text-white")}`}>{sTitle}</p>
@@ -478,11 +477,6 @@ const SongDetails: React.FC = () => {
                   </td>
                   <td className="py-3 hidden sm:table-cell text-right pr-10">
                     <span className={`text-xs font-bold ${isLightMode ? "text-gray-400" : "text-slate-500"}`}>{actualSong.play_count || 0} plays</span>
-                  </td>
-                  <td className="py-3">
-                    <button onClick={(e) => handleToggleLike(e, sId)} className={`transition-colors ${favoriteSongIds.has(sId) ? "text-rose-500" : (isLightMode ? "text-gray-300 hover:text-rose-500" : "text-slate-600 hover:text-rose-400")}`}>
-                       {favoriteSongIds.has(sId) ? <FaHeart size={14} /> : <FaRegHeart size={14} />}
-                    </button>
                   </td>
                   <td className="py-3 text-right pr-2 rounded-r-xl">
                     <span className={`text-xs font-mono font-bold ${isLightMode ? "text-gray-400" : "text-slate-500"}`}>{formatDuration(sDuration)}</span>
@@ -531,7 +525,7 @@ const SongDetails: React.FC = () => {
          <div className={`flex flex-col md:flex-row gap-8 items-center md:items-center ${isLightMode ? "bg-white border-gray-200" : "bg-white/[0.02] border-white/[0.05]"} p-6 md:p-8 rounded-[2rem] backdrop-blur-xl border`}>
 
             <div className={`w-40 h-40 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-2xl shrink-0 border ${isLightMode ? "border-gray-100" : "border-white/10"}`}>
-               <img src={songCoverUrl || ''} className="w-full h-full object-cover" alt={currentSong.title} />
+               <img crossOrigin="anonymous" src={songCoverUrl || ''} className="w-full h-full object-cover" alt={currentSong.title} />
             </div>
 
             <div className="flex-1 flex flex-col justify-center text-center md:text-left space-y-6">
@@ -635,7 +629,7 @@ const SongDetails: React.FC = () => {
                   <div className="flex items-center gap-4">
                      <div className={`w-12 h-12 rounded-xl overflow-hidden border ${isLightMode ? "border-gray-100" : "border-white/10 shadow-lg"}`}>
                         {currentSong.artists?.[0]?.image_url ? (
-                           <img src={currentSong.artists[0].image_url} className="w-full h-full object-cover" alt="" />
+                           <img crossOrigin="anonymous" src={currentSong.artists[0].image_url} className="w-full h-full object-cover" alt="" />
                         ) : (
                            <div className="w-full h-full flex items-center justify-center bg-indigo-500/10"><FaMusic className="text-indigo-500/40" /></div>
                         )}

@@ -119,7 +119,11 @@ export type RecommendationEventType =
 const normalize = (value: string) => value.trim().toLowerCase();
 
 const getToken = (): string | null => {
-  return localStorage.getItem("userToken") || localStorage.getItem("authToken");
+  return (
+    localStorage.getItem("userToken") ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("token")
+  );
 };
 
 const authenticatedRequest = async (path: string, options: RequestInit = {}) => {

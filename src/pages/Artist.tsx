@@ -68,6 +68,7 @@ function HeroBanner({
         <div className="shrink-0">
           <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-purple-500/50 shadow-2xl shadow-purple-500/50">
             <img
+              crossOrigin="anonymous"
               src={
                 artist.image_url ||
                 "https://images.unsplash.com/photo-1511192336575-5a79af67a629"
@@ -268,7 +269,7 @@ function AlbumsSection({ artistId }: { artistId: string }) {
     try {
       const data = await getCachedData(`artist_albums_${artistId}`, async () => {
         console.log(`🔄 [Artist Albums] Fetching albums for artist ${artistId}...`);
-        const albumData = await getAlbums(200, 0);
+        const albumData = await getAlbums(200);
 
         return (albumData || [])
           .map((album: any) => ({
@@ -365,7 +366,7 @@ function SingleSongs({ artistId }: { artistId: string }) {
     try {
       const data = await getCachedData(`artist_singles_${artistId}`, async () => {
         console.log(`🔄 [Artist Singles] Fetching singles for artist ${artistId}...`);
-        const albums = await getAlbums(200, 0);
+        const albums = await getAlbums(200);
 
         return (albums || [])
           .filter((album: any) => album?.type === "single")
@@ -496,7 +497,6 @@ function FansAlsoListen({ artistId }: { artistId?: string }) {
     <section className="mb-12">
       <ArtistSection
         title="Fans Also Listen To"
-        isLightMode={false}
         artists={artists.map((artist) => ({
           id: artist.id,
           name: artist.name,
@@ -581,7 +581,7 @@ const Artist: React.FC = () => {
         <SingleSongs artistId={artist.id} />
         <FansAlsoListen artistId={artist.id} />
       </div>
-      <AppFooter isLightMode={isLightMode} />
+      <AppFooter />
     </>
   );
 };
