@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  FaTimes, FaMusic, FaClock, FaMicrophone, 
-  FaCompactDisc, FaSpinner, FaUpload, FaImage, FaDotCircle, FaChevronDown,
-  FaQuoteLeft, FaTags, FaCheckCircle, FaTrashAlt, FaHeart, FaExclamationTriangle, FaUserPlus
-} from "react-icons/fa";
-import { createArtistSong, updateArtistSong, uploadArtistMedia } from "../artistStudioApi";
+  FaTimes, FaMusic, FaClock,
+  FaSpinner, FaUpload, FaImage, FaDotCircle, FaChevronDown,
+  FaQuoteLeft, FaTags, FaCheckCircle, FaTrashAlt, FaHeart
+} from "react-icons/fa";import { createArtistSong, updateArtistSong, uploadArtistMedia } from "../artistStudioApi";
 import { getDerivedCategories, getDerivedTags } from "../../backend/catalogService";
 
 interface Artist {
@@ -53,6 +52,51 @@ interface SongModalProps {
 
 const SONG_TYPES = ["Original", "Remix", "Cover", "Instrumental", "Live"];
 
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+function readAudioDurationSeconds(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const audio = document.createElement("audio");
+    audio.preload = "metadata";
+
+    const cleanup = () => {
+      audio.removeAttribute("src");
+      audio.load();
+      URL.revokeObjectURL(objectUrl);
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Timed out reading audio duration"));
+    }, 15000);
+
+    const tryResolve = () => {
+      if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
+        return;
+      }
+
+      window.clearTimeout(timeoutId);
+      cleanup();
+      resolve(Math.max(1, Math.round(audio.duration)));
+    };
+
+    audio.addEventListener("loadedmetadata", tryResolve);
+    audio.addEventListener("durationchange", tryResolve);
+    audio.addEventListener("error", () => {
+      window.clearTimeout(timeoutId);
+      cleanup();
+      reject(new Error("Failed to load audio file"));
+    });
+
+    audio.src = objectUrl;
+  });
+}
+
 export default function SongModal({
   show,
   editingSong,
@@ -72,15 +116,13 @@ export default function SongModal({
     category_id: "",
     mood: "",
     song_type: "Original",
-    bpm: 0,
     is_explicit: false,
     featured_artists: ""
   });
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState("");
-  const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([]);
-  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);  const [readingDuration, setReadingDuration] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ audio: 0 });
   const [uploading, setUploading] = useState(false);
   const [genres, setGenres] = useState<Array<{ id: string; name: string }>>([]);
@@ -114,11 +156,9 @@ export default function SongModal({
         category_id: editingSong.category_id || "",
         mood: editingSong.mood || "",
         song_type: editingSong.song_type || "Original",
-        bpm: editingSong.bpm || 0,
         is_explicit: editingSong.is_explicit || false,
         featured_artists: editingSong.featured_artists || ""
       });
-      setSelectedArtistIds(editingSong.artists?.map(a => a.id) || []);
     } else {
       setFormData({
         title: "",
@@ -131,23 +171,34 @@ export default function SongModal({
         category_id: "",
         mood: "",
         song_type: "Original",
-        bpm: 0,
         is_explicit: false,
         featured_artists: ""
       });
-      setSelectedArtistIds([]);
-    }
-    setAudioFile(null);
+    }    setAudioFile(null);
+    setReadingDuration(false);
     setUploadProgress({ audio: 0 });
     setCoverFile(null);
     setCoverPreview("");
   }, [editingSong, show]);
 
-  const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 50 * 1024 * 1024) return alert('Audio file must be less than 50MB');
+
     setAudioFile(file);
+    setReadingDuration(true);
+
+    try {
+      const duration = await readAudioDurationSeconds(file);
+      setFormData((prev) => ({ ...prev, duration }));
+    } catch (err) {
+      console.warn("Failed to read audio duration:", err);
+      alert("Could not detect duration from this file. Using default 3:00.");
+      setFormData((prev) => ({ ...prev, duration: 180 }));
+    } finally {
+      setReadingDuration(false);
+    }
   };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,9 +239,9 @@ export default function SongModal({
 
       const payload = {
         title: formData.title || "",
-        duration: formData.duration || 180,
+        duration: Math.max(1, Math.round(formData.duration ?? 180)),
         album_id: String(formData.album_id),
-        artist: allArtists.find(a => selectedArtistIds.includes(a.id))?.name || allArtists[0]?.name || "Unknown Artist",
+        artist: allArtists[0]?.name || "Unknown Artist",
         track_number: editingSong?.track_number || 1,
         original_key: audioKey,
         cover_key: coverKey,
@@ -198,10 +249,8 @@ export default function SongModal({
         category_id: formData.category_id,
         mood: formData.mood,
         song_type: formData.song_type,
-        bpm: Number(formData.bpm),
         is_explicit: formData.is_explicit,
-        featured_artists: formData.featured_artists
-      };
+        featured_artists: formData.featured_artists      };
 
       if (editingSong) {
         await updateArtistSong(editingSong.id, payload);
@@ -323,43 +372,7 @@ export default function SongModal({
                </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-               <div>
-                  <label className={labelBase}>Beats Per Minute (BPM)</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={formData.bpm || ''}
-                      onChange={(e) => setFormData({...formData, bpm: Number(e.target.value)})}
-                      className={inputBase}
-                      placeholder="128"
-                    />
-                    <FaDotCircle size={12} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-700" />
-                  </div>
-               </div>
-               <div>
-                 <label className={labelBase}>Contributor Credits</label>
-                 <div className="bg-[#18181b] border border-white/5 rounded-xl p-3 max-h-[50px] overflow-y-auto custom-scrollbar">
-                    {allArtists.map(artist => (
-                      <label key={artist.id} className="flex items-center gap-3 cursor-pointer hover:bg-white/5 p-1 rounded-lg transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={selectedArtistIds.includes(artist.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) setSelectedArtistIds([...selectedArtistIds, artist.id]);
-                            else setSelectedArtistIds(selectedArtistIds.filter(id => id !== artist.id));
-                          }}
-                          className="w-3 h-3 accent-indigo-500 bg-transparent border-white/10"
-                        />
-                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">{artist.name}</span>
-                      </label>
-                    ))}
-                 </div>
-               </div>
-            </div>
-
-            <div className="space-y-4">
-               <div className="flex items-center justify-between">
+            <div className="space-y-4">               <div className="flex items-center justify-between">
                   <label className={labelBase}>Asset Pipeline</label>
                   {(coverPreview || formData.cover_key) && (
                      <button onClick={clearSongCover} className="text-[8px] font-black text-red-500 uppercase flex items-center gap-1 hover:text-red-400 transition-colors">
@@ -377,7 +390,21 @@ export default function SongModal({
                           <p className="text-[9px] font-black text-white uppercase tracking-widest truncate">
                              {audioFile ? audioFile.name : formData.audio_url ? 'File Verified' : 'File Song Audio'}
                           </p>
-                          <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">MP3/WAV High-Res</p>
+                          <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+                             {readingDuration ? (
+                               <>
+                                 <FaSpinner className="animate-spin" size={8} />
+                                 Reading duration...
+                               </>
+                             ) : audioFile && formData.duration ? (
+                               <>
+                                 <FaClock size={8} />
+                                 {formatDuration(formData.duration)}
+                               </>
+                             ) : (
+                               "MP3/WAV High-Res"
+                             )}
+                          </p>
                        </div>
                     </div>
                     <input type="file" accept="audio/*" onChange={handleAudioChange} className="hidden" />

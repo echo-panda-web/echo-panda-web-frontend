@@ -5,8 +5,6 @@ import {
   FaMusic,
   FaCompactDisc,
   FaUpload,
-  FaSave,
-  FaCheckCircle,
   FaUserCircle,
   FaCamera,
   FaSpinner,
@@ -25,10 +23,8 @@ interface MenuItem {
 const menus: MenuItem[] = [
   { name: "Analytics", path: "/artist/dashboard", icon: <FaChartLine /> },
   { name: "Songs", path: "/artist/songs", icon: <FaMusic /> },
-  { name: "Releases", path: "/artist/albums", icon: <FaCompactDisc /> },
+  { name: "Albums", path: "/artist/albums", icon: <FaCompactDisc /> },
   { name: "Upload Song", path: "/artist/songs", icon: <FaUpload />, action: "upload" },
-  { name: "Draft Releases", path: "/artist/drafts", icon: <FaSave /> },
-  { name: "Publish", path: "/artist/publish", icon: <FaCheckCircle /> },
   { name: "Profile", path: "/artist/settings", icon: <FaUserCircle /> },
 ];
 

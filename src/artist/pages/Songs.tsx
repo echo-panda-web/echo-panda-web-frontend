@@ -144,7 +144,7 @@ export default function SongsManager() {
               className="h-12 px-8 rounded-xl bg-indigo-500 text-white font-black transition-all hover:bg-indigo-600 active:scale-95 flex items-center gap-3 shadow-2xl text-[10px] uppercase tracking-widest"
           >
               <FaPlus size={10} />
-              New Master
+              New Song
           </button>
         </div>
 
@@ -179,7 +179,7 @@ export default function SongsManager() {
                             <div className="col-span-1 text-center text-slate-800 font-bold text-xs group-hover:text-indigo-500 transition-colors">
                                 {(index + 1).toString().padStart(2, '0')}
                             </div>
-                            <div className="col-span-4 flex items-center gap-4">
+                            <div className="col-span-5 flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-[#0e0e11] border border-white/5 shadow-lg">
                                     {song.coverUrl || albumCover ? (
                                         <img src={song.coverUrl || albumCover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -205,11 +205,6 @@ export default function SongsManager() {
                             <div className="col-span-1 text-[10px] font-bold text-slate-600 flex items-center gap-2">
                                 <FaChartBar className="opacity-20" size={9} />
                                 {song.playCount.toLocaleString()}
-                            </div>
-                            <div className="col-span-1">
-                                <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest border ${song.processingStatus === 'ready' ? 'bg-green-500/10 text-green-500 border-green-500/10' : 'bg-amber-500/10 text-amber-400 border-amber-500/10'}`}>
-                                    {song.processingStatus}
-                                </span>
                             </div>
                             <div className="col-span-2 flex items-center justify-end gap-2">
                                 <button onClick={() => playSong({ id: song.id, title: song.title, artist: song.artist, coverUrl: song.coverUrl || albumCover || '', audioUrl: song.audioUrl, duration: song.duration })} className="w-10 h-10 flex items-center justify-center rounded-lg bg-white text-black hover:bg-indigo-50 active:scale-90 transition-all shadow-lg"><FaPlay size={10} className="ml-0.5" /></button>

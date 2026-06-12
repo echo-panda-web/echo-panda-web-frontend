@@ -9,8 +9,6 @@ import Dashboard from "../artist/pages/Dashboard";
 import Songs from "../artist/pages/Songs";
 import Artists from "../artist/pages/Artists";
 import Albums from "../artist/pages/Albums";
-import DraftReleases from "../artist/pages/DraftReleases";
-import PublishRelease from "../artist/pages/PublishRelease";
 import ArtistSettings from "../artist/pages/ArtistSettings";
 import ArtistOnboarding from "../artist/pages/ArtistOnboarding";
 
@@ -67,8 +65,6 @@ const router = createBrowserRouter([
       { path: "/artist/studio", element: <Artists /> },
       { path: "/artist/songs", element: <Songs /> },
       { path: "/artist/albums", element: <Albums /> },
-      { path: "/artist/drafts", element: <DraftReleases /> },
-      { path: "/artist/publish", element: <PublishRelease /> },
       { path: "/artist/settings", element: <ArtistSettings /> },
     ],
   },

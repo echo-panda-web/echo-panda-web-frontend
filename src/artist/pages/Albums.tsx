@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FaCheckCircle, FaCompactDisc, FaImage, FaMusic, FaPlus, FaTrash,
+  FaCompactDisc, FaImage, FaPlus, FaTrash,
   FaSpinner, FaDotCircle, FaSearch, FaFilter, FaCalendarAlt, FaChevronRight, FaEdit
 } from "react-icons/fa";
 import {
   deleteArtistAlbum,
   getArtistIdentity,
   getOwnedAlbums,
-  updateArtistAlbum,
   type ArtistIdentity,
   type ArtistAlbum,
 } from "../artistStudioApi";
@@ -146,20 +145,12 @@ export default function Albums() {
                 </div>
             ) : (
                 filteredAlbums.map((album, index) => {
-                    const statusMeta: Record<string, { label: string; className: string; icon: any }> = {
-                        draft: { label: "Draft", className: "bg-amber-500/10 text-amber-500 border-amber-500/10", icon: FaDotCircle },
-                        pending_review: { label: "Review", className: "bg-blue-500/10 text-blue-400 border-blue-500/10", icon: FaSpinner },
-                        published: { label: "Live", className: "bg-green-500/10 text-green-500 border-green-500/10", icon: FaCheckCircle },
-                        rejected: { label: "Issue", className: "bg-red-500/10 text-red-500 border-red-500/10", icon: FaTrash },
-                    };
-                    const status = statusMeta[album.releaseStatus] || statusMeta.draft;
-
                     return (
                         <div key={album.id} className="group grid grid-cols-12 items-center gap-4 p-4 rounded-2xl bg-[#121214]/50 border border-transparent hover:border-white/10 hover:bg-[#121214] transition-all duration-300">
                             <div className="col-span-1 text-center text-slate-800 font-bold text-xs group-hover:text-indigo-500 transition-colors">
                                 {(index + 1).toString().padStart(2, '0')}
                             </div>
-                            <div className="col-span-4 flex items-center gap-4">
+                            <div className="col-span-5 flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-[#0e0e11] border border-white/5 shadow-lg">
                                     {album.coverUrl ? (
                                         <img src={album.coverUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -178,14 +169,8 @@ export default function Albums() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="col-span-2 text-xs font-bold text-slate-500 truncate uppercase tracking-widest">
+                            <div className="col-span-3 text-xs font-bold text-slate-500 truncate uppercase tracking-widest">
                                 {album.type || "album"}
-                            </div>
-                            <div className="col-span-2">
-                                <span className={`inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest border ${status.className}`}>
-                                    <status.icon className={status.label === "Review" ? "animate-spin" : ""} size={7} />
-                                    {status.label}
-                                </span>
                             </div>
                             <div className="col-span-3 flex items-center justify-end gap-2">
                                 <button
