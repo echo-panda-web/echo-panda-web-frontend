@@ -161,9 +161,10 @@ const Home: React.FC = () => {
       }
 
       if (songs.length === 0) {
+        // Do not fall back to a broad search — only show explicit Khmer category songs
         setCategorySectionTitle("Khmer Songs");
-        setCategoryViewAllLink("/search?query=Khmer");
-        songs = await getSongs(10, { search: "Khmer" });
+        setCategoryViewAllLink("/category/khmer");
+        songs = [];
       }
 
       setCategorySongs(songs);
