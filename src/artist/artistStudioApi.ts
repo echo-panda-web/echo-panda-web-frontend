@@ -20,6 +20,8 @@ export interface ArtistAlbum {
   description: string;
   releaseStatus: "draft" | "pending_review" | "published" | "rejected";
   scheduledAt: string;
+  categoryId?: string;
+  mood?: string;
 }
 
 export interface ArtistSong {
@@ -161,6 +163,8 @@ export async function getOwnedAlbums(identity: ArtistIdentity): Promise<ArtistAl
         type,
         releaseStatus: (row.release_status || "draft") as ArtistAlbum["releaseStatus"],
         scheduledAt: row.scheduled_at || "",
+        categoryId: row.category_id ? String(row.category_id) : undefined,
+        mood: row.mood || undefined,
       };
     });
 }
@@ -223,6 +227,8 @@ export async function createArtistAlbum(payload: {
   release_status?: "draft" | "pending_review" | "published" | "rejected";
   scheduled_at?: string;
   coverFile?: File | null;
+  category_id?: string;
+  mood?: string;
 }) {
   const coverUpload = payload.coverFile ? await uploadMediaDirectly(payload.coverFile, "album_cover") : null;
 
@@ -238,6 +244,8 @@ export async function createArtistAlbum(payload: {
         release_status: payload.release_status,
         scheduled_at: payload.scheduled_at,
         cover_key: coverUpload?.key,
+        category_id: payload.category_id,
+        mood: payload.mood,
       }),
     },
     true
@@ -254,6 +262,8 @@ export async function updateArtistAlbum(
     release_status?: "draft" | "pending_review" | "published" | "rejected";
     scheduled_at?: string;
     coverFile?: File | null;
+    category_id?: string;
+    mood?: string;
   }
 ) {
   const coverUpload = payload.coverFile ? await uploadMediaDirectly(payload.coverFile, "album_cover") : null;
@@ -270,6 +280,8 @@ export async function updateArtistAlbum(
         release_status: payload.release_status,
         scheduled_at: payload.scheduled_at,
         cover_key: coverUpload?.key,
+        category_id: payload.category_id,
+        mood: payload.mood,
       }),
     },
     true
@@ -408,11 +420,22 @@ export async function updateMyProfile(payload: { name: string; image_url?: strin
   }
 }
 
+export interface ArtistTrendData {
+  daily: number[];
+  weekly: number[];
+  monthly: number[];
+  dates: string[];
+}
+
 export async function getArtistAnalytics(): Promise<{
   artist_id: number;
   monthly_streams: number;
   top_song: { id: number; title: string; play_count: number } | null;
   listener_countries: Array<{ country: string; streams: number }>;
+  trends: {
+    plays: ArtistTrendData;
+    listeners: ArtistTrendData;
+  };
 }> {
   return request("/artist/analytics", {}, true);
 }

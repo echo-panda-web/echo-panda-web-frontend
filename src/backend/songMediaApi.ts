@@ -57,3 +57,7 @@ export async function getSignedArtistImageUrl(artistId: string | number): Promis
 export async function getSignedGenreImageUrl(genreId: string | number): Promise<string | null> {
   return fetchSignedUrl(`/genres/${genreId}/image-url`, true);
 }
+
+export async function getSignedTagImageUrl(tagId: string | number): Promise<string | null> {
+  return fetchSignedUrl(`/tags/${tagId}/image-url`, true);
+}

@@ -208,34 +208,6 @@ export default function AdminTopbar({
          
         </div>
 
-        {/* Center Section  */}
-        <div className="flex-1 max-w-md mx-8">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search users, songs, playlists..."
-              value={searchQuery}
-              onChange={handleSearch}
-              onKeyPress={handleSearchKeyPress}
-              className="w-full px-4 py-2 pl-10 pr-10 rounded-full bg-white/5 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-            />
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm" />
-            {searchQuery && (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors z-10"
-              >
-                ✕
-              </button>
-            )}
-            {isSearching && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Right Section */}
         <div className="flex items-center gap-4">
           {/* Notification Icon */}

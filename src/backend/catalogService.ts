@@ -366,12 +366,6 @@ const DEFAULT_GENRES: CatalogCategory[] = [
   { id: "classical", name: "Classical", description: "Classical music" },
   { id: "k-pop", name: "K-Pop", description: "Korean pop music" },
   { id: "lo-fi", name: "Lo-Fi", description: "Low fidelity beats" },
-  { id: "relax", name: "Relax", description: "Relaxing vibes" },
-  { id: "party", name: "Party", description: "Upbeat celebration music" },
-  { id: "sleep", name: "Sleep", description: "Peaceful sleep music" },
-  { id: "study", name: "Study", description: "Focus and concentration" },
-  { id: "driving", name: "Driving", description: "Perfect road trip tunes" },
-  { id: "gaming", name: "Gaming", description: "Epic gaming soundtracks" },
 ];
 
 export async function getGenres(): Promise<CatalogCategory[]> {
@@ -428,10 +422,11 @@ export async function getDerivedTags(): Promise<CatalogCategory[]> {
         return rows
           .filter((t: any) => t?.name)
           .map((t: any) => ({
-            // Use tag name as value — Song.mood stores the tag name string
-            id: String(t.name),
+            // Song.mood stores the tag name string for compatibility
+            id: String(t.id),
             name: String(t.name),
             description: t.slug || String(t.name).toLowerCase(),
+            image_url: t.image_url || undefined,
           }));
       }
     }

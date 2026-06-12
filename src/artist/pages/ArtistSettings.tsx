@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaImage, FaSave, FaUserCircle, FaSpinner, FaCircleNotch } from "react-icons/fa";
+import { FaImage, FaSave, FaUserCircle, FaSpinner, FaCircleNotch, FaDotCircle } from "react-icons/fa";
 import { getMyProfile, updateMyProfile, uploadArtistMedia, type ArtistProfilePayload } from "../artistStudioApi";
 import { getSignedArtistImageUrl } from "../../backend/songMediaApi";
 
@@ -15,10 +15,10 @@ const DEFAULT_PROFILE: ArtistProfilePayload = {
 
 // ─── SENIOR FRONTEND DESIGN DICTIONARY ──────────────────────────────
 const STYLES = {
-  container: "min-h-screen bg-[#0a0c16] bg-radial-gradient from-[#131833] via-[#0a0c16] to-[#05060b] p-6 md:p-10 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white",
-  cardWrapper: "rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl shadow-xl shadow-black/40 p-8 space-y-6",
-  inputField: "w-full bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-white font-medium outline-none transition-all duration-200 focus:border-indigo-500/50 focus:bg-white/[0.04] placeholder-slate-600 disabled:opacity-40 disabled:bg-black/20 disabled:border-white/[0.02] disabled:text-slate-400",
-  labelTitle: "text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 ml-1",
+  container: "min-h-screen bg-[#0a0a0c] text-white selection:bg-indigo-500/30 font-sans",
+  cardWrapper: "rounded-[2.5rem] bg-[#121214]/30 border border-white/5 p-8 space-y-8 shadow-2xl",
+  inputField: "w-full bg-[#18181b] border border-white/5 rounded-xl px-5 py-4 outline-none focus:border-indigo-500/30 transition-all font-medium text-slate-300 text-sm placeholder:text-slate-700 disabled:opacity-40",
+  labelTitle: "text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 block ml-1",
 };
 
 export default function ArtistSettings() {
@@ -145,18 +145,20 @@ export default function ArtistSettings() {
 
   return (
     <div className={STYLES.container}>
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto px-6 py-12 space-y-12">
 
         {/* Header Block */}
-        <div className="border-b border-white/5 pb-6">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-400 mb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-            Identity Dashboard
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-white/5">
+          <div className="space-y-3">
+             <div className="flex items-center gap-3 text-indigo-500 font-bold uppercase tracking-[0.4em] text-[9px]">
+                <FaDotCircle className="animate-pulse" />
+                <span>Identity Dashboard</span>
+             </div>
+             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">Artist Settings.</h1>
+             <p className="text-slate-500 text-sm font-medium max-w-lg leading-relaxed">
+                Manage your public presentation and verified production credentials across EchoPanda Network.
+             </p>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Artist Settings</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Manage your public presentation and verified production credentials across EchoPanda Network.
-          </p>
         </div>
 
         {/* Global Notifications */}
@@ -244,14 +246,14 @@ export default function ArtistSettings() {
           </div>
 
           {/* Submit Segment Footer */}
-          <div className="pt-4 flex justify-end border-t border-white/[0.04]">
+          <div className="pt-6 flex justify-end border-t border-white/5">
             <button
               disabled={saving || loading || profileImageUploading}
               onClick={saveProfile}
-              className="px-6 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 active:scale-98 transition-all text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/50 disabled:opacity-40 disabled:pointer-events-none"
+              className="h-12 px-10 rounded-xl bg-indigo-500 text-white font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-indigo-600 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-3"
             >
-              {saving ? <FaSpinner className="animate-spin text-xs" /> : <FaSave className="text-xs" />}
-              <span>{saving ? "Saving Verification..." : "Commit Profile Changes"}</span>
+              {saving ? <FaSpinner className="animate-spin" /> : <FaSave size={10} />}
+              <span>{saving ? "Processing" : "Commit Changes"}</span>
             </button>
           </div>
 

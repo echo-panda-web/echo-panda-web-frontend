@@ -4,6 +4,7 @@ import {
   getGenres,
   getPopularArtists,
   getDerivedCategories,
+  getDerivedTags,
   type CatalogAlbum
 } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
@@ -63,16 +64,15 @@ const Discover: React.FC = () => {
   const fetchMoods = async () => {
     try {
       setLoadingMoods(true);
-      // These are static categories for Mood & Activity
-      const moodCategories = [
-        { id: 'relax', name: 'Relax', icon: '🧘', image: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?w=400&q=80' },
-        { id: 'party', name: 'Party', icon: '🎉', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&q=80' },
-        { id: 'sleep', name: 'Sleep', icon: '😴', image: 'https://images.unsplash.com/photo-1511295742364-917e70351cab?w=400&q=80' },
-        { id: 'study', name: 'Study', icon: '📖', image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80' },
-        { id: 'driving', name: 'Driving', icon: '🚗', image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=400&q=80' },
-        { id: 'gaming', name: 'Gaming', icon: '🎮', image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&q=80' },
-      ];
-      setMoods(moodCategories);
+      const tagsData = await getDerivedTags();
+      // Filter tags that are specifically for Mood & Activity if needed,
+      // but here we'll just take the tags from admin as requested.
+      setMoods(tagsData.map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        icon: '🎧', // Default icon for dynamic tags
+        image: tag.image_url || 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?w=400&q=80'
+      })));
     } catch (e) {
       console.error(e);
     } finally {

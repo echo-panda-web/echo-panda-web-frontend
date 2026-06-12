@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   FaChartLine,
   FaMusic,
@@ -10,8 +10,10 @@ import {
   FaUserCircle,
   FaCamera,
   FaSpinner,
+  FaSignOutAlt,
 } from "react-icons/fa";
 import { uploadArtistMedia } from "./artistStudioApi";
+import { signOut } from "../routes/authContext";
 
 interface MenuItem {
   name: string;
@@ -32,8 +34,18 @@ const menus: MenuItem[] = [
 
 export default function ArtistSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const currentAction = searchParams.get("action");
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
 
   // ─── LOGO STATE MANAGEMENT ──────────────────────────────────────────
   const [logoUrl, setLogoUrl] = useState<string>(() => {
@@ -146,6 +158,16 @@ export default function ArtistSidebar() {
             </NavLink>
           );
         })}
+
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative border border-transparent text-red-400 hover:bg-red-500/10 hover:text-red-300 mt-4"
+        >
+          <span className="text-base transition-transform duration-200 group-hover:scale-105">
+            <FaSignOutAlt />
+          </span>
+          <span className="tracking-wide">Logout</span>
+        </button>
       </nav>
 
       {/* Persistent Footer Workspace Branding */}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaCheckCircle, FaCompactDisc, FaImage, FaMusic, FaPlus, FaTrash,
   FaSpinner, FaDotCircle, FaSearch, FaFilter, FaCalendarAlt, FaChevronRight, FaEdit
@@ -14,6 +15,7 @@ import {
 import AlbumModal from "./AlbumModal";
 
 export default function Albums() {
+  const navigate = useNavigate();
   const [albums, setAlbums] = useState<ArtistAlbum[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -204,16 +206,6 @@ export default function Albums() {
                     );
                 })
             )}
-        </div>
-
-        {/* Help Footer */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-10">
-            <div className="p-6 rounded-3xl bg-[#121214]/50 border border-white/5 flex gap-5 items-start">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 shrink-0">
-                    <FaMusic size={14} />
-                </div>
-
-            </div>
         </div>
       </div>
 

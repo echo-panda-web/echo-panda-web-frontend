@@ -52,7 +52,6 @@ interface SongModalProps {
 }
 
 const SONG_TYPES = ["Original", "Remix", "Cover", "Instrumental", "Live"];
-const MOOD_ACTIVITIES = ["Relax", "Party", "Sleep", "Study", "Driving", "Gaming"];
 
 export default function SongModal({
   show,
@@ -302,14 +301,9 @@ export default function SongModal({
                       className={`${inputBase} appearance-none`}
                     >
                       <option value="">Select Mood</option>
-                      <optgroup label="Mood & Activity" className="bg-[#121214] text-indigo-400">
-                         {MOOD_ACTIVITIES.map(m => <option key={m} value={m}>{m}</option>)}
-                      </optgroup>
-                      <optgroup label="General Tags" className="bg-[#121214] text-slate-500">
-                         {tags.filter(t => !MOOD_ACTIVITIES.includes(t.name)).map(t => (
-                           <option key={t.id} value={t.id}>{t.name}</option>
-                         ))}
-                      </optgroup>
+                      {tags.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
                     </select>
                     <FaHeart size={10} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" />
                   </div>
