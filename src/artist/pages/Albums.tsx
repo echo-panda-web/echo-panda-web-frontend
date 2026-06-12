@@ -13,6 +13,17 @@ import {
 } from "../artistStudioApi";
 import AlbumModal from "./AlbumModal";
 
+function formatReleaseDate(value?: string): string {
+  if (!value) return "No Date";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "No Date";
+  return parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function Albums() {
   const navigate = useNavigate();
   const [albums, setAlbums] = useState<ArtistAlbum[]>([]);
@@ -165,7 +176,9 @@ export default function Albums() {
                                     </button>
                                     <div className="flex items-center gap-2 mt-0.5">
                                         <FaCalendarAlt className="text-slate-600" size={8} />
-                                        <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest truncate">{album.releaseDate || "No Date"}</p>
+                                        <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest truncate">
+                                          {formatReleaseDate(album.releaseDate)}
+                                        </p>
                                     </div>
                                 </div>
                             </div>

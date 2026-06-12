@@ -3,7 +3,8 @@ import {
   FaTimes, FaMusic, FaClock,
   FaSpinner, FaUpload, FaImage, FaDotCircle, FaChevronDown,
   FaQuoteLeft, FaTags, FaCheckCircle, FaTrashAlt, FaHeart
-} from "react-icons/fa";import { createArtistSong, updateArtistSong, uploadArtistMedia } from "../artistStudioApi";
+} from "react-icons/fa";
+import { createArtistSong, updateArtistSong, uploadArtistMedia } from "../artistStudioApi";
 import { getDerivedCategories, getDerivedTags } from "../../backend/catalogService";
 
 interface Artist {
@@ -58,11 +59,21 @@ function formatDuration(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
+function normalizeDurationSeconds(value: unknown, fallback = 180): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (Number.isFinite(parsed) && parsed >= 1) {
+    return Math.round(parsed);
+  }
+  return fallback;
+}
+
 function readAudioDurationSeconds(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
     const audio = document.createElement("audio");
     audio.preload = "metadata";
+
+    let seekAttempted = false;
 
     const cleanup = () => {
       audio.removeAttribute("src");
@@ -75,26 +86,57 @@ function readAudioDurationSeconds(file: File): Promise<number> {
       reject(new Error("Timed out reading audio duration"));
     }, 15000);
 
+    const finish = (duration: number) => {
+      window.clearTimeout(timeoutId);
+      cleanup();
+      resolve(normalizeDurationSeconds(duration));
+    };
+
+    const fail = (message: string) => {
+      window.clearTimeout(timeoutId);
+      cleanup();
+      reject(new Error(message));
+    };
+
     const tryResolve = () => {
-      if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        finish(audio.duration);
         return;
       }
 
-      window.clearTimeout(timeoutId);
-      cleanup();
-      resolve(Math.max(1, Math.round(audio.duration)));
+      if (!seekAttempted && (audio.duration === Infinity || !Number.isFinite(audio.duration))) {
+        seekAttempted = true;
+        audio.currentTime = Number.MAX_SAFE_INTEGER;
+        return;
+      }
+
+      if (seekAttempted && Number.isFinite(audio.duration) && audio.duration > 0) {
+        finish(audio.duration);
+      }
     };
 
     audio.addEventListener("loadedmetadata", tryResolve);
     audio.addEventListener("durationchange", tryResolve);
-    audio.addEventListener("error", () => {
-      window.clearTimeout(timeoutId);
-      cleanup();
-      reject(new Error("Failed to load audio file"));
-    });
+    audio.addEventListener("timeupdate", tryResolve);
+    audio.addEventListener("error", () => fail("Failed to load audio file"));
 
     audio.src = objectUrl;
   });
+}
+
+async function resolveSongDurationSeconds(
+  audioFile: File | null,
+  currentDuration: unknown
+): Promise<number> {
+  if (audioFile) {
+    try {
+      return await readAudioDurationSeconds(audioFile);
+    } catch (err) {
+      console.warn("Failed to read audio duration at save time:", err);
+    }
+  }
+
+  return normalizeDurationSeconds(currentDuration);
 }
 
 export default function SongModal({
@@ -122,7 +164,8 @@ export default function SongModal({
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState("");
-  const [audioFile, setAudioFile] = useState<File | null>(null);  const [readingDuration, setReadingDuration] = useState(false);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [readingDuration, setReadingDuration] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ audio: 0 });
   const [uploading, setUploading] = useState(false);
   const [genres, setGenres] = useState<Array<{ id: string; name: string }>>([]);
@@ -174,7 +217,8 @@ export default function SongModal({
         is_explicit: false,
         featured_artists: ""
       });
-    }    setAudioFile(null);
+    }
+    setAudioFile(null);
     setReadingDuration(false);
     setUploadProgress({ audio: 0 });
     setCoverFile(null);
@@ -219,11 +263,13 @@ export default function SongModal({
     if (!formData.title) return alert('Song Title is required');
     if (!editingSong && !audioFile) return alert('Song audio file is required');
     if (!formData.album_id) return alert('Please select a release album');
+    if (readingDuration) return alert('Reading audio duration, please wait a moment.');
 
     try {
       setUploading(true);
       let audioKey = editingSong?.original_key || null;
       let coverKey = formData.cover_key || null;
+      const duration = await resolveSongDurationSeconds(audioFile, formData.duration);
 
       if (audioFile) {
         setUploadProgress({ audio: 30 });
@@ -239,7 +285,7 @@ export default function SongModal({
 
       const payload = {
         title: formData.title || "",
-        duration: Math.max(1, Math.round(formData.duration ?? 180)),
+        duration,
         album_id: String(formData.album_id),
         artist: allArtists[0]?.name || "Unknown Artist",
         track_number: editingSong?.track_number || 1,
@@ -250,7 +296,8 @@ export default function SongModal({
         mood: formData.mood,
         song_type: formData.song_type,
         is_explicit: formData.is_explicit,
-        featured_artists: formData.featured_artists      };
+        featured_artists: formData.featured_artists,
+      };
 
       if (editingSong) {
         await updateArtistSong(editingSong.id, payload);

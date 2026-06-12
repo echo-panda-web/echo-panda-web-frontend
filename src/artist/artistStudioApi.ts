@@ -108,7 +108,10 @@ async function request<T = any>(path: string, init: RequestInit = {}, auth = fal
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data?.message || `Request failed (${response.status})`);
+    const validationErrors = data?.errors && typeof data.errors === "object"
+      ? Object.values(data.errors as Record<string, string[]>).flat().join(" ")
+      : "";
+    throw new Error(validationErrors || data?.message || `Request failed (${response.status})`);
   }
 
   return data as T;
@@ -157,7 +160,7 @@ export async function getOwnedAlbums(identity: ArtistIdentity): Promise<ArtistAl
         id: String(row.id),
         title: row.title || "Untitled",
         artist: String(safeArtistName || "Unknown Artist"),
-        releaseDate: row.release_date || "",
+        releaseDate: row.release_date ? String(row.release_date).split("T")[0] : "",
         coverUrl: row.cover_url || "",
         description: row.description || "",
         type,
