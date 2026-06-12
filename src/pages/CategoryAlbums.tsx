@@ -49,16 +49,12 @@ const CategoryAlbums: React.FC = () => {
         const startTime = performance.now();
         console.log(`🔄 [CategoryPage] Fetching data for category/tag ${categoryId}...`);
 
-        // Fetch both categories and tags to determine which one we're looking at
-        const [categories, tags, albumsData, songsData, mostPlayedAlbumsData] = await Promise.all([
+        const [categories, tags, mostPlayedAlbumsData] = await Promise.all([
           getDerivedCategories(),
           getDerivedTags(),
-          getAlbums(50, { category_id: categoryId }),
-          getSongs(50, { category_id: categoryId }),
           getMostPlayedAlbums(20),
         ]);
 
-        // Check if this is a tag or a genre/category
         const tagMatch = tags.find((t) =>
           String(t.id) === categoryId ||
           t.slug === categoryId ||
@@ -72,27 +68,35 @@ const CategoryAlbums: React.FC = () => {
         );
 
         const categoryData = tagMatch || categoryMatch || null;
+        const isTagPage = Boolean(tagMatch);
 
-        // If it's a tag, refetch with tag_id filter instead
-        let finalAlbums = albumsData;
-        let finalSongs = songsData;
-        
-        if (tagMatch && (!albumsData || albumsData.length === 0)) {
+        let finalAlbums: CatalogAlbum[] = [];
+        let finalSongs: CatalogSong[] = [];
+
+        if (isTagPage) {
           console.log(`🏷️ [CategoryPage] Identified as TAG, fetching with tag_id filter...`);
           const [albumsByTag, songsByTag] = await Promise.all([
             getAlbums(50, { tag_id: categoryId }),
-            getSongs(50, { tag_id: categoryId })
+            getSongs(50, { tag_id: categoryId }),
           ]);
           finalAlbums = albumsByTag;
           finalSongs = songsByTag;
+        } else {
+          const [albumsData, songsData] = await Promise.all([
+            getAlbums(50, { category_id: categoryId }),
+            getSongs(50, { category_id: categoryId }),
+          ]);
+          finalAlbums = albumsData;
+          finalSongs = songsData;
         }
 
         const fetchTime = performance.now() - startTime;
         console.log(`✅ [CategoryPage] Data fetched in ${fetchTime.toFixed(0)}ms`);
 
-        // If no albums found via API with category_id, fallback to name-based filtering for legacy support
-        if (finalAlbums.length === 0 && categoryData) {
-          console.log("⚠️ [CategoryPage] No albums found via filters, trying name fallback...");
+        // Only fall back to name-based album matching for genre/category pages,
+        // not for mood/activity tags.
+        if (!isTagPage && finalAlbums.length === 0 && categoryData) {
+          console.log("⚠️ [CategoryPage] No albums found via category filters, trying name fallback...");
           const allAlbums = await getAlbums(200);
           const normalizedName = categoryData.name.toLowerCase();
           finalAlbums = allAlbums.filter(a =>

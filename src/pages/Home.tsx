@@ -143,13 +143,25 @@ const Home: React.FC = () => {
       setTopAlbums(topAlbumsData);
 
       // Handle category section which depends on genres
-      const khmerCategory = genres.find(
-        (g) =>
-          g.name.toLowerCase().includes("khmer") ||
-          g.slug?.toLowerCase().includes("khmer") ||
-          String(g.id).toLowerCase() === "khmer" ||
-          String(g.id) === "12",
-      );
+      const khmerCategory = genres.find((g) => {
+        const name = g.name.toLowerCase();
+        const slug = g.slug?.toLowerCase();
+        const id = String(g.id).toLowerCase();
+
+        if (name === "khmer" || name === "song khmer" || name === "khmer song") {
+          return true;
+        }
+
+        if (slug === "khmer" || slug === "song-khmer" || slug === "khmer-song") {
+          return true;
+        }
+
+        if (id === "khmer" || id === "12") {
+          return true;
+        }
+
+        return false;
+      });
 
       let songs: any[] = [];
       if (khmerCategory) {

@@ -398,15 +398,7 @@ export async function getGenres(): Promise<CatalogCategory[]> {
     console.error("Error fetching genres from backend:", error);
   }
 
-  // Merge backend genres with defaults, avoiding duplicates by name
-  const merged = [...fromBackend];
-  DEFAULT_GENRES.forEach(def => {
-    if (!merged.some(b => b.name.toLowerCase() === def.name.toLowerCase() || b.id === def.id)) {
-      merged.push(def);
-    }
-  });
-
-  return merged;
+  return fromBackend;
 }
 
 export async function getDerivedTags(): Promise<CatalogCategory[]> {
