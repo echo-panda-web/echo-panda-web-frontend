@@ -85,29 +85,44 @@ export interface AdaptiveRecommendation {
 const enrichRecommendations = async (
   recommendations: AdaptiveRecommendation[]
 ): Promise<AdaptiveRecommendation[]> => {
-  return recommendations.map((rec) => {
-    const song = rec.song;
-    if (!song?.id) return rec;
+  return Promise.all(
+    recommendations.map(async (rec) => {
+      const song = rec.song;
+      if (!song?.id) return rec;
 
-    const resolvedCover = song.cover_url || song.songCover_url || song.album?.cover_url || null;
+      const [signedSongCover, signedAlbumCover] = await Promise.all([
+        getSignedSongCoverUrl(song.id),
+        song.album?.id ? getSignedAlbumCoverUrl(song.album.id) : Promise.resolve(null),
+      ]);
 
-    const normalizedArtists = Array.isArray(song.artists) && song.artists.length > 0
-      ? song.artists
-      : song.artist
-        ? [{ id: Number(song.artist_id ?? 0), name: song.artist }]
-        : [];
+      const resolvedCover =
+        signedSongCover ||
+        signedAlbumCover ||
+        song.cover_url ||
+        song.songCover_url ||
+        song.album?.cover_url ||
+        song.cover_key ||
+        null;
 
-    return {
-      ...rec,
-      song: {
-        ...song,
-        artists: normalizedArtists,
-        artist: song.artist || normalizedArtists.map((a) => a.name).filter(Boolean).join(', '),
-        songCover_url: resolvedCover,
-        cover_url: resolvedCover,
-      },
-    };
-  });
+      const normalizedArtists = Array.isArray(song.artists) && song.artists.length > 0
+        ? song.artists
+        : song.artist
+          ? [{ id: Number(song.artist_id ?? 0), name: song.artist }]
+          : [];
+
+      return {
+        ...rec,
+        song: {
+          ...song,
+          artists: normalizedArtists,
+          artist: song.artist || normalizedArtists.map((a) => a.name).filter(Boolean).join(', '),
+          songCover_url: resolvedCover,
+          cover_url: resolvedCover,
+          cover_key: resolvedCover,
+        },
+      };
+    })
+  );
 };
 
 export type RecommendationEventType =

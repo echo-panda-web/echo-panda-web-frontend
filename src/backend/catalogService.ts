@@ -3,7 +3,8 @@ import {
   getSignedAlbumCoverUrl,
   getSignedSongCoverUrl,
   getSignedArtistImageUrl,
-  getSignedGenreImageUrl
+  getSignedGenreImageUrl,
+  getSignedTagImageUrl
 } from "./songMediaApi";
 
 export interface CatalogArtist {
@@ -398,7 +399,24 @@ export async function getGenres(): Promise<CatalogCategory[]> {
     console.error("Error fetching genres from backend:", error);
   }
 
-  return fromBackend;
+  return Promise.all(
+    fromBackend.map(async (genre) => {
+      if (!genre.id) {
+        return genre;
+      }
+
+      const signedUrl = await getSignedGenreImageUrl(genre.id);
+      if (signedUrl) {
+        return { ...genre, image_url: signedUrl };
+      }
+
+      const resolvedUrl = resolveMediaUrl(genre.image_url);
+      return {
+        ...genre,
+        image_url: resolvedUrl || genre.image_url || undefined,
+      };
+    })
+  );
 }
 
 export async function getDerivedTags(): Promise<CatalogCategory[]> {
@@ -411,15 +429,26 @@ export async function getDerivedTags(): Promise<CatalogCategory[]> {
       // API returns { data: [{ id, name, slug, image_url }] }
       const rows: any[] = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
       if (rows.length > 0) {
-        return rows
-          .filter((t: any) => t?.name)
-          .map((t: any) => ({
-            // Song.mood stores the tag name string for compatibility
-            id: String(t.id),
-            name: String(t.name),
-            description: t.slug || String(t.name).toLowerCase(),
-            image_url: t.image_url || undefined,
-          }));
+        const tags = normalizeCategories(rows);
+
+        return Promise.all(
+          tags.map(async (tag) => {
+            if (!tag.id) {
+              return tag;
+            }
+
+            const signedUrl = await getSignedTagImageUrl(tag.id);
+            if (signedUrl) {
+              return { ...tag, image_url: signedUrl };
+            }
+
+            const resolvedUrl = resolveMediaUrl(tag.image_url);
+            return {
+              ...tag,
+              image_url: resolvedUrl || tag.image_url || undefined,
+            };
+          })
+        );
       }
     }
   } catch (error) {

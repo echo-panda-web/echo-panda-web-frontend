@@ -77,9 +77,8 @@ const ScrollReveal: React.FC<{ children: React.ReactNode; delay?: string }> = ({
   return (
     <div
       ref={domRef}
-      className={`transition-all duration-700 ease-out transform ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
+      className={`transition-all duration-700 ease-out transform ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}
       style={{ transitionDelay: delay }}
     >
       {children}
@@ -148,24 +147,18 @@ const Home: React.FC = () => {
         const slug = g.slug?.toLowerCase();
         const id = String(g.id).toLowerCase();
 
-        if (name === "khmer" || name === "song khmer" || name === "khmer song") {
+        if (name === "khmer song") {
           return true;
         }
-
-        if (slug === "khmer" || slug === "song-khmer" || slug === "khmer-song") {
+        if (slug === "khmer-song") {
           return true;
         }
-
-        if (id === "khmer" || id === "12") {
-          return true;
-        }
-
         return false;
       });
 
       let songs: any[] = [];
       if (khmerCategory) {
-        setCategorySectionTitle(`${khmerCategory.name} Songs`);
+        setCategorySectionTitle(`Khmer Songs`);
         setCategoryViewAllLink(
           `/category/${khmerCategory.slug || khmerCategory.id}`,
         );
@@ -395,11 +388,10 @@ const Home: React.FC = () => {
           <div className="mt-12 flex justify-center">
             <Link
               to="/songs?type=trending"
-              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
-                isLightMode
-                  ? "bg-zinc-200 text-zinc-800 hover:bg-zinc-300"
-                  : "bg-zinc-800/80 text-white hover:bg-zinc-700"
-              }`}
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${isLightMode
+                ? "bg-zinc-200 text-zinc-800 hover:bg-zinc-300"
+                : "bg-zinc-800/80 text-white hover:bg-zinc-700"
+                }`}
             >
               <FaPlus size={10} /> View All
             </Link>

@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   getGenres,
   getPopularArtists,
-  getDerivedCategories,
   getDerivedTags,
   type CatalogAlbum
 } from "../backend/catalogService";
@@ -18,9 +17,19 @@ import { useAudioPlayer } from "../contexts/AudioPlayerContext";
 
 interface Category {
   id: string;
+  slug?: string;
   name: string;
   description: string;
+  image_url?: string;
 }
+
+const GENRE_IMAGE_FALLBACK =
+  "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80";
+
+const MOOD_IMAGE_FALLBACK =
+  "https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?w=400&q=80";
+
+type Mood = Category;
 
 type Album = CatalogAlbum;
 
@@ -44,7 +53,7 @@ const Discover: React.FC = () => {
   const [trendingSongs, setTrendingSongs] = useState<any[]>([]);
   const [popularArtists, setPopularArtists] = useState<ArtistCard[]>([]);
   const [featuredCharts, setFeaturedCharts] = useState<any[]>([]);
-  const [moods, setMoods] = useState<any[]>([]);
+  const [moods, setMoods] = useState<Mood[]>([]);
 
   const [loadingTopAlbums, setLoadingTopAlbums] = useState(true);
   const [loadingPopularArtists, setLoadingPopularArtists] = useState(true);
@@ -64,17 +73,13 @@ const Discover: React.FC = () => {
   const fetchMoods = async () => {
     try {
       setLoadingMoods(true);
-      const tagsData = await getDerivedTags();
-      // Filter tags that are specifically for Mood & Activity if needed,
-      // but here we'll just take the tags from admin as requested.
-      setMoods(tagsData.map(tag => ({
-        id: tag.id,
-        name: tag.name,
-        icon: '🎧', // Default icon for dynamic tags
-        image: tag.image_url || 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?w=400&q=80'
-      })));
+      const data = await getCachedData("discover_moods", async () => {
+        const tagsData = await getDerivedTags();
+        return tagsData || [];
+      });
+      setMoods(data);
     } catch (e) {
-      console.error(e);
+      console.error("Error fetching moods:", e);
     } finally {
       setLoadingMoods(false);
     }
@@ -207,22 +212,14 @@ const Discover: React.FC = () => {
             <div className="flex justify-center py-10"><FaSpinner className="animate-spin text-blue-500 text-2xl" /></div>
           ) : (
             <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-none snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {categories.map((category, idx) => {
-                const bgImages = [
-                  'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80',
-                  'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=400&q=80',
-                  'https://images.unsplash.com/photo-1514525253361-bee871846439?w=400&q=80',
-                  'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80',
-                  'https://images.unsplash.com/photo-1459749411177-042180ce673c?w=400&q=80',
-                ];
-                return (
+              {categories.map((category) => (
                   <button
                     key={category.id}
-                    onClick={() => navigate(`/category/${category.id}`)}
+                    onClick={() => navigate(`/category/${category.slug || category.id}`)}
                     className="group relative shrink-0 w-48 h-28 md:w-64 md:h-36 rounded-2xl overflow-hidden snap-start transition-transform duration-500 hover:scale-[1.03]"
                   >
                     <img
-                      src={bgImages[idx % bgImages.length]}
+                      src={category.image_url || GENRE_IMAGE_FALLBACK}
                       alt={category.name}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
@@ -233,8 +230,7 @@ const Discover: React.FC = () => {
                       </h3>
                     </div>
                   </button>
-                );
-              })}
+              ))}
               <ViewAllCircle link="/categories" />
             </div>
           )}
@@ -355,14 +351,9 @@ const Discover: React.FC = () => {
           )}
         </section>
 
-        {/* Mood & Activity Section */}
+        {/* Mood & Activity Section (tags) */}
         <section>
-          <div className="flex items-center gap-3 mb-8">
-            <span className="text-2xl md:text-3xl"></span>
-            <h2 className={`text-2xl md:text-3xl font-black tracking-tight ${isLightMode ? 'text-zinc-900' : 'text-white'}`}>
-              8. Mood & <span className="text-blue-500">Activity</span>
-            </h2>
-          </div>
+          <SectionTitle main="Mood &" accent="Activity" />
           {loadingMoods ? (
             <div className="flex justify-center py-10"><FaSpinner className="animate-spin text-blue-500 text-2xl" /></div>
           ) : (
@@ -370,25 +361,23 @@ const Discover: React.FC = () => {
               {moods.map((mood) => (
                 <button
                   key={mood.id}
-                  onClick={() => navigate(`/category/${mood.id}`)}
-                  className="group relative shrink-0 w-44 h-44 md:w-56 md:h-56 rounded-[2.5rem] overflow-hidden snap-start transition-all duration-500 hover:scale-[1.02] shadow-xl"
+                  onClick={() => navigate(`/category/${mood.slug || mood.id}`)}
+                  className="group relative shrink-0 w-48 h-28 md:w-64 md:h-36 rounded-2xl overflow-hidden snap-start transition-transform duration-500 hover:scale-[1.03]"
                 >
                   <img
-                    src={mood.image}
+                    src={mood.image_url || MOOD_IMAGE_FALLBACK}
                     alt={mood.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 brightness-[0.7]"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                    <span className="text-4xl mb-3 transform transition-transform group-hover:scale-125 duration-500">{mood.icon}</span>
-                    <h3 className="text-white font-black text-xl md:text-2xl uppercase tracking-tighter">
-                      {mood.name}
+                  <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-colors" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <h3 className="text-white font-black text-lg md:text-2xl uppercase tracking-tighter text-center px-4">
+                      {mood.name} <span className="text-blue-400">Hits</span>
                     </h3>
-                    <p className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Explore Hits</p>
                   </div>
                 </button>
               ))}
-              <ViewAllCircle link="/categories" />
+              <ViewAllCircle link="/moods" />
             </div>
           )}
         </section>

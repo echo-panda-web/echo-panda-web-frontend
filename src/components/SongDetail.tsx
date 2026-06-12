@@ -9,7 +9,7 @@ import { getGlobalPlayCountMap, trackSongPlay } from '../backend/playTrackingSer
 import { getSimilarRecommendations, trackRecommendationEvent, type AdaptiveRecommendation } from '../backend/recommendationService';
 import { useAudioPlayer } from '../contexts/AudioPlayerContext';
 import { isSongFavorite, toggleFavorite, getUserFavorites } from '../backend/favoritesService';
-import { getSignedSongCoverUrl, getSignedArtistImageUrl } from '../backend/songMediaApi';
+import { getSignedSongCoverUrl, getSignedArtistImageUrl, getSignedAlbumCoverUrl } from '../backend/songMediaApi';
 import { useTheme } from '../contexts/ThemeContext';
 import ShareModal from './ShareModal';
 import { addSongToPlaylist, getUserPlaylists, createPlaylist, type Playlist } from '../backend/playlistsService';
@@ -291,10 +291,20 @@ const SongDetails: React.FC = () => {
         playCountMap.get(songId) ?? apiCount ?? 0;
 
       const artistId = songData.artist_id || songData.artist?.id || null;
-      const [signedSongCover, signedArtistImage] = await Promise.all([
+      const albumId = songData.album_id || songData.album?.id || null;
+      const [signedSongCover, signedArtistImage, signedAlbumCover] = await Promise.all([
         getSignedSongCoverUrl(songData.id),
-        artistId ? getSignedArtistImageUrl(artistId) : Promise.resolve(null)
+        artistId ? getSignedArtistImageUrl(artistId) : Promise.resolve(null),
+        albumId ? getSignedAlbumCoverUrl(albumId) : Promise.resolve(null),
       ]);
+
+      const resolvedCover =
+        signedSongCover ||
+        signedAlbumCover ||
+        songData.cover_url ||
+        songData.album?.cover_url ||
+        songData.album?.cover_image ||
+        null;
 
       const transformedSong: SongData = {
         id: String(songData.id),
@@ -302,13 +312,13 @@ const SongDetails: React.FC = () => {
         duration: songData.duration,
         album_id: songData.album_id,
         audio_url: songData.audio_url || null,
-        songCover_url: signedSongCover || songData.album?.cover_url || songData.album?.cover_image || null,
+        songCover_url: resolvedCover,
         created_at: songData.created_at,
         lyrics: songData.lyrics || "",
         album: songData.album ? {
           id: String(songData.album.id),
           title: songData.album.title,
-          cover_url: songData.album.cover_url || songData.album.cover_image,
+          cover_url: signedAlbumCover || songData.album.cover_url || songData.album.cover_image,
           release_date: songData.album.release_date
         } : undefined,
         artists: artistId ? [{
@@ -336,7 +346,7 @@ const SongDetails: React.FC = () => {
               album_id: s.album_id,
               audio_url: s.audio_url,
               play_count: resolvePlayCount(String(s.id), s.play_count),
-              songCover_url: s.album?.cover_url || s.album?.cover_image,
+              songCover_url: signedAlbumCover || s.album?.cover_url || s.album?.cover_image,
               album: s.album ? { title: s.album.title } : undefined,
               artists: s.artist ? [{ id: String(s.artist_id), name: getArtistName(s.artist) }] : []
             } as any)));

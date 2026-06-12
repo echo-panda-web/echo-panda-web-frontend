@@ -30,6 +30,7 @@ import SearchPage from "../pages/SearchPage";
 import Playlist from "../pages/Playlist";
 import Settings from "../pages/Settings";
 import CategoryAlbums from "../pages/CategoryAlbums";
+import BrowseCatalog from "../pages/BrowseCatalog";
 import SongsList from "../pages/SongsList";
 
 // Admin 
@@ -107,6 +108,22 @@ export const routeConfig: RouteConfig[] = [
     icon: null,
     component: CategoryAlbums,
     group: "menu",
+    showInSidebar: false,
+  },
+  {
+    path: "/categories",
+    label: "Music Genres",
+    icon: null,
+    component: injectProps(BrowseCatalog, { type: "genre" }),
+    group: "other",
+    showInSidebar: false,
+  },
+  {
+    path: "/moods",
+    label: "Mood & Activity",
+    icon: null,
+    component: injectProps(BrowseCatalog, { type: "mood" }),
+    group: "other",
     showInSidebar: false,
   },
   {

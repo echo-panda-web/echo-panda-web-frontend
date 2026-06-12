@@ -1,27 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getAlbums, getSongs, getDerivedCategories, getDerivedTags, CatalogSong, CatalogAlbum } from "../backend/catalogService";
-import { getMostPlayedAlbums } from "../backend/playTrackingService";
+import { getSongs, getDerivedCategories, getDerivedTags, CatalogSong } from "../backend/catalogService";
 import { useDataCache } from "../contexts/DataCacheContext";
 import { FaSpinner, FaArrowLeft, FaMusic } from "react-icons/fa";
-import AlbumCard from "../components/AlbumCard";
 import Song from "../components/Song";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAudioPlayer } from "../contexts/AudioPlayerContextCore";
 import { trackSongPlay } from "../backend/playTrackingService";
-
-interface Artist {
-  id: string;
-  name: string;
-  image_url: string;
-}
 
 interface Category {
   id: string;
   slug?: string;
   name: string;
   description: string;
+  image_url?: string;
 }
+
+const CATEGORY_IMAGE_FALLBACK =
+  "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80";
 
 const CategoryAlbums: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,8 +26,6 @@ const CategoryAlbums: React.FC = () => {
   const { isLightMode } = useTheme();
   const { playSong } = useAudioPlayer();
   const [category, setCategory] = useState<Category | null>(null);
-  const [albums, setAlbums] = useState<CatalogAlbum[]>([]);
-  const [topAlbums, setTopAlbums] = useState<CatalogAlbum[]>([]);
   const [songs, setSongs] = useState<CatalogSong[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,10 +43,9 @@ const CategoryAlbums: React.FC = () => {
         const startTime = performance.now();
         console.log(`🔄 [CategoryPage] Fetching data for category/tag ${categoryId}...`);
 
-        const [categories, tags, mostPlayedAlbumsData] = await Promise.all([
+        const [categories, tags] = await Promise.all([
           getDerivedCategories(),
           getDerivedTags(),
-          getMostPlayedAlbums(20),
         ]);
 
         const tagMatch = tags.find((t) =>
@@ -70,56 +63,32 @@ const CategoryAlbums: React.FC = () => {
         const categoryData = tagMatch || categoryMatch || null;
         const isTagPage = Boolean(tagMatch);
 
-        let finalAlbums: CatalogAlbum[] = [];
         let finalSongs: CatalogSong[] = [];
 
         if (isTagPage) {
           console.log(`🏷️ [CategoryPage] Identified as TAG, fetching with tag_id filter...`);
-          const [albumsByTag, songsByTag] = await Promise.all([
-            getAlbums(50, { tag_id: categoryId }),
-            getSongs(50, { tag_id: categoryId }),
-          ]);
-          finalAlbums = albumsByTag;
-          finalSongs = songsByTag;
+          const resolvedTagId = tagMatch?.id || categoryId;
+          finalSongs = await getSongs(50, { tag_id: resolvedTagId });
+
+          // Legacy songs may only have mood text set instead of tag_id
+          if (finalSongs.length === 0 && tagMatch) {
+            finalSongs = await getSongs(50, { category_id: tagMatch.name });
+          }
         } else {
-          const [albumsData, songsData] = await Promise.all([
-            getAlbums(50, { category_id: categoryId }),
-            getSongs(50, { category_id: categoryId }),
-          ]);
-          finalAlbums = albumsData;
-          finalSongs = songsData;
+          const resolvedCategoryId = categoryMatch?.id || categoryId;
+          finalSongs = await getSongs(50, { category_id: resolvedCategoryId });
         }
 
         const fetchTime = performance.now() - startTime;
         console.log(`✅ [CategoryPage] Data fetched in ${fetchTime.toFixed(0)}ms`);
 
-        // Only fall back to name-based album matching for genre/category pages,
-        // not for mood/activity tags.
-        if (!isTagPage && finalAlbums.length === 0 && categoryData) {
-          console.log("⚠️ [CategoryPage] No albums found via category filters, trying name fallback...");
-          const allAlbums = await getAlbums(200);
-          const normalizedName = categoryData.name.toLowerCase();
-          finalAlbums = allAlbums.filter(a =>
-            a.title.toLowerCase().includes(normalizedName) ||
-            (a.artists && a.artists.some(art => art.name.toLowerCase().includes(normalizedName)))
-          );
-        }
-
-        // Filter top albums to only include those in this category
-        const albumIds = new Set(finalAlbums.map(a => a.id));
-        const categoryTopAlbums = mostPlayedAlbumsData.filter(a => albumIds.has(a.id));
-
         return {
           category: categoryData,
-          albums: finalAlbums,
-          topAlbums: categoryTopAlbums,
-          songs: finalSongs
+          songs: finalSongs,
         };
       });
 
       setCategory(data.category);
-      setTopAlbums(data.topAlbums || []);
-      setAlbums(data.albums);
       setSongs(data.songs);
     } catch (error) {
       console.error('Error fetching category data:', error);
@@ -131,7 +100,7 @@ const CategoryAlbums: React.FC = () => {
   const handlePlaySong = (songId: string) => {
     const song = songs.find(s => s.id === songId);
     if (song) {
-      trackSongPlay(song.id).catch(() => {});
+      trackSongPlay(song.id).catch(() => { });
       playSong({
         id: song.id,
         title: song.title,
@@ -180,8 +149,12 @@ const CategoryAlbums: React.FC = () => {
 
         <div className="mb-10">
           <div className="flex items-start gap-6 mb-6">
-            <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center text-5xl md:text-6xl shadow-2xl shrink-0">
-              🎵
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden shadow-2xl shrink-0">
+              <img
+                src={category.image_url || CATEGORY_IMAGE_FALLBACK}
+                alt={category.name}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex-1">
               <h1 className={`text-5xl md:text-6xl font-black tracking-tight mb-2 ${isLightMode ? "text-gray-900" : "text-white"}`}>
@@ -193,22 +166,14 @@ const CategoryAlbums: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex gap-4">
-             <p className={`${isLightMode ? "text-gray-500" : "text-gray-500"} font-medium`}>
-              {albums.length} {albums.length === 1 ? 'album' : 'albums'}
-            </p>
-            <p className={`${isLightMode ? "text-gray-500" : "text-gray-500"} font-medium`}>
-              {songs.length} {songs.length === 1 ? 'song' : 'songs'}
-            </p>
-          </div>
+          <p className={`${isLightMode ? "text-gray-500" : "text-gray-500"} font-medium`}>
+            {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+          </p>
         </div>
 
-        {/* Songs Section */}
-        {songs.length > 0 && (
+        {songs.length > 0 ? (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <FaMusic className="text-purple-500" /> Top Songs
-            </h2>
+
             <div className={`${isLightMode ? "bg-white" : "bg-white/5"} rounded-3xl overflow-hidden`}>
               <div className="p-4 space-y-1">
                 {songs.map((song, index) => (
@@ -228,52 +193,12 @@ const CategoryAlbums: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {/* Top Albums Section */}
-        {topAlbums.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <FaMusic className="text-purple-500" /> Top Albums
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {topAlbums.map((album) => (
-                <AlbumCard key={album.id} album={album} />
-              ))}
-            </div>
+        ) : (
+          <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl">
+            <div className="text-6xl mb-4 opacity-20">🎵</div>
+            <p className={`${isLightMode ? "text-gray-400" : "text-gray-400"} text-xl`}>No songs in this category yet</p>
           </div>
         )}
-
-        {/* All Albums Section */}
-        {(() => {
-          const remainingAlbums = albums.filter(a => !topAlbums.some(ta => ta.id === a.id));
-
-          if (remainingAlbums.length > 0) {
-            return (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">
-                  {topAlbums.length > 0 ? "More Albums" : "Albums"}
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {remainingAlbums.map((album) => (
-                    <AlbumCard key={album.id} album={album} />
-                  ))}
-                </div>
-              </div>
-            );
-          }
-
-          if (topAlbums.length === 0) {
-            return (
-              <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl">
-                <div className="text-6xl mb-4 opacity-20">📀</div>
-                <p className={`${isLightMode ? "text-gray-400" : "text-gray-400"} text-xl`}>No albums in this category yet</p>
-              </div>
-            );
-          }
-
-          return null;
-        })()}
       </div>
     </div>
   );
