@@ -120,13 +120,13 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, type, id, titl
           >
             {/* Background Blur */}
             <div className="absolute inset-0 opacity-40 blur-3xl scale-150">
-              <img crossOrigin="anonymous" src={imageUrl || "/logo.webp"} alt="" className="w-full h-full object-cover" />
+              <img src={imageUrl || "/logo.webp"} alt="" className="w-full h-full object-cover" />
             </div>
 
             {/* Content */}
             <div className="relative z-10 h-full flex flex-col">
               <div className="aspect-square w-full rounded-2xl overflow-hidden shadow-2xl mb-6">
-                <img crossOrigin="anonymous" src={imageUrl || "/logo.webp"} alt={title} className="w-full h-full object-cover" />
+                <img src={imageUrl || "/logo.webp"} alt={title} className="w-full h-full object-cover" />
               </div>
 
               <h3 className="text-xl font-black leading-tight mb-1 truncate">{title}</h3>

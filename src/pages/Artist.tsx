@@ -68,7 +68,6 @@ function HeroBanner({
         <div className="shrink-0">
           <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-purple-500/50 shadow-2xl shadow-purple-500/50">
             <img
-              crossOrigin="anonymous"
               src={
                 artist.image_url ||
                 "https://images.unsplash.com/photo-1511192336575-5a79af67a629"

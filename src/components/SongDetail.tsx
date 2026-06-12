@@ -474,7 +474,7 @@ const SongDetails: React.FC = () => {
                   <td className="py-3">
                     <div className="flex items-center gap-3">
                        <div className="w-10 h-10 rounded-md overflow-hidden bg-white/5 shrink-0 border border-white/5">
-                          <img crossOrigin="anonymous" src={sCover || ''} className="w-full h-full object-cover" alt="" />
+                          <img src={sCover || ''} className="w-full h-full object-cover" alt="" />
                        </div>
                        <div className="min-w-0">
                           <p className={`text-sm font-bold truncate ${isThisPlaying ? "text-indigo-500" : (isLightMode ? "text-gray-900" : "text-white")}`}>{sTitle}</p>
@@ -535,7 +535,7 @@ const SongDetails: React.FC = () => {
          <div className={`flex flex-col md:flex-row gap-8 items-center md:items-center ${isLightMode ? "bg-white border-gray-200" : "bg-white/[0.02] border-white/[0.05]"} p-6 md:p-8 rounded-[2rem] backdrop-blur-xl border`}>
 
             <div className={`w-40 h-40 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-2xl shrink-0 border ${isLightMode ? "border-gray-100" : "border-white/10"}`}>
-               <img crossOrigin="anonymous" src={songCoverUrl || ''} className="w-full h-full object-cover" alt={currentSong.title} />
+               <img src={songCoverUrl || ''} className="w-full h-full object-cover" alt={currentSong.title} />
             </div>
 
             <div className="flex-1 flex flex-col justify-center text-center md:text-left space-y-6">
@@ -639,7 +639,7 @@ const SongDetails: React.FC = () => {
                   <div className="flex items-center gap-4">
                      <div className={`w-12 h-12 rounded-xl overflow-hidden border ${isLightMode ? "border-gray-100" : "border-white/10 shadow-lg"}`}>
                         {currentSong.artists?.[0]?.image_url ? (
-                           <img crossOrigin="anonymous" src={currentSong.artists[0].image_url} className="w-full h-full object-cover" alt="" />
+                           <img src={currentSong.artists[0].image_url} className="w-full h-full object-cover" alt="" />
                         ) : (
                            <div className="w-full h-full flex items-center justify-center bg-indigo-500/10"><FaMusic className="text-indigo-500/40" /></div>
                         )}

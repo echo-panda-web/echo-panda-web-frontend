@@ -171,7 +171,7 @@ const Player: React.FC = () => {
       <footer className={`fixed bottom-0 left-0 right-0 w-full ${isLightMode ? "bg-white/95 border-gray-200" : "bg-black/95 border-white/10"} backdrop-blur-md border-t h-20 md:h-24 px-3 md:px-6 z-50 flex items-center pointer-events-none`}>
       <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/info pointer-events-auto" onClick={() => currentSong?.id && navigate(`/song/${currentSong.id}`)}>
         <div className="w-10 h-10 md:w-14 md:h-14 rounded overflow-hidden flex-shrink-0 shadow-md group-hover/info:opacity-80 transition-opacity">
-          <img crossOrigin="anonymous" src={currentSong.coverUrl} alt={currentSong.title} className="w-full h-full object-cover" />
+          <img src={currentSong.coverUrl} alt={currentSong.title} className="w-full h-full object-cover" />
         </div>
         <div className="min-w-0">
           <h4 className={`${isLightMode ? "text-gray-900" : "text-white"} text-[13px] md:text-sm font-semibold truncate group-hover/info:underline`}>{currentSong.title}</h4>
