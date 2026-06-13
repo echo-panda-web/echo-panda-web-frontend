@@ -65,14 +65,21 @@ async function uploadViaBackend(file: File, purpose: MediaUploadPurpose): Promis
   formData.append("file", file);
   formData.append("purpose", purpose);
 
-  const response = await fetch(`${BACKEND_API_BASE_URL}/upload/media`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BACKEND_API_BASE_URL}/upload/media`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+  } catch (error) {
+    throw new Error(
+      "Could not reach the upload API. If this persists, the API server may need its CORS or upload size limits updated."
+    );
+  }
 
   const data = await response.json().catch(() => null);
   if (!response.ok) {
@@ -85,32 +92,41 @@ async function uploadViaBackend(file: File, purpose: MediaUploadPurpose): Promis
   };
 }
 
+async function uploadViaPresignedUrl(file: File, purpose: MediaUploadPurpose): Promise<{ key: string; url: string }> {
+  const presigned = await requestPresignedUpload(file, purpose);
+  const contentType = file.type || "application/octet-stream";
+  const headers = {
+    ...normalizeHeaders(presigned.headers),
+    "Content-Type": contentType,
+  };
+
+  const uploadResponse = await fetch(presigned.upload_url, {
+    method: "PUT",
+    headers,
+    body: file,
+  });
+
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text().catch(() => "");
+    throw new Error(errorText || `Upload failed (${uploadResponse.status})`);
+  }
+
+  return {
+    key: presigned.key,
+    url: presigned.url,
+  };
+}
+
+/**
+ * Upload media through the API by default. Browser-direct S3 PUT requires S3 CORS
+ * configuration that production may not have, so we only try presigned S3 as fallback.
+ */
 export async function uploadMediaDirectly(file: File, purpose: MediaUploadPurpose): Promise<{ key: string; url: string }> {
   try {
-    const presigned = await requestPresignedUpload(file, purpose);
-    const contentType = file.type || "application/octet-stream";
-    const headers = {
-      ...normalizeHeaders(presigned.headers),
-      "Content-Type": contentType,
-    };
-
-    const uploadResponse = await fetch(presigned.upload_url, {
-      method: "PUT",
-      headers,
-      body: file,
-    });
-
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text().catch(() => "");
-      throw new Error(errorText || `Upload failed (${uploadResponse.status})`);
-    }
-
-    return {
-      key: presigned.key,
-      url: presigned.url,
-    };
-  } catch (error) {
-    console.warn("Presigned upload failed, falling back to backend upload", error);
-    return uploadViaBackend(file, purpose);
+    return await uploadViaBackend(file, purpose);
+  } catch (backendError) {
+    console.warn("Backend upload failed, trying presigned S3 upload", backendError);
   }
+
+  return uploadViaPresignedUrl(file, purpose);
 }
