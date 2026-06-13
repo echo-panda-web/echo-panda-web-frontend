@@ -1,5 +1,6 @@
 import { buildApiUrl, resolveMediaUrl } from "./backendUrls";
 import {
+  getAlbumCoverImageUrl,
   getSignedAlbumCoverUrl,
   getSignedSongCoverUrl,
   getSignedArtistImageUrl,
@@ -115,7 +116,7 @@ export async function getAlbums(limit = 10, params: Record<string, any> = {}): P
     id: String(album.id),
     title: album.title,
     cover_key: album.cover_key || null,
-    cover_url: album.cover_url || undefined,
+    cover_url: album.cover_key || album.cover_url ? getAlbumCoverImageUrl(album.id) : undefined,
     release_date: album.release_date || undefined,
     scheduled_at: album.scheduled_at || undefined,
     created_at: album.created_at || undefined,
@@ -136,7 +137,7 @@ export async function getNewReleasesToday(limit = 10): Promise<CatalogAlbum[]> {
       id: String(album.id),
       title: album.title,
       cover_key: album.cover_key || null,
-      cover_url: album.cover_url || undefined,
+      cover_url: album.cover_key || album.cover_url ? getAlbumCoverImageUrl(album.id) : undefined,
       release_date: album.release_date || undefined,
       scheduled_at: album.scheduled_at || undefined,
       created_at: album.created_at || undefined,

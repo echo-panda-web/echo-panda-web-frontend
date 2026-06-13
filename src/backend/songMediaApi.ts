@@ -38,16 +38,28 @@ async function fetchSignedUrl(path: string, silent = false): Promise<string | nu
   }
 }
 
+/** Same-origin cover URL — streams through the API instead of loading S3 directly. */
+export function getSongCoverImageUrl(songId: string | number): string {
+  return buildApiUrl(`/songs/${songId}/cover`);
+}
+
+/** Same-origin cover URL — streams through the API instead of loading S3 directly. */
+export function getAlbumCoverImageUrl(albumId: string | number): string {
+  return buildApiUrl(`/albums/${albumId}/cover`);
+}
+
 export async function getSignedSongAudioUrl(songId: string | number): Promise<string | null> {
   return fetchSignedUrl(`/songs/${songId}/signed-url`);
 }
 
 export async function getSignedSongCoverUrl(songId: string | number): Promise<string | null> {
-  return fetchSignedUrl(`/songs/${songId}/cover-url`, true);
+  if (!songId) return null;
+  return getSongCoverImageUrl(songId);
 }
 
 export async function getSignedAlbumCoverUrl(albumId: string | number): Promise<string | null> {
-  return fetchSignedUrl(`/albums/${albumId}/cover-url`, true);
+  if (!albumId) return null;
+  return getAlbumCoverImageUrl(albumId);
 }
 
 export async function getSignedArtistImageUrl(artistId: string | number): Promise<string | null> {

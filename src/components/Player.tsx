@@ -93,6 +93,7 @@ const Player: React.FC = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [togglePlayPause, playNextSong, playPreviousSong]);
 
+  // Build autoplay pool from adaptive recommendations (weighted random pick in AudioPlayerContext).
   useEffect(() => {
     if (playbackMode === 'queue') return;
 
@@ -110,6 +111,7 @@ const Player: React.FC = () => {
             audioUrl: item.song?.audio_url || null,
             duration: item.song?.duration || 0,
             recommendationScore: Number(item.recommendation_score || 0),
+            // Sum of preference dimension scores — used for autoplay weighting (30% of pick weight).
             similarityScore: Number(
               (item.reason?.artist || 0)
               + (item.reason?.genre || 0)

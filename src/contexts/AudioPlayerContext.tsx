@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, ReactNode } from 'react';
 import { getSignedSongAudioUrl, getSignedSongCoverUrl } from '../backend/songMediaApi';
+// Event log only (user_interactions) — does not update recommendation taste profile.
 import { trackInteraction } from '../backend/recommendationService';
 import { AudioPlayerContext, PlaySongOptions, SongData, useAudioPlayer } from './AudioPlayerContextCore';
 
@@ -54,6 +55,7 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
 
     const handleEnded = () => {
       if (currentSong) {
+        // Logs to user_interactions — not the same as UserPreferenceService complete bonus.
         trackInteraction(currentSong.id, 'complete');
       }
       if (isRepeated) {
@@ -110,7 +112,7 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
         playPromise
           .then(() => {
             setIsPlaying(true);
-            trackInteraction(song.id, 'play');
+            trackInteraction(song.id, 'play'); // event log only
           })
           .catch(e => {
             console.error(`❌ Playback failed for ${song.title}:`, e);
@@ -201,6 +203,10 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
   const toggleShuffle = () => setIsShuffled(prev => !prev);
   const toggleRepeat = () => setIsRepeated(prev => !prev);
 
+  /**
+   * Autoplay next song: weighted random from Player's recommendation pool.
+   * Weight = recommendationScore×0.7 + similarityScore×0.3 (min 1 so all songs can appear).
+   */
   const pickWeightedRandomSong = useCallback((pool: SongData[], currentSongId?: string): SongData | null => {
     const candidates = pool.filter((song) => song.id !== currentSongId);
     const source = candidates.length > 0 ? candidates : pool;
@@ -214,7 +220,7 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
       const similarityScore = Math.max(0, song.similarityScore ?? 0);
       const combinedWeight = (recommendationScore * 0.7) + (similarityScore * 0.3);
 
-      // Keep a floor so low-score songs can still appear occasionally.
+      // Floor keeps low-score songs in rotation occasionally.
       return {
         song,
         weight: Math.max(1, combinedWeight),
@@ -261,8 +267,9 @@ export const AudioPlayerProvider: React.FC<AudioPlayerProviderProps> = ({ childr
 
     const recommendationPool = autoplayPoolRef.current;
 
+    // Autoplay mode: pick next from adaptive/cold-start pool (set in Player.tsx).
     if (recommendationPool.length > 0) {
-      if (currentSong) trackInteraction(currentSong.id, 'skip');
+      if (currentSong) trackInteraction(currentSong.id, 'skip'); // event log only
 
       const nextSong = pickWeightedRandomSong(recommendationPool, currentSong?.id);
 

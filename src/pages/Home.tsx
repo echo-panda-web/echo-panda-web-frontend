@@ -189,6 +189,7 @@ const Home: React.FC = () => {
   const fetchAdaptiveSections = async () => {
     try {
       setLoading((prev) => ({ ...prev, adaptive: true }));
+      // Try personalized first; fall back to cold-start for new/guest users.
       const recs = await getAdaptiveRecommendations(10);
       const fallback =
         recs.length === 0 ? await getColdStartRecommendations(10) : recs;
@@ -239,6 +240,7 @@ const Home: React.FC = () => {
       (r) => String(r.song.id) === String(item.id),
     );
 
+    // Analytics only — logs to recommendation_events, not user_preferences.
     if (recommendation) {
       trackRecommendationEvent({
         songId: recommendation.song.id,
@@ -303,7 +305,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* 1. Recommended Songs */}
+      {/* 1. Recommended Songs — from GET /recommendations (adaptive) with cold-start fallback */}
       <ScrollReveal>
         <div className="px-4 md:px-8">
           <SongSection

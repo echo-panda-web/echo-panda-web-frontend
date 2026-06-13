@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 
+/** Optional scores attached by Player.tsx from recommendation API for autoplay weighting. */
 export interface SongData {
   id: string;
   title: string;
@@ -7,7 +8,9 @@ export interface SongData {
   coverUrl: string;
   audioUrl?: string | null;
   duration?: number;
+  /** From GET /recommendations — 70% of autoplay pick weight. */
   recommendationScore?: number;
+  /** Sum of artist+genre+mood+tag reason scores — 30% of autoplay pick weight. */
   similarityScore?: number;
 }
 

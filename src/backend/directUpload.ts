@@ -110,10 +110,6 @@ export async function uploadMediaDirectly(file: File, purpose: MediaUploadPurpos
       url: presigned.url,
     };
   } catch (error) {
-    if (!import.meta.env.DEV) {
-      throw error;
-    }
-
     console.warn("Presigned upload failed, falling back to backend upload", error);
     return uploadViaBackend(file, purpose);
   }

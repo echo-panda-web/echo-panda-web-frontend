@@ -189,6 +189,7 @@ const SongDetails: React.FC = () => {
   const fetchSimilarSongs = async (songId: string) => {
     try {
       setLoadingSimilar(true);
+      // Content-based similar songs — GET /recommendations/similar/{song}
       const [rows, playCountMap] = await Promise.all([
         getSimilarRecommendations(songId, 10),
         getGlobalPlayCountMap(500),
@@ -412,7 +413,7 @@ const SongDetails: React.FC = () => {
        eventType: 'recommendation_clicked',
        recommendationScore: item.recommendation_score,
        recommendationReason: item.recommendation_reason,
-    }).catch(() => undefined);
+    }).catch(() => undefined); // analytics only
   };
 
   if (loading) return (
@@ -627,7 +628,7 @@ const SongDetails: React.FC = () => {
                {/* Tracklist - Album Content */}
                <SongTable songs={albumSongs} title="Album Content" />
 
-               {/* Discovery Section - More Like This */}
+               {/* Discovery Section — GET /recommendations/similar/{song} */}
                <SongTable songs={similarSongs} title="More Like This" isRecommended />
             </div>
 

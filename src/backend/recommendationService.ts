@@ -2,6 +2,19 @@ import { buildApiUrl } from "./backendUrls";
 import { getSongs } from "./catalogService";
 import { getSignedAlbumCoverUrl, getSignedSongCoverUrl } from "./songMediaApi";
 
+/**
+ * Frontend client for the active adaptive recommendation system.
+ *
+ * IN USE:
+ *   getAdaptiveRecommendations  → GET /recommendations (Home, Player)
+ *   getColdStartRecommendations → GET /recommendations/cold-start (fallback)
+ *   getSimilarRecommendations   → GET /recommendations/similar/{id} (Song Detail)
+ *   trackRecommendationEvent    → POST /recommendations/events (analytics)
+ *   trackInteraction            → POST /interactions/track (event log only, not ranking)
+ *
+ * NOT IN USE: getHomeRecommendations, getRecommendationsForInterests (legacy)
+ */
+
 const viteEnv = (import.meta as any).env || {};
 const BACKEND_API_BASE_URL =
   viteEnv.VITE_BACKEND_API_URL || "http://localhost:8082/api";
@@ -164,6 +177,7 @@ const authenticatedRequest = async (path: string, options: RequestInit = {}) => 
   return response.json();
 };
 
+/** @deprecated Legacy client-side interest matching — onboarding was removed. */
 export async function getRecommendationsForInterests(interests: string[]): Promise<AlbumRef[]> {
   const songs = await getSongs(500);
 
@@ -207,10 +221,15 @@ export async function getRecommendationsForInterests(interests: string[]): Promi
 
 // New Dynamic Recommendation Endpoints
 
+/** @deprecated Not used — /recommendations/home has no controller method. */
 export async function getHomeRecommendations() {
   return authenticatedRequest('/recommendations/home');
 }
 
+/**
+ * Logs player events to user_interactions. Does NOT update the taste profile.
+ * For preference learning on play click, see trackSongPlay() in playTrackingService.
+ */
 export async function trackInteraction(songId: string, action: string) {
   try {
     return await authenticatedRequest('/interactions/track', {
@@ -222,6 +241,11 @@ export async function trackInteraction(songId: string, action: string) {
   }
 }
 
+/**
+ * Personalized recommendations from user_preferences (auth required).
+ * Used by Home "Recommended Songs" and Player autoplay pool.
+ * Backend auto-logs recommendation_shown for each result.
+ */
 export async function getAdaptiveRecommendations(limit: number = 20): Promise<AdaptiveRecommendation[]> {
   if (!getBackendToken()) {
     return [];
@@ -239,6 +263,10 @@ export async function getAdaptiveRecommendations(limit: number = 20): Promise<Ad
   }
 }
 
+/**
+ * Fallback when adaptive returns empty (guest, new user, or no candidates).
+ * Mix of trending, recently added, and popular songs.
+ */
 export async function getColdStartRecommendations(limit: number = 20): Promise<AdaptiveRecommendation[]> {
   try {
     const payload = await backendRequest<{ data?: AdaptiveRecommendation[] }>(
@@ -252,6 +280,10 @@ export async function getColdStartRecommendations(limit: number = 20): Promise<A
   }
 }
 
+/**
+ * Content-based "More Like This" for Song Detail.
+ * Scores by same artist/genre/mood/tag — does not use user_preferences.
+ */
 export async function getSimilarRecommendations(songId: string | number, limit: number = 10): Promise<AdaptiveRecommendation[]> {
   try {
     const payload = await backendRequest<{ data?: AdaptiveRecommendation[] }>(
@@ -265,6 +297,10 @@ export async function getSimilarRecommendations(songId: string | number, limit: 
   }
 }
 
+/**
+ * Logs recommendation UI events (clicked, etc.) for admin analytics.
+ * Does not affect future recommendation rankings.
+ */
 export async function trackRecommendationEvent(event: {
   songId: string | number;
   eventType: RecommendationEventType;

@@ -53,7 +53,11 @@ import { getSignedSongCoverUrl } from "./songMediaApi";
 import { getSignedAlbumCoverUrl } from "./songMediaApi";
 import { resolveMediaUrl } from "./backendUrls";
 
-// Track a song play/listen
+/**
+ * Primary web path for taste learning: POST /listen-history → UserPreferenceService.
+ * Sends song_id only (+1 per artist/genre/mood/tag). Does not send duration/completed
+ * bonuses unless extended later.
+ */
 export const trackSongPlay = async (songId: string): Promise<boolean> => {
   const parsed = Number.parseInt(songId, 10);
   if (Number.isNaN(parsed)) {

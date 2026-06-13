@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import { useTheme } from "../contexts/ThemeContext";
+import { getAlbumCoverImageUrl, getSongCoverImageUrl } from "../backend/songMediaApi";
 import AlbumCard from "./AlbumCard";
 
 interface Props {
@@ -50,10 +51,17 @@ export default function SongsSection({ title, songs, albums, viewAllLink, onItem
             return String(artist);
           };
 
+          const albumId = item.album_id || item.album?.id || (item.type === 'album' ? item.id : undefined);
+          const proxiedCover = albumId && String(item.type || '').toLowerCase() === 'album'
+            ? getAlbumCoverImageUrl(albumId)
+            : item.id
+              ? getSongCoverImageUrl(item.id)
+              : null;
+
           const normalizedItem = {
              ...item,
              title: item.title || item.name,
-             cover_url: item.cover_url || item.songCover_url || item.image_url || item.cover_key || item.album?.cover_url,
+             cover_url: proxiedCover || item.cover_url || item.songCover_url || item.image_url || item.cover_key || item.album?.cover_url,
              artists: item.artists || (item.artist ? [{ name: normalizeArtist(item.artist) }] : (item.artist_name ? [{ name: normalizeArtist(item.artist_name) }] : undefined)),
              album_id: item.album_id || item.album?.id || (item.type === 'album' ? item.id : undefined),
              type: item.type || (item.name && !item.title ? 'category' : (item.songCover_url || item.audio_url ? 'Song' : 'album'))

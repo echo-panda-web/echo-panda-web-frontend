@@ -1,4 +1,5 @@
 import { uploadMediaDirectly } from "../backend/directUpload";
+import { getAlbumCoverImageUrl, getSongCoverImageUrl } from "../backend/songMediaApi";
 
 const viteEnv = (import.meta as any).env || {};
 const BACKEND_API_BASE_URL = viteEnv.VITE_BACKEND_API_URL || "http://localhost:8082/api";
@@ -161,7 +162,7 @@ export async function getOwnedAlbums(identity: ArtistIdentity): Promise<ArtistAl
         title: row.title || "Untitled",
         artist: String(safeArtistName || "Unknown Artist"),
         releaseDate: row.release_date ? String(row.release_date).split("T")[0] : "",
-        coverUrl: row.cover_url || "",
+        coverUrl: row.id ? getAlbumCoverImageUrl(row.id) : (row.cover_url || ""),
         description: row.description || "",
         type,
         releaseStatus: (row.release_status || "draft") as ArtistAlbum["releaseStatus"],
@@ -195,7 +196,7 @@ export async function getOwnedSongs(identity: ArtistIdentity): Promise<ArtistSon
       lyricsUrl: row.lyrics_url || "",
       lyrics: row.lyrics || "",
       createdAt: row.created_at || new Date().toISOString(),
-      coverUrl: row.cover_url || "",
+      coverUrl: row.id ? getSongCoverImageUrl(row.id) : (row.cover_url || ""),
       coverKey: row.cover_key || null,
       originalKey: row.original_key || null,
       playCount: Number(row.play_count || 0),
